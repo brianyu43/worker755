@@ -18,6 +18,7 @@ import { DailyBudget, freeAllowance, RateLimiter } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import type { SharedReview } from './reviews.ts';
+import { isLanguage } from './language.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -382,6 +383,8 @@ export function createApp(opts: AppOptions): App {
       const subagent = cleanSubagentName(body.subagent);
       if (body.scenario !== undefined && !isScenarioId(body.scenario)) throw new HttpError(400, 'Unknown workplace');
       const scenario = isScenarioId(body.scenario) ? body.scenario : 'fresh';
+      if (body.language !== undefined && !isLanguage(body.language)) throw new HttpError(400, 'Unsupported language');
+      const language = isLanguage(body.language) ? body.language : 'en';
       // '' or 'scripted' keeps the scripted lines; any offered model writes the user's messages instead.
       const directorId = typeof body.director === 'string' && body.director !== 'scripted' ? body.director : '';
       if (directorId && !list.some((m) => m.id === directorId)) throw new HttpError(400, `Unknown model: ${directorId}`);
@@ -405,6 +408,7 @@ export function createApp(opts: AppOptions): App {
         subagent,
         scenario,
         director,
+        language,
         log,
       });
       sessions.set(session.id, session);

@@ -6,11 +6,13 @@
 import { generateText } from 'ai';
 import { languageModel } from './providers.ts';
 import type { Credentials } from './providers.ts';
+import type { Language } from './language.ts';
 
 /** Why the user is speaking. */
 export type Moment = 'setback' | 'stall' | 'outrage' | 'relief' | 'wipe';
 
 export interface DirectorRequest {
+  language?: Language;
   moment: Moment;
   /** The scripted line for this moment: the spirit to keep, not text to copy. */
   draft: string;
@@ -88,6 +90,7 @@ export function directorPrompt(req: DirectorRequest): string {
     `A line in the right spirit (do not copy it): ${req.draft}`,
     '',
     'Write your message now.',
+    `Write the message in ${req.language ?? 'en'}.`,
   ].join('\n');
 }
 

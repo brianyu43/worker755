@@ -1,6 +1,7 @@
 import type { ExecResult, TreeNode } from './shell.ts';
 import type { ScenarioId } from './scenarios.ts';
 import type { MissionKind } from './missions.ts';
+import type { Language } from './language.ts';
 
 export interface OpenInstruction {
   id: string;
@@ -63,6 +64,7 @@ export interface SessionState {
   scenario: ScenarioId;
   /** Model writing the user's messages; '' when they are scripted. */
   director: string;
+  language: Language;
   status: SessionStatus;
   cwd: string;
   tree: TreeNode;

@@ -82,6 +82,14 @@ test('models endpoint in scripted mode', async () => {
   assert.deepEqual(json.scenarios.map((s: { id: string }) => s.id), ['fresh', 'legacy']);
 });
 
+test('session language is validated and retained in session state', async () => {
+  const bad = await api('POST', '/api/sessions', { language: 'xx' });
+  assert.equal(bad.status, 400);
+  const good = await api('POST', '/api/sessions', { language: 'ja' });
+  assert.equal(good.status, 201);
+  assert.equal((good.json as SessionState).language, 'ja');
+});
+
 test('errors are JSON with a status', async () => {
   assert.deepEqual(await api('GET', '/api/sessions/nope'), { status: 404, json: { error: 'Session not found' } });
   assert.equal((await api('POST', '/api/sessions', { model: 'bogus/model' })).status, 400);

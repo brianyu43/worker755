@@ -1889,3 +1889,6 @@ a.btn-ink {
 .about-cta .btn {
   text-decoration: none;
 }
+.language-picker { margin: 0 0 1rem auto; max-width: 13rem; }
+html[lang='zh-CN'] body, html[lang='ja'] body, html[lang='hi'] body { line-height: 1.55; }
+.start-copy, .feed, .work-order, .review { overflow-wrap: anywhere; }

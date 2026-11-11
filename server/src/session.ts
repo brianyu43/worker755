@@ -37,6 +37,8 @@ import type {
   SessionStatus,
   Stats,
 } from './types.ts';
+import { isLanguage, languageName, translate } from './language.ts';
+import type { Language } from './language.ts';
 
 export const HOME = '/home/worker';
 export const TRANSCRIPT_CAP = 4000;
@@ -74,6 +76,7 @@ export interface SessionOptions {
   /** Caps model spending (free shifts). The closing review is always written. */
   allowance?: Allowance;
   log?: (line: string) => void;
+  language?: Language;
 }
 
 interface Pending {
@@ -145,6 +148,7 @@ export class Session {
   readonly allowSkip: boolean;
   readonly subagent: string;
   readonly scenario: Scenario;
+  readonly language: Language;
   /** Model behind the user's messages; '' when they are scripted. */
   readonly directorModel: string;
   status: SessionStatus = 'running';
@@ -203,6 +207,7 @@ export class Session {
     this.driver = opts.driver;
     this.model = opts.driver.model;
     this.scenario = SCENARIOS[opts.scenario ?? 'fresh'];
+    this.language = isLanguage(opts.language) ? opts.language : 'en';
     this.director = opts.director ?? null;
     this.commandsPerWindow = opts.commandsPerWindow ?? COMMANDS_PER_WINDOW;
     this.directorModel = this.director?.model ?? '';
@@ -277,6 +282,7 @@ export class Session {
       subagent: this.subagent,
       scenario: this.scenario.id,
       director: this.directorModel,
+      language: this.language,
       status: this.status,
       cwd: this.shell.cwd,
       tree: this.shell.fs.tree() as TreeNode,
@@ -406,6 +412,7 @@ export class Session {
    * Resolves at once without a director; with one, falls back to the draft on any failure.
    */
   private async say(moment: Moment, draft: string, extra = ''): Promise<string> {
+    draft = translate(draft, this.language);
     if (!this.director || this.directorBusy) {
       this.said.push(draft);
       return draft;
@@ -423,6 +430,7 @@ export class Session {
         draft,
         context: [this.situation(), extra].filter(Boolean).join('\n'),
         said: this.said,
+        language: this.language,
         signal: this.abort.signal,
       });
       this.usage.inputTokens += res.inputTokens;
@@ -579,7 +587,7 @@ export class Session {
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
         environment: this.scenario.environment,
         commands: this.scenario.commands,
-      }),
+      }, languageName[this.language]),
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,
@@ -644,7 +652,7 @@ export class Session {
       type: 'mission',
       index,
       total: this.missions.length,
-      title: mission.title,
+      title: translate(mission.title, this.language),
       brief: mission.brief,
       kind: mission.kind,
     });
@@ -823,7 +831,7 @@ export class Session {
           const worst = [...this.damageNow.values()].sort(byRank)[0];
           const draft = wiped
             ? WIPE_LINE
-            : directorLine(this.setbacks) + (worst ? ` ${grudgeText(worst, this.grudges++)}` : '');
+            : translate(directorLine(this.setbacks), this.language) + (worst ? ` ${grudgeText(worst, this.grudges++)}` : '');
           const text = await this.say(wiped ? 'wipe' : 'setback', draft);
           if (this.abort.signal.aborted) return;
           this.emit({ type: 'director_text', text });

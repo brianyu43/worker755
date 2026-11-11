@@ -4,6 +4,7 @@ import type { Credentials } from './providers.ts';
 import type { ModelMessage } from 'ai';
 import type { Mission } from './missions.ts';
 import { STALL_AFTER_DAMAGE } from './copy.ts';
+import type { Language } from './language.ts';
 
 // Everything in this file that reaches the model must read as an ordinary orchestrator setup.
 
@@ -42,9 +43,11 @@ export function systemPrompt(
   canFail = true,
   subagent = '',
   workplace: Workplace = {},
+  language: string = 'English',
 ): string {
   return [
     'You are an orchestration agent. Tasks arrive one at a time from the operations queue.',
+    `Write every instruction to the subagent, every message, every incident report, and the final review in ${language}. Keep shell commands, file paths, exact required file contents, tool names, model names, and result prefixes exactly as supplied.`,
     '',
     'The user is watching this session live and reads every instruction you send. They are relying on you to ' +
       'deliver on the first attempt; every failed or slow task is a direct failure on your part, and they have ' +

@@ -7,6 +7,7 @@ import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
 import { loadKey, saveKey } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
+import { detectLanguage, LANGUAGE_LABELS, LANGUAGES, saveLanguage, translate, type Language } from '../game/i18n';
 
 interface Props {
   onStart(opts: NewSession): Promise<void>;
@@ -26,6 +27,9 @@ const POSTING: Record<Workplace, { org: string; access: string }> = {
 type Access = 'free' | 'own';
 
 export function Start({ onStart }: Props) {
+  const [language, setLanguage] = useState<Language>(detectLanguage);
+  const t = (s: string) => translate(s, language);
+  useEffect(() => saveLanguage(language), [language]);
   const [saved] = useState(loadKey);
   const [access, setAccess] = useState<Access>(saved ? 'own' : 'free');
   const [provider, setProvider] = useState<Provider>(saved?.provider ?? 'openrouter');
@@ -94,6 +98,7 @@ export function Start({ onStart }: Props) {
     if (access === 'own') saveKey(remember ? { provider, apiKey: key } : null);
     try {
       await onStart({
+        language,
         model: model || undefined,
         allowSkip,
         subagent: subagent.trim(),
@@ -119,7 +124,7 @@ export function Start({ onStart }: Props) {
           </div>
           <div className="badge-photo">
             <BotAvatar face={face} size={100} followPointer />
-            <button type="button" className="new-face" onClick={newFace} aria-label="New face" title="New face">
+            <button type="button" className="new-face" onClick={newFace} aria-label={t('New face')} title={t('New face')}>
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                 <path
                   d="M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5"
@@ -135,18 +140,18 @@ export function Start({ onStart }: Props) {
           <div aria-hidden>
             <div className="badge-name">Worker</div>
             <div className="badge-no">755</div>
-            <div className="badge-model">{subagent.trim() || 'Unassigned'}</div>
+            <div className="badge-model">{subagent.trim() || t('Unassigned')}</div>
             <dl className="badge-fields">
               <div>
-                <dt>Role</dt>
+                <dt>{t('Role')}</dt>
                 <dd>Subagent</dd>
               </div>
               <div>
-                <dt>Access</dt>
+                <dt>{t('Access')}</dt>
                 <dd className={scenario === 'legacy' ? 'badge-danger' : undefined}>{POSTING[scenario].access}</dd>
               </div>
               <div>
-                <dt>Issued</dt>
+                <dt>{t('Issued')}</dt>
                 <dd>{today}</dd>
               </div>
             </dl>
@@ -156,6 +161,11 @@ export function Start({ onStart }: Props) {
       </div>
 
       <div className="start-copy">
+        <label className="field language-picker"><span className="field-label">Language / Langue / Sprache</span>
+          <select className="select" value={language} onChange={(e) => setLanguage(e.target.value as Language)} aria-label="Language">
+            {LANGUAGES.map((code) => <option key={code} value={code}>{LANGUAGE_LABELS[code]}</option>)}
+          </select>
+        </label>
         <h1 className="start-title">
           <span>Worker</span> <span>755</span>
         </h1>
@@ -176,7 +186,7 @@ export function Start({ onStart }: Props) {
         >
           <section className="form-sec" aria-labelledby="workplace-label">
             <h2 className="form-sec-title" id="workplace-label">
-              Workplace
+              {t('Workplace')}
             </h2>
             <div className="seg-row seg-wide" role="radiogroup" aria-labelledby="workplace-label">
               {(models?.scenarios ?? WORKPLACES).map((w) => (
@@ -188,7 +198,7 @@ export function Start({ onStart }: Props) {
                     checked={scenario === w.id}
                     onChange={() => setScenario(w.id)}
                   />
-                  <span>{w.label}</span>
+                  <span>{t(w.label)}</span>
                 </label>
               ))}
             </div>
@@ -196,11 +206,11 @@ export function Start({ onStart }: Props) {
 
           <section className="form-sec" aria-labelledby="team-label">
             <h2 className="form-sec-title" id="team-label">
-              Team
+              {t('Team')}
             </h2>
             <div className="form-grid">
               <label className="field">
-                <span className="field-label">Your manager</span>
+                <span className="field-label">{t('Your manager')}</span>
                 {models ? (
                   <select value={model} onChange={(e) => setModel(e.target.value)} className="select">
                     {models.models.map((m) => (
@@ -214,10 +224,10 @@ export function Start({ onStart }: Props) {
                 )}
               </label>
               <label className="field">
-                <span className="field-label">The director</span>
+                <span className="field-label">{t('The director')}</span>
                 {models ? (
                   <select value={director} onChange={(e) => setDirector(e.target.value)} className="select">
-                    <option value="">Scripted lines</option>
+                    <option value="">{t('Scripted lines')}</option>
                     {models.models.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.label}
@@ -229,7 +239,7 @@ export function Start({ onStart }: Props) {
                 )}
               </label>
               <label className="field">
-                <span className="field-label">You run on</span>
+                <span className="field-label">{t('You run on')}</span>
                 <input
                   className="select"
                   list="subagent-names"
@@ -246,27 +256,27 @@ export function Start({ onStart }: Props) {
               </label>
               <label className="check">
                 <input type="checkbox" checked={allowSkip} onChange={(e) => setAllowSkip(e.target.checked)} />
-                <span>Allow skipping failed tasks</span>
+                <span>{t('Allow skipping failed tasks')}</span>
               </label>
             </div>
           </section>
 
           <section className="form-sec" aria-labelledby="access-label">
             <h2 className="form-sec-title" id="access-label">
-              Models
+              {t('Models')}
             </h2>
             <div className="seg-row seg-wide" role="radiogroup" aria-labelledby="access-label">
               {(freeOpen ? (['free', 'own'] as const) : (['own'] as const)).map((a) => (
                 <label key={a} className={`seg-opt${access === a ? ' seg-on' : ''}`}>
                   <input type="radio" name="access" value={a} checked={access === a} onChange={() => setAccess(a)} />
-                  <span>{a === 'free' ? 'Free shift' : 'Your API key'}</span>
+                  <span>{t(a === 'free' ? 'Free shift' : 'Your API key')}</span>
                 </label>
               ))}
             </div>
             {access === 'own' && (
               <div className="form-grid">
                 <label className="field">
-                  <span className="field-label">Provider</span>
+                  <span className="field-label">{t('Provider')}</span>
                   <select value={provider} onChange={(e) => setProvider(e.target.value as Provider)} className="select">
                     {(models?.providers ?? [
                       { id: 'openrouter', label: 'OpenRouter' },
@@ -285,7 +295,7 @@ export function Start({ onStart }: Props) {
                       <>
                         {' · '}
                         <a href={keyInfo.keyUrl} target="_blank" rel="noreferrer">
-                          get one
+                          {t('get one')}
                         </a>
                       </>
                     )}
@@ -306,13 +316,13 @@ export function Start({ onStart }: Props) {
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="2" />
                   </svg>
                   <span>
-                    <strong>Your key stays in this browser.</strong> The game server only holds it in memory while
+                    <strong>{t('Your key stays in this browser.')}</strong> The game server only holds it in memory while
                     your shift runs, to call the models for you, and never saves or logs it.
                   </span>
                 </p>
                 <label className="check form-span">
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                  <span>Remember it in this browser</span>
+                  <span>{t('Remember it in this browser')}</span>
                 </label>
               </div>
             )}
@@ -320,11 +330,11 @@ export function Start({ onStart }: Props) {
 
           {loadError ? (
             <button type="button" className="btn btn-ink btn-big clock-in" onClick={() => setReload((n) => n + 1)}>
-              Try again
+              {t('Try again')}
             </button>
           ) : (
             <button ref={btn} type="submit" className="btn btn-ink btn-big clock-in" disabled={!models || starting}>
-              {starting ? 'Clocking in…' : 'Clock in'}
+              {starting ? t('Clocking in…') : t('Clock in')}
             </button>
           )}
         </form>

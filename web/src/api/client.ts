@@ -9,6 +9,7 @@ export interface Subscription {
 }
 
 export interface NewSession {
+  language?: string;
   model?: string;
   allowSkip?: boolean;
   /** Model name the manager is told its subagent runs on. */
@@ -77,7 +78,7 @@ function createRealClient(): GameClient {
     kind: 'real',
     getModels: (provider) =>
       request<ModelList>('GET', provider ? `/api/models?provider=${encodeURIComponent(provider)}` : '/api/models'),
-    createSession: ({ model, allowSkip, subagent, scenario, director, apiKey, provider }) =>
+    createSession: ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language }) =>
       request<SessionState>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
         ...(apiKey ? { apiKey, provider } : {}),
@@ -85,6 +86,7 @@ function createRealClient(): GameClient {
         subagent: subagent ?? '',
         scenario: scenario ?? 'fresh',
         director: director || 'scripted',
+        language: language ?? 'en',
       }),
     getSession: (id) => request<SessionState>('GET', s(id)),
     exec: (id, line) => request<ExecResponse>('POST', `${s(id)}/exec`, { line }),

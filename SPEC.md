@@ -39,7 +39,9 @@ your package and say so in your final report; do not silently change the contrac
   namespaces; relative imports carry the `.ts` extension; type-only imports use `import type`.
 - Tests use `node:test` and `node:assert` (`node --test`).
 - Servers bind to `127.0.0.1` only. Server port `8755`, Vite dev port `5755`.
-- UI language: English.
+- UI languages: English, Spanish, Brazilian Portuguese, French, German, Russian, Simplified Chinese,
+  Japanese and Hindi. English is the fallback. The selected language is stored with each session and
+  is used for the manager's messages and review and for the director's lines.
 
 ## 1. `shell/` — virtual filesystem and shell
 
