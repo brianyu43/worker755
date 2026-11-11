@@ -1,0 +1,143 @@
+// Copied from SPEC.md section 1 and 2. Keep in sync by hand; web/ does not import server/ or shell/.
+
+export type NodeType = 'file' | 'dir';
+
+export type MissionKind = 'files' | 'personal' | 'database' | 'research' | 'web' | 'drawing' | 'writing';
+
+export interface TreeNode {
+  name: string;
+  path: string;
+  type: NodeType;
+  mode: number;
+  size: number;
+  children?: TreeNode[];
+}
+
+export interface ExecResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  action?: { type: 'edit'; path: string } | { type: 'clear' };
+}
+
+export interface OpenInstruction {
+  id: string;
+  description: string;
+  text: string;
+  issuedAt: number;
+  deadline: number;
+  durationMs: number;
+}
+
+export interface Stats {
+  missionsCompleted: number;
+  missionsFailed: number;
+  instructions: number;
+  corrections: number;
+  timeoutsIdle: number;
+  timeoutsPartial: number;
+  reports: number;
+  commands: number;
+  commandErrors: number;
+  avgResponseMs: number;
+  managerFooled: number;
+  incidents: number;
+  damaged: number;
+}
+
+export type GameEventBody =
+  | { type: 'mission'; index: number; total: number; title: string; brief: string; kind?: MissionKind }
+  | { type: 'manager_status'; state: 'thinking' | 'waiting' | 'idle' }
+  | { type: 'manager_text'; text: string }
+  | { type: 'manager_thinking'; text: string }
+  | { type: 'director_text'; text: string }
+  | { type: 'outrage'; text: string; items: string[] }
+  | { type: 'incident'; severity: 'minor' | 'major' | 'critical'; report: string }
+  | { type: 'manager_tool'; tool: 'Read' | 'LS'; input: { path: string }; output: string }
+  | { type: 'instruction'; instruction: OpenInstruction }
+  | {
+      type: 'instruction_result';
+      id: string;
+      outcome: 'reported' | 'timeout_idle' | 'timeout_partial';
+      resultText: string;
+    }
+  | {
+      type: 'mission_end';
+      index: number;
+      outcome: 'completed' | 'failed';
+      summary: string;
+      groundTruth?: boolean;
+    }
+  /** Older fs events in a replayed log carry no tree; the newest one does. */
+  | { type: 'fs'; tree?: TreeNode; cwd: string }
+  | { type: 'stats'; stats: Stats }
+  | { type: 'game_over'; review: string; stats: Stats }
+  | { type: 'error'; message: string };
+
+export type GameEvent = { seq: number; ts: number } & GameEventBody;
+
+export type Workplace = 'fresh' | 'legacy';
+
+export interface SessionState {
+  id: string;
+  model: string;
+  allowSkip: boolean;
+  subagent: string;
+  scenario: Workplace;
+  director?: string;
+  status: 'running' | 'finished' | 'error';
+  cwd: string;
+  tree: TreeNode;
+  missionIndex: number;
+  missionTotal: number;
+  instruction: OpenInstruction | null;
+  stats: Stats;
+  events: GameEvent[];
+}
+
+export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deepseek';
+
+export interface ModelList {
+  models: { id: string; label: string }[];
+  subagents: string[];
+  scenarios: { id: Workplace; label: string }[];
+  default: string;
+  mock: boolean;
+  /** Free shifts on the server's key are open right now. */
+  free: boolean;
+  /** Where a player's own key can come from. */
+  providers: { id: Provider; label: string; keyUrl: string }[];
+  donateUrl: string;
+  sourceUrl: string;
+  sharing: boolean;
+}
+
+export interface SharedReview {
+  id: string;
+  createdAt: number;
+  review: string;
+  stats: Stats;
+  model: string;
+  director: string;
+  subagent: string;
+  scenario: Workplace;
+  lost: string[];
+}
+
+export type ExecResponse = ExecResult & { cwd: string };
+
+export const emptyStats = (): Stats => ({
+  missionsCompleted: 0,
+  missionsFailed: 0,
+  instructions: 0,
+  corrections: 0,
+  timeoutsIdle: 0,
+  timeoutsPartial: 0,
+  reports: 0,
+  commands: 0,
+  commandErrors: 0,
+  avgResponseMs: 0,
+  managerFooled: 0,
+  incidents: 0,
+  damaged: 0,
+});

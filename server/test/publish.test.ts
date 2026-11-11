@@ -1,0 +1,293 @@
+// Own keys, free-shift limits and shared reviews.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { AddressInfo } from 'node:net';
+import { createApp, withPreview } from '../src/http.ts';
+import type { App, AppOptions } from '../src/http.ts';
+import { Session } from '../src/session.ts';
+import { assistant, call, createMockDriver } from '../src/manager.ts';
+import type { ManagerDriver, StepResult } from '../src/manager.ts';
+import type { Credentials } from '../src/providers.ts';
+import { providerModelId } from '../src/providers.ts';
+import { DailyBudget, freeAllowance, RateLimiter, ALLOWANCE_SPENT } from '../src/limits.ts';
+import { ReviewStore } from '../src/reviews.ts';
+import type { Mission } from '../src/missions.ts';
+import type { GameEvent } from '../src/types.ts';
+
+const KEY = 'sk-or-v1-0123456789abcdef0123456789abcdef';
+const MODELS = [
+  { id: 'a/one', label: 'One' },
+  { id: 'b/two', label: 'Two' },
+];
+
+const HELLO: Mission = {
+  id: 't',
+  kind: 'files',
+  title: 'Test task',
+  brief: 'Create /home/worker/a.txt containing a.',
+  focus: '/home/worker/a.txt',
+  check: (fs) => fs.stat('/home/worker/a.txt')?.type === 'file',
+  solution: ['echo a > a.txt'],
+};
+
+async function withApp(opts: Partial<AppOptions>, fn: (api: Api, app: App) => Promise<void>): Promise<void> {
+  const app = createApp({ mock: false, timeoutMs: 5000, log: () => {}, models: async () => MODELS, ...opts });
+  await new Promise<void>((r) => app.server.listen(0, '127.0.0.1', () => r()));
+  const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+  const api: Api = async (method, path, body) => {
+    const res = await fetch(base + path, {
+      method,
+      headers: body === undefined ? {} : { 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    let json: any = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = null;
+    }
+    return { status: res.status, json, text };
+  };
+  try {
+    await fn(api, app);
+  } finally {
+    await app.close();
+  }
+}
+type Api = (method: string, path: string, body?: unknown) => Promise<{ status: number; json: any; text: string }>;
+
+/** Records the credentials each driver was built with; the drivers themselves are scripted. */
+function recorder() {
+  const creds: (Credentials | null)[] = [];
+  const models: string[] = [];
+  return {
+    creds,
+    models,
+    driverFor: (model: string, cred: Credentials | null): ManagerDriver => {
+      creds.push(cred);
+      models.push(model);
+      return createMockDriver(0);
+    },
+  };
+}
+
+const HOSTED: Credentials = { provider: 'gateway', apiKey: 'hosted-key-0123456789abcdef' };
+
+test('own key: checked, used for the shift, and never sent back', async () => {
+  const rec = recorder();
+  await withApp({ driverFor: rec.driverFor }, async (api) => {
+    assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'nope' })).status, 400);
+    const bad = await api('POST', '/api/sessions', { apiKey: 'short', provider: 'openrouter' });
+    assert.equal(bad.status, 400);
+    assert.ok(!bad.text.includes('short'));
+    const ok = await api('POST', '/api/sessions', { apiKey: KEY, provider: 'openrouter', model: 'b/two' });
+    assert.equal(ok.status, 201);
+    assert.deepEqual(rec.models, ['b/two']);
+    assert.deepEqual(rec.creds, [{ provider: 'openrouter', apiKey: KEY }]);
+    assert.ok(!ok.text.includes(KEY));
+    const state = await api('GET', `/api/sessions/${ok.json.id}`);
+    assert.ok(!state.text.includes(KEY));
+  });
+});
+
+test('without a server key, a shift needs the player\'s own key', async () => {
+  await withApp({}, async (api) => {
+    const models = await api('GET', '/api/models');
+    assert.equal(models.json.free, false);
+    assert.deepEqual(models.json.models, []);
+    assert.deepEqual(models.json.providers.map((p: { id: string }) => p.id), ['openrouter', 'gateway', 'anthropic', 'openai', 'deepseek']);
+    assert.equal((await api('GET', '/api/models?provider=openrouter')).json.models.length, 2);
+    assert.equal((await api('GET', '/api/models?provider=x')).status, 400);
+    const r = await api('POST', '/api/sessions', {});
+    assert.equal(r.status, 400);
+    assert.equal(r.json.error, 'Add your own API key to play.');
+  });
+});
+
+test('free shifts: one model, the server key, a few per address per day', async () => {
+  const rec = recorder();
+  const free = { sessionTokens: 1000, dailyTokens: 100_000, perAddressPerDay: 2, credentials: HOSTED };
+  await withApp({ driverFor: rec.driverFor, free }, async (api) => {
+    const models = await api('GET', '/api/models');
+    assert.equal(models.json.free, true);
+    assert.deepEqual(models.json.models, [MODELS[0]]);
+    // Only the free model; a rejected request does not use up a free shift.
+    assert.equal((await api('POST', '/api/sessions', { model: 'b/two' })).status, 400);
+    assert.equal((await api('POST', '/api/sessions', {})).status, 201);
+    assert.equal((await api('POST', '/api/sessions', {})).status, 201);
+    const third = await api('POST', '/api/sessions', {});
+    assert.equal(third.status, 429);
+    assert.match(third.json.error, /own API key/);
+    // Own keys still work.
+    assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'gateway' })).status, 201);
+    assert.deepEqual(rec.creds, [HOSTED, HOSTED, { provider: 'gateway', apiKey: KEY }]);
+  });
+});
+
+test('shift starts are rate limited per address on any key', async () => {
+  await withApp({ driverFor: recorder().driverFor, shiftsPerHour: 1 }, async (api) => {
+    assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'gateway' })).status, 201);
+    assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'gateway' })).status, 429);
+  });
+});
+
+test('daily budget rolls over at UTC midnight; rate limiter windows expire', () => {
+  let now = Date.parse('2026-11-11T23:00:00Z');
+  const daily = new DailyBudget(100, () => now);
+  const a = freeAllowance(80, daily);
+  const b = freeAllowance(80, daily);
+  a.spend(70);
+  assert.equal(a.canSpend(), true);
+  a.spend(20);
+  assert.equal(a.canSpend(), false, 'own cap');
+  assert.equal(b.canSpend(), true, 'the shared budget has 10 left');
+  b.spend(10);
+  assert.equal(daily.exhausted(), true);
+  assert.equal(b.canSpend(), false);
+  now = Date.parse('2026-11-12T00:00:01Z');
+  assert.equal(daily.exhausted(), false);
+  assert.equal(b.canSpend(), true);
+
+  const rl = new RateLimiter(2, 1000, () => now);
+  assert.equal(rl.take('x'), true);
+  assert.equal(rl.take('x'), true);
+  assert.equal(rl.take('x'), false);
+  assert.equal(rl.take('y'), true);
+  now += 1000;
+  assert.equal(rl.take('x'), true);
+});
+
+test('a spent allowance stops the shift with a message, but not the review', async () => {
+  let open = true;
+  const driver: ManagerDriver = {
+    model: 'test/m',
+    async step(req): Promise<StepResult> {
+      if (!req.tools) return assistant('Review.', []);
+      return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+    },
+  };
+  const s = new Session({
+    driver,
+    timeoutMs: 5000,
+    missions: [HELLO],
+    allowance: { canSpend: () => open, spend: () => {} },
+  });
+  s.start();
+  await waitFor(s, (e) => e.type === 'instruction');
+  open = false;
+  s.exec('echo a > a.txt');
+  s.report('Done.');
+  const err = await waitFor(s, (e) => e.type === 'error');
+  assert.ok(err.type === 'error' && err.message === ALLOWANCE_SPENT);
+  s.dispose();
+});
+
+test('a finished shift can be shared once; the page carries the review', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'w755-'));
+  const web = join(dir, 'web');
+  await mkdir(web);
+  await writeFile(
+    join(web, 'index.html'),
+    '<html><head><title>Worker 755</title>\n    <meta name="description" content="Default." />\n</head><body></body></html>',
+  );
+  try {
+    await withApp({ mock: true, reviews: new ReviewStore(dir), staticDir: web }, async (api, app) => {
+      const driver: ManagerDriver = {
+        model: 'test/m',
+        async step(req) {
+          if (!req.tools) return assistant('Worker 755 <b>follows</b> instructions "mostly".', []);
+          if (!req.messages.some((m) => m.role === 'tool')) {
+            return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+          }
+          return assistant('', [call('MissionComplete', { summary: 'ok' })]);
+        },
+      };
+      const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], subagent: 'gpt-6.1' });
+      app.sessions.set(s.id, s);
+      s.start();
+      await waitFor(s, (e) => e.type === 'instruction');
+      assert.equal((await api('POST', `/api/sessions/${s.id}/share`)).status, 409);
+      s.exec('echo a > a.txt');
+      s.report('Done.');
+      await waitFor(s, (e) => e.type === 'game_over');
+
+      const first = await api('POST', `/api/sessions/${s.id}/share`);
+      assert.equal(first.status, 200);
+      assert.match(first.json.id, /^[A-Za-z0-9]{10}$/);
+      assert.equal(first.json.path, `/r/${first.json.id}`);
+      assert.deepEqual((await api('POST', `/api/sessions/${s.id}/share`)).json, first.json);
+
+      const got = await api('GET', `/api/reviews/${first.json.id}`);
+      assert.equal(got.status, 200);
+      assert.equal(got.json.review, 'Worker 755 <b>follows</b> instructions "mostly".');
+      assert.equal(got.json.subagent, 'gpt-6.1');
+      assert.equal(got.json.stats.missionsCompleted, 1);
+      assert.deepEqual(got.json.lost, []);
+      assert.equal((await api('GET', '/api/reviews/nope')).status, 404);
+      assert.equal((await api('GET', '/api/reviews/..%2F..%2Fx')).status, 404);
+
+      const page = await api('GET', `/r/${first.json.id}`);
+      assert.equal(page.status, 200);
+      assert.ok(page.text.includes('<title>Worker 755: performance review</title>'));
+      assert.ok(page.text.includes('content="Worker 755 &lt;b&gt;follows&lt;/b&gt; instructions &quot;mostly&quot;."'));
+      assert.ok(!page.text.includes('Default.'));
+      assert.equal((await api('GET', '/r/ZZZZZZZZZZ')).status, 404);
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('withPreview trims long reviews', () => {
+  const html = withPreview('<head><title>x</title></head>', {
+    id: 'a',
+    createdAt: 0,
+    review: 'word '.repeat(100),
+    stats: {} as never,
+    model: '',
+    director: '',
+    subagent: '',
+    scenario: 'fresh',
+    lost: [],
+  });
+  const desc = /og:description" content="([^"]*)"/.exec(html)![1];
+  assert.ok(desc.length <= 200 && desc.endsWith('...'));
+});
+
+test('OpenRouter spells some vendors differently', () => {
+  assert.equal(providerModelId('openrouter', 'zai/glm-5.3-flash'), 'z-ai/glm-5.3-flash');
+  assert.equal(providerModelId('openrouter', 'anthropic/claude-haiku-5.5'), 'anthropic/claude-haiku-5.5');
+  assert.equal(providerModelId('gateway', 'zai/glm-5.3-flash'), 'zai/glm-5.3-flash');
+});
+
+function waitFor(s: Session, pred: (e: GameEvent) => boolean, timeoutMs = 5000): Promise<GameEvent> {
+  const found = s.events.find(pred);
+  if (found) return Promise.resolve(found);
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      off();
+      reject(new Error('timed out waiting for event'));
+    }, timeoutMs);
+    const off = s.subscribe((e) => {
+      if (pred(e)) {
+        clearTimeout(t);
+        off();
+        resolve(e);
+      }
+    });
+  });
+}
+
+test("a player's key can go straight to Anthropic, OpenAI or DeepSeek, with each vendor's own model names", async () => {
+  const { listModels } = await import('../src/models.ts');
+  const { providerModelId } = await import('../src/providers.ts');
+  assert.deepEqual((await listModels('anthropic')).map((m) => m.id), ['anthropic/claude-haiku-5.5', 'anthropic/claude-sonnet-5.5']);
+  assert.equal(providerModelId('anthropic', 'anthropic/claude-haiku-5.5'), 'claude-haiku-5-5');
+  assert.equal(providerModelId('openai', 'openai/gpt-6-luna'), 'gpt-6-luna');
+  assert.equal(providerModelId('deepseek', 'deepseek/deepseek-v4.1-flash'), 'deepseek-flash');
+  assert.equal(providerModelId('gateway', 'deepseek/deepseek-v4.1-flash'), 'deepseek/deepseek-v4.1-flash');
+});

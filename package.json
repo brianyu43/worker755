@@ -1,0 +1,19 @@
+{
+  "name": "worker-755",
+  "private": true,
+  "description": "A browser game where an AI manager thinks you are its subagent.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "setup": "npm ci --prefix server && npm ci --prefix web",
+    "build": "npm run build --prefix web",
+    "start": "node --env-file-if-exists=.env server/src/index.ts",
+    "mock": "MOCK_LLM=1 node server/src/index.ts",
+    "dev:web": "npm run dev --prefix web",
+    "test": "npm test --prefix shell && npm test --prefix server",
+    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix web"
+  }
+}

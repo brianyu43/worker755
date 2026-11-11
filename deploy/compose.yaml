@@ -1,0 +1,58 @@
+# Example: run Worker 755 behind a Cloudflare tunnel, hardened, with no published ports.
+#
+#   1. Create a named Cloudflare tunnel whose public hostname points at http://game:8755.
+#   2. Put AI_GATEWAY_API_KEY=... in game.env (optional: without it, players bring their own keys)
+#      and TUNNEL_TOKEN=... in tunnel.env, both readable only by the owner (chmod 600).
+#   3. From the repository root: docker compose -f deploy/compose.yaml up -d --build
+#
+# The game never runs real commands (the shell is simulated in JavaScript), but on a shared host it
+# still gets its own network, an unprivileged read-only container and resource limits.
+name: worker755
+
+x-hardened: &hardened
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  networks: [worker755]
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: '3' }
+
+services:
+  game:
+    <<: *hardened
+    build: ..
+    image: worker755-game:latest
+    env_file: ./game.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '8755'
+      DATA_DIR: /data
+      TRUST_PROXY: '1'
+      PUBLIC_URL: https://worker755.com
+    volumes:
+      - worker755-data:/data
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 256
+
+  tunnel:
+    <<: *hardened
+    image: cloudflare/cloudflared:2026.10.3
+    command: tunnel --no-autoupdate run
+    env_file: ./tunnel.env
+    depends_on: [game]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+
+networks:
+  worker755:
+    name: worker755
+
+volumes:
+  worker755-data:

@@ -1,0 +1,17 @@
+{
+  "name": "worker-755-shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "In-memory virtual filesystem and shell interpreter for Worker 755",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
