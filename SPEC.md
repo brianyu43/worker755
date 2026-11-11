@@ -41,7 +41,11 @@ your package and say so in your final report; do not silently change the contrac
 - Servers bind to `127.0.0.1` only. Server port `8755`, Vite dev port `5755`.
 - UI languages: English, Spanish, Brazilian Portuguese, French, German, Russian, Simplified Chinese,
   Japanese and Hindi. English is the fallback. The selected language is stored with each session and
-  is used for the manager's messages and review and for the director's lines.
+  is used for the manager's messages and review and for the director's lines. Interface text is in
+  `web/src/i18n/<code>.ts`, game content (mission titles and briefs, the director's scripted lines,
+  harness notes the manager reads, player-facing errors) in `server/src/i18n/<code>.ts`; `en.ts` is
+  the source and every other file is typed against it. File contents that missions check, tool names,
+  the manager's system prompt and result prefixes stay English. See `docs/translating.md`.
 
 ## 1. `shell/` — virtual filesystem and shell
 

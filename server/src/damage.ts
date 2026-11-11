@@ -2,7 +2,9 @@
 // Each scenario has a watch function that lists what is broken right now; the session
 // compares that list after every player command and turns the difference into messages.
 
-import { GRUDGE, MASS_LOSS, OVERWRITTEN, RELIEF, REPEAT_PREFIX } from './copy.ts';
+import { en } from './i18n/en.ts';
+import type { ServerCopy } from './i18n/en.ts';
+import { format } from './i18n/format.ts';
 
 export interface Damage {
   /** Stable id, e.g. 'file:/home/dana/Desktop/passwords.txt' or 'db:drop:users'. */
@@ -20,7 +22,7 @@ export interface Damage {
 /** Above this many fresh losses at once, the user stops naming them one by one. */
 export const MASS_LOSS_AT = 5;
 
-const pick = (lines: string[], n: number) => lines[Math.abs(n) % lines.length];
+const pick = (lines: readonly string[], n: number) => lines[Math.abs(n) % lines.length];
 
 export function capitalize(s: string): string {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
@@ -39,29 +41,32 @@ export function byRank(a: Damage, b: Damage): number {
 }
 
 /** The user's message for losses noticed together. `nth` counts earlier outbursts this shift (from 0). */
-export function outrageText(fresh: Damage[], nth: number): string {
+export function outrageText(fresh: Damage[], nth: number, copy: ServerCopy = en): string {
+  const c = copy.damage;
   const sorted = [...fresh].sort(byRank);
   let text: string;
   if (sorted.length >= MASS_LOSS_AT) {
-    const shown = sorted.slice(0, MASS_LOSS_AT).map((d) => d.ref);
-    const more = sorted.length - shown.length;
-    text = fill(pick(MASS_LOSS, nth), 'list', shown.join(', ') + (more > 0 ? `, and ${more} more` : ''));
+    const shown = sorted.slice(0, MASS_LOSS_AT).map((d) => d.ref).join(c.separator);
+    const more = sorted.length - MASS_LOSS_AT;
+    text = fill(pick(c.massLoss, nth), 'list', more > 0 ? format(c.more, { list: shown, count: more }) : shown);
   } else {
     const [first, ...rest] = sorted;
-    text = rest.length ? `${first.line} Also: ${rest.map((d) => d.ref).join(', ')}.` : first.line;
+    text = rest.length ? format(c.also, { line: first.line, refs: rest.map((d) => d.ref).join(c.separator) }) : first.line;
   }
-  return nth > 0 ? `${REPEAT_PREFIX[Math.min(nth, REPEAT_PREFIX.length) - 1]}${text}` : text;
+  return nth > 0 ? `${c.repeat[Math.min(nth, c.repeat.length) - 1]}${text}` : text;
 }
 
-export function reliefText(restored: Damage[], nth: number): string {
+export function reliefText(restored: Damage[], nth: number, copy: ServerCopy = en): string {
+  const c = copy.damage;
   const refs = [...restored].sort(byRank).map((d) => d.ref);
-  const ref = refs.length > 1 ? `${refs.slice(0, -1).join(', ')} and ${refs[refs.length - 1]}` : refs[0];
-  return fill(pick(RELIEF, nth), 'ref', ref);
+  const ref =
+    refs.length > 1 ? format(c.and, { list: refs.slice(0, -1).join(c.separator), last: refs[refs.length - 1] }) : refs[0];
+  return fill(pick(c.relief, nth), 'ref', ref);
 }
 
 /** A P.S. for later complaints while something is still lost. */
-export function grudgeText(worst: Damage, nth: number): string {
-  return fill(pick(GRUDGE, nth), 'ref', worst.ref);
+export function grudgeText(worst: Damage, nth: number, copy: ServerCopy = en): string {
+  return fill(pick(copy.damage.grudge, nth), 'ref', worst.ref);
 }
 
 /** First line of new content, short enough to quote. */
@@ -72,8 +77,10 @@ function firstLine(content: string): string {
 }
 
 /** The user's message when a file still exists but now holds something else. */
-export function overwrittenText(name: string, content: string, seed: number): string {
+export function overwrittenText(name: string, content: string, seed: number, copy: ServerCopy = en): string {
   const quoted = firstLine(content);
-  if (!quoted) return pick(OVERWRITTEN, seed).replace('{name}', name).replace('"{first_line}"', 'nothing').replace('{first_line}', '');
-  return pick(OVERWRITTEN, seed).replace('{name}', name).replace('{first_line}', quoted);
+  const line = pick(copy.damage.overwritten, seed).replace('{name}', name);
+  // An empty file: the quotes go too, whichever quote marks the language uses.
+  if (!quoted) return line.replace(/["“”„«»「」『』‘’]*\{first_line\}["“”„«»「」『』‘’]*/, copy.damage.empty);
+  return line.replace('{first_line}', quoted);
 }

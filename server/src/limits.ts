@@ -2,6 +2,8 @@
 // allowance, all of them together share a daily budget, and each address gets a few per day.
 // Shifts on a player's own key are only rate limited.
 
+import { en } from './i18n/en.ts';
+
 /** What a session may spend on model calls. */
 export interface Allowance {
   /** False once the shift should make no more optional model calls. */
@@ -10,7 +12,7 @@ export interface Allowance {
 }
 
 /** Thrown by the session when a free shift runs out mid-game; the message is shown to the player. */
-export const ALLOWANCE_SPENT = 'Your free shift has run out. Add your own API key on the start screen to keep playing.';
+export const ALLOWANCE_SPENT = en.errors.allowanceSpent;
 
 function utcDay(now: number): string {
   return new Date(now).toISOString().slice(0, 10);

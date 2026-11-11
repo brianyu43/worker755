@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffec
 import { ApiError, client } from '../api/client';
 import type { TreeNode } from '../api/types';
 import { Editor } from './Editor';
+import { t } from '../i18n';
 
 export type LineKind = 'cmd' | 'out' | 'err' | 'sys' | 'ok' | 'warn';
 interface Line {
@@ -60,7 +61,7 @@ let lineId = 0;
 
 export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ sessionId, cwd, tree, onReport }, ref) {
   const [lines, setLines] = useState<Line[]>(() => [
-    { id: ++lineId, kind: 'sys', text: 'Terminal ready. Report with Ctrl+Enter or type done.' },
+    { id: ++lineId, kind: 'sys', text: t('term.ready', { keys: 'Ctrl+Enter', command: 'done' }) },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -120,7 +121,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
       content = (await client.readFile(sessionId, path)).content;
     } catch (e) {
       if (e instanceof ApiError && e.status === 0) {
-        push([{ kind: 'err', text: 'edit: no connection' }]);
+        push([{ kind: 'err', text: t('term.editOffline') }]);
         return;
       }
       isNew = true;
@@ -156,7 +157,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
         else if (add.length) push(add);
         if (r.action?.type === 'edit') await openEditor(r.action.path);
       } catch (e) {
-        push([{ kind: 'err', text: e instanceof ApiError && e.status !== 0 ? e.message : 'No connection. Command not run.' }]);
+        push([{ kind: 'err', text: e instanceof ApiError && e.status !== 0 ? e.message : t('term.offline') }]);
       } finally {
         setBusy(false);
       }
@@ -259,7 +260,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
   };
 
   return (
-    <section className="term" aria-label="Terminal">
+    <section className="term" aria-label={t('term.label')}>
       <div className="term-scroll" ref={scrollRef} onScroll={onScroll} onMouseUp={onMouseUp} hidden={editing !== null}>
         <div className="term-lines" role="log" aria-live="off">
           {lines.map((l) => (
@@ -285,7 +286,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
             autoComplete="off"
             autoCorrect="off"
             autoFocus
-            aria-label="Command"
+            aria-label={t('term.command')}
           />
           {busy && <span className="term-busy" aria-hidden />}
         </label>
@@ -298,8 +299,8 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
           displayPath={tildify(editing.path)}
           initial={editing.content}
           isNew={editing.isNew}
-          onSaved={(bytes) => closeEditor({ kind: 'ok', text: `Saved ${tildify(editing.path)} (${bytes} bytes)` })}
-          onCancel={() => closeEditor({ kind: 'sys', text: `Closed ${tildify(editing.path)} without saving` })}
+          onSaved={(bytes) => closeEditor({ kind: 'ok', text: t('term.saved', { path: tildify(editing.path), count: bytes }) })}
+          onCancel={() => closeEditor({ kind: 'sys', text: t('term.closed', { path: tildify(editing.path) }) })}
         />
       )}
     </section>

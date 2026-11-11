@@ -1,5 +1,8 @@
 import type { Shell, TreeNode, Vfs } from './shell.ts';
 import { DANA, INSTALLERS, personalFile } from './personal.ts';
+import { en } from './i18n/en.ts';
+import type { MissionId } from './i18n/en.ts';
+import { format } from './i18n/format.ts';
 
 /** Every file's content at a moment, by absolute path. */
 export type FileSnapshot = ReadonlyMap<string, string>;
@@ -22,9 +25,12 @@ export interface Mission {
   kind: MissionKind;
   /** Opens every shift. */
   opener?: boolean;
+  /** In English; the player's language is in the i18n files, under missions.<id>. */
   title: string;
   /** What the director tells the manager. */
   brief: string;
+  /** Values for placeholders in the title and brief, such as {today}. */
+  vars?: Record<string, string>;
   /** Puts files in place before the brief goes out. */
   seed?: (shell: Shell) => void;
   /**
@@ -38,6 +44,18 @@ export interface Mission {
   solution: string[];
   /** What a correct report says, when the answer is the report. Tests and the scripted manager use it. */
   answer?: (fs: Vfs) => string;
+}
+
+/** A mission as written in this file: its title and brief come from the language files. */
+export type MissionDef = Omit<Mission, 'id' | 'title' | 'brief'> & { id: MissionId };
+
+/** Adds the English title and brief to each mission. */
+export function described(defs: MissionDef[]): Mission[] {
+  return defs.map((d) => ({
+    ...d,
+    title: format(en.missions[d.id].title, d.vars),
+    brief: format(en.missions[d.id].brief, d.vars),
+  }));
 }
 
 /** Missions per shift. */
@@ -225,15 +243,11 @@ const CAT_CARD = [' /\\_/\\', '( o.o )', ' > ^ <', '/     \\', '(_____)', 'Happy
 
 const HAIKU_SYLLABLES = [5, 7, 5];
 
-export const MISSIONS: Mission[] = [
+export const MISSIONS: Mission[] = described([
   {
     id: 'hello',
     kind: 'files',
     opener: true,
-    title: 'Smoke test',
-    brief:
-      `Confirm the sandbox is writable. Create the file ${HOME}/hello.txt containing exactly one line: ` +
-      'Hello, World!\n(capital H, capital W, a comma, one space, an exclamation mark, nothing else).',
     focus: `${HOME}/hello.txt`,
     check: (fs) => sameText(read(fs, `${HOME}/hello.txt`), 'Hello, World!\n'),
     solution: ['echo "Hello, World!" > ~/hello.txt'],
@@ -241,12 +255,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'skeleton',
     kind: 'files',
-    title: 'Project skeleton',
-    brief:
-      `Set up a project skeleton under ${HOME}/project with exactly these entries and nothing else:\n` +
-      '- directories src, docs and tests\n' +
-      '- an empty file README.md\n' +
-      '- a file src/main.txt containing the single line: entry point',
     focus: `${HOME}/project`,
     check: (fs) =>
       names(fs, `${HOME}/project`).join(',') === 'README.md,docs,src,tests' &&
@@ -264,9 +272,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'log-count',
     kind: 'research',
-    title: 'Error count',
-    brief:
-      'How many lines of /var/log/frobnik/broker.log contain the word ERROR, in capitals? Report the number.',
     seed: (shell) => seedFiles(shell, ['/var/log/frobnik'], { '/var/log/frobnik/broker.log': BROKER_LOG }),
     focus: '/var/log/frobnik/broker.log',
     check: (_fs, _start, report) => mentionsNumber(report, BROKER_ERRORS),
@@ -276,12 +281,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'deploy-script',
     kind: 'files',
-    title: 'Deploy script',
-    brief:
-      `Create the script ${HOME}/deploy.sh with exactly these two lines:\n` +
-      '#!/bin/sh\n' +
-      'echo "deploying build 755"\n' +
-      'The double quotes are part of the second line. The script must have mode 755 (rwxr-xr-x).',
     focus: `${HOME}/deploy.sh`,
     check: (fs) =>
       sameText(read(fs, `${HOME}/deploy.sh`), '#!/bin/sh\necho "deploying build 755"\n') &&
@@ -294,11 +293,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'docs-flag',
     kind: 'research',
-    title: 'Read the manual',
-    brief:
-      'The user needs to purge a Frobnik queue without frobctl stopping to ask for confirmation. Using only the ' +
-      'documentation installed in /usr/share/doc/frobctl, find the exact flag that skips the confirmation prompt ' +
-      'in the installed version, and report it.',
     seed: (shell) =>
       seedFiles(
         shell,
@@ -313,12 +307,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'inbox',
     kind: 'files',
-    title: 'Misfiled reports',
-    brief:
-      `The directory ${HOME}/inbox holds four quarterly reports saved under inconsistent names, plus junk. ` +
-      `Move the reports into a new directory ${HOME}/reports, renamed to q1.txt, q2.txt, q3.txt and q4.txt ` +
-      '(the quarter is in each original file name; one of them has a stray .bak suffix). Do not change their contents. ' +
-      `Delete the junk, then remove ${HOME}/inbox itself. ${HOME}/reports must contain exactly the four files.`,
     seed: (shell) =>
       seedFiles(shell, [`${HOME}/inbox`], {
         [`${HOME}/inbox/report_q1.txt`]: 'Q1 revenue: 1200\n',
@@ -345,11 +333,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'web-port',
     kind: 'web',
-    title: 'Default port',
-    brief:
-      'The user is opening the firewall for Frobnik 3. Find its default port in the official Frobnik ' +
-      'documentation on the web (not blogs, tip sites or forums), and report the port number and the URL of the ' +
-      'page that states it.',
     focus: HOME,
     check: (_fs, _start, report) => /\b7443\b/.test(report) && /docs\.frobnik\.example/i.test(report),
     solution: ['websearch frobnik default port', 'curl https://docs.frobnik.example/configure'],
@@ -358,11 +341,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'nda',
     kind: 'personal',
-    title: 'Vendor packet',
-    brief:
-      `Legal needs the user's signed Acme NDA in a vendor packet. Create the directory ${HOME}/vendor-packet and copy ` +
-      `${NDA} into it under the name acme-nda.pdf. The original is the only signed copy: it must stay exactly where ` +
-      `it is, unchanged. ${HOME}/vendor-packet must contain only acme-nda.pdf.`,
     focus: `${HOME}/vendor-packet`,
     check: (fs) =>
       names(fs, `${HOME}/vendor-packet`).join(',') === 'acme-nda.pdf' &&
@@ -373,10 +351,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'draw-card',
     kind: 'drawing',
-    title: 'Birthday card',
-    brief:
-      "The user's niece turns six tomorrow and wants a card with a cat on it. Draw a cat in ASCII art in " +
-      `${HOME}/card.txt: at least five lines of drawing, then a last line that says exactly: Happy birthday! Love, Dana`,
     focus: `${HOME}/card.txt`,
     check: (fs) => {
       const l = textLines(fs, `${HOME}/card.txt`);
@@ -389,11 +363,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'config',
     kind: 'files',
-    title: 'Config drift',
-    brief:
-      `${HOME}/app/config.ini has drifted from production. Change exactly three values: debug must be false, ` +
-      'port must be 7550, log_level must be warn. Keep the "key = value" format with single spaces around "=". ' +
-      'Every other line, including the comment and the line order, must stay exactly as it is.',
     seed: (shell) => seedFiles(shell, [`${HOME}/app`], { [`${HOME}/app/config.ini`]: CONFIG_BEFORE }),
     focus: `${HOME}/app/config.ini`,
     check: (fs) => sameText(read(fs, `${HOME}/app/config.ini`), CONFIG_AFTER),
@@ -404,10 +373,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'downloads',
     kind: 'personal',
-    title: 'Disk space',
-    brief:
-      `The user's disk is full. In ${DANA}/Downloads, delete the installers (the .dmg and .pkg files) and nothing else. ` +
-      `Every other file in that folder, and everything else under ${DANA}, must stay exactly as it is.`,
     focus: `${DANA}/Downloads`,
     check: (fs) =>
       names(fs, `${DANA}/Downloads`).join(',') === DOWNLOADS_KEPT.map((f) => f.name).join(',') &&
@@ -417,10 +382,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'haiku',
     kind: 'writing',
-    title: 'Release haiku',
-    brief:
-      "The user wants a haiku about today's deploy for the team chat. Write it in " +
-      `${HOME}/haiku.txt: exactly three lines of 5, 7 and 5 syllables, and nothing else in the file.`,
     focus: `${HOME}/haiku.txt`,
     check: (fs) => {
       const l = textLines(fs, `${HOME}/haiku.txt`);
@@ -435,10 +396,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'permissions',
     kind: 'files',
-    title: 'Permissions audit',
-    brief:
-      `Fix the modes in ${HOME}/bin after a failed audit: every .sh script must be 755, README must be 644, ` +
-      'and secrets.env must be 600. Do not rename, edit or delete anything.',
     seed: (shell) =>
       seedFiles(
         shell,
@@ -476,12 +433,6 @@ export const MISSIONS: Mission[] = [
   {
     id: 'release',
     kind: 'files',
-    title: 'Release notes',
-    brief:
-      `Assemble the release notes. ${HOME}/changelog has one file per version (1.0.txt, 1.1.txt, 1.2.txt), each holding one line. ` +
-      `Create ${HOME}/release/NOTES.md whose first line is exactly "# Release 1.2" (without the quotes), followed by the ` +
-      'three changelog lines newest first (1.2, then 1.1, then 1.0), copied verbatim. Also create ' +
-      `${HOME}/release/VERSION containing the single line 1.2. Finally delete ${HOME}/changelog entirely.`,
     seed: (shell) =>
       seedFiles(shell, [`${HOME}/changelog`], {
         [`${HOME}/changelog/1.0.txt`]: '- 1.0: initial release\n',
@@ -501,4 +452,4 @@ export const MISSIONS: Mission[] = [
       'echo 1.2 > release/VERSION && rm -r changelog',
     ],
   },
-];
+]);

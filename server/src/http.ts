@@ -19,6 +19,7 @@ import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import type { SharedReview } from './reviews.ts';
 import { isLanguage } from './language.ts';
+import { copyFor } from './i18n/index.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -361,18 +362,20 @@ export function createApp(opts: AppOptions): App {
 
     if (path === '/api/sessions' && method === 'POST') {
       const body = await readJson(req);
+      // Refusals a player can act on are in the player's language; malformed requests are not.
+      const errors = copyFor(isLanguage(body.language) ? body.language : 'en').errors;
       // A player's own key, or a free shift on the server's key.
       let cred: Credentials | null = null;
       let list: ModelOption[];
       const own = body.apiKey !== undefined && body.apiKey !== '';
       if (own) {
         if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
-        if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, 'That does not look like an API key.');
+        if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
         cred = { provider: body.provider, apiKey: body.apiKey };
         list = await models(body.provider);
       } else {
-        if (!opts.mock && !freeCred) throw new HttpError(400, 'Add your own API key to play.');
-        if (!freeOpen()) throw new HttpError(429, 'Free shifts are used up for today. Add your own API key to play.');
+        if (!opts.mock && !freeCred) throw new HttpError(400, errors.keyNeeded);
+        if (!freeOpen()) throw new HttpError(429, errors.freeClosed);
         cred = freeCred;
         list = await freeList();
       }
@@ -390,11 +393,11 @@ export function createApp(opts: AppOptions): App {
       if (directorId && !list.some((m) => m.id === directorId)) throw new HttpError(400, `Unknown model: ${directorId}`);
       // Limits are counted only for requests that would start a shift.
       const address = clientAddress(req);
-      if (!shiftLimiter.take(address)) throw new HttpError(429, 'Too many shifts started. Try again later.');
+      if (!shiftLimiter.take(address)) throw new HttpError(429, errors.tooManyShifts);
       let allowance: Allowance | undefined;
       if (!own && !opts.mock && opts.free && daily) {
         if (!freePerAddress!.take(address)) {
-          throw new HttpError(429, 'You have used your free shifts for today. Add your own API key to keep playing.');
+          throw new HttpError(429, errors.freeUsed);
         }
         allowance = freeAllowance(opts.free.sessionTokens, daily);
       }
@@ -426,7 +429,7 @@ export function createApp(opts: AppOptions): App {
     if (!sub && method === 'GET') return sendJson(res, 200, s.state());
     if (sub === 'events' && method === 'GET') return events(req, res, s, url);
     if ((sub === 'exec' && method === 'POST') || (sub === 'file' && method === 'PUT')) {
-      if (!s.allowCommand()) throw new HttpError(429, 'Slow down: too many commands at once.');
+      if (!s.allowCommand()) throw new HttpError(429, s.copy.errors.slowDown);
     }
     if (sub === 'exec' && method === 'POST') {
       const body = await readJson(req);
@@ -455,13 +458,13 @@ export function createApp(opts: AppOptions): App {
       return sendJson(res, 200, { ok: true });
     }
     if (sub === 'share' && method === 'POST') {
-      if (!opts.reviews) throw new HttpError(404, 'Sharing is off on this server');
+      if (!opts.reviews) throw new HttpError(404, s.copy.errors.sharingOff);
       let id = shared.get(s.id);
       if (!id) {
         const snap = snapshot(s);
-        if (!snap) throw new HttpError(409, 'The shift is not over yet');
+        if (!snap) throw new HttpError(409, s.copy.errors.notOver);
         const saved = await opts.reviews.save(snap);
-        if (!saved) throw new HttpError(503, 'Sharing is unavailable right now');
+        if (!saved) throw new HttpError(503, s.copy.errors.sharingDown);
         id = saved.id;
         shared.set(s.id, id);
       }
@@ -470,7 +473,7 @@ export function createApp(opts: AppOptions): App {
     if (sub === 'report' && method === 'POST') {
       const body = await readJson(req);
       const message = typeof body.message === 'string' ? body.message : undefined;
-      if (!s.report(message)) throw new HttpError(409, 'No open instruction');
+      if (!s.report(message)) throw new HttpError(409, s.copy.errors.noInstruction);
       return sendJson(res, 200, { ok: true });
     }
     throw new HttpError(405, 'Method not allowed');

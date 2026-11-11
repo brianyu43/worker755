@@ -1,4 +1,3 @@
-import { tr } from '../game/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
 import type { ModelList } from '../api/types';
@@ -6,6 +5,7 @@ import type { GameView } from '../game/useGame';
 import { ReviewCard } from '../components/ReviewCard';
 import { loadFace } from '../game/avatar';
 import { SiteLinks } from './Start';
+import { t } from '../i18n';
 
 type Share = { state: 'idle' | 'busy' | 'error' } | { state: 'done'; url: string; copied: boolean };
 
@@ -43,11 +43,11 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
       <div className="end-col">
         <ReviewCard model={view.model} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()}>
           <button ref={btn} type="button" className="btn btn-ink btn-big" onClick={onAgain}>
-            {tr('Clock in again')}
+            {t('app.clockInAgain')}
           </button>
           {site?.sharing && share.state !== 'done' && (
             <button type="button" className="btn btn-big" onClick={doShare} disabled={share.state === 'busy'}>
-              {share.state === 'busy' ? tr('Filing…') : tr('Share review')}
+              {share.state === 'busy' ? t('end.filing') : t('end.share')}
             </button>
           )}
         </ReviewCard>
@@ -57,21 +57,21 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
               className="select share-link"
               readOnly
               value={share.url}
-              aria-label={tr('Link to this review')}
+              aria-label={t('end.link')}
               onFocus={(e) => e.currentTarget.select()}
             />
-            <span className="share-note">{share.copied ? tr('Link copied') : tr('Copy this link')}</span>
+            <span className="share-note">{share.copied ? t('end.copied') : t('end.copy')}</span>
             <a
               className="btn"
-              href={`https://x.com/intent/post?text=${encodeURIComponent('My AI manager wrote me a performance review.')}&url=${encodeURIComponent(share.url)}`}
+              href={`https://x.com/intent/post?text=${encodeURIComponent(t('end.postText'))}&url=${encodeURIComponent(share.url)}`}
               target="_blank"
               rel="noreferrer"
             >
-              Post on X
+              {t('end.post')}
             </a>
           </div>
         )}
-        {share.state === 'error' && <p className="form-error">Could not share the review. Try again.</p>}
+        {share.state === 'error' && <p className="form-error">{t('end.shareFailed')}</p>}
         <SiteLinks site={site} />
       </div>
     </main>

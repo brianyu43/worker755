@@ -14,6 +14,7 @@
     "mock": "MOCK_LLM=1 node server/src/index.ts",
     "dev:web": "npm run dev --prefix web",
     "test": "npm test --prefix shell && npm test --prefix server",
-    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix web"
+    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix web",
+    "i18n:check": "node server/scripts/i18n-check.ts"
   }
 }

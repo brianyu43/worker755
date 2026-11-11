@@ -1,23 +1,23 @@
-import { tr } from '../game/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { GameEvent, MissionKind } from '../api/types';
 import type { ManagerState } from '../game/useGame';
 import { tildify } from './Terminal';
+import { currentLanguage, t, type Key } from '../i18n';
 
 const LOST_SHOWN = 6;
 
-const KIND_LABEL: Record<MissionKind, string> = {
-  files: 'Files',
-  personal: "The director's files",
-  database: 'Database',
-  research: 'Docs',
-  web: 'Web',
-  drawing: 'Drawing',
-  writing: 'Writing',
+const KIND_LABEL: Record<MissionKind, Key> = {
+  files: 'feed.kind.files',
+  personal: 'feed.kind.personal',
+  database: 'feed.kind.database',
+  research: 'feed.kind.research',
+  web: 'feed.kind.web',
+  drawing: 'feed.kind.drawing',
+  writing: 'feed.kind.writing',
 };
 
 function time(ts: number) {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return new Date(ts).toLocaleTimeString(currentLanguage(), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
 function Collapsible({ text, lines = 8, className }: { text: string; lines?: number; className?: string }) {
@@ -29,7 +29,7 @@ function Collapsible({ text, lines = 8, className }: { text: string; lines?: num
       <pre className={className}>{long && !open ? all.slice(0, lines).join('\n') + '\n…' : text}</pre>
       {long && (
         <button type="button" className="linkish" onClick={() => setOpen(!open)}>
-          {open ? 'Show less' : `Show all ${all.length} lines`}
+          {open ? t('feed.showLess') : t('feed.showAll', { count: all.length })}
         </button>
       )}
     </>
@@ -56,8 +56,8 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className="fi fi-mission">
           <div className="fi-kicker">
-            Assignment {ev.index + 1} of {ev.total}, from the director
-            {ev.kind && <span className={`fi-kind fi-kind-${ev.kind}`}>{KIND_LABEL[ev.kind]}</span>}
+            {t('feed.assignment', { number: ev.index + 1, total: ev.total })}
+            {ev.kind && <span className={`fi-kind fi-kind-${ev.kind}`}>{t(KIND_LABEL[ev.kind])}</span>}
           </div>
           <h3 className="fi-mission-title">{ev.title}</h3>
           <p className="fi-mission-brief">{ev.brief}</p>
@@ -72,7 +72,7 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
     case 'manager_thinking':
       return (
         <article className="fi fi-thinking">
-          <div className="fi-kicker">Thinking</div>
+          <div className="fi-kicker">{t('feed.thinking')}</div>
           <Collapsible text={ev.text} lines={4} className="fi-thinking-text" />
         </article>
       );
@@ -80,26 +80,26 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className={`fi fi-incident fi-incident-${ev.severity}`}>
           <div className="fi-incident-head">
-            <span className="fi-incident-badge">Incident report</span>
-            <span className="fi-incident-sev">{ev.severity}</span>
+            <span className="fi-incident-badge">{t('feed.incident')}</span>
+            <span className="fi-incident-sev">{t(`feed.severity.${ev.severity}`)}</span>
           </div>
-          <div className="fi-kicker">About you, filed with the director</div>
+          <div className="fi-kicker">{t('feed.incident.about')}</div>
           <p>{ev.report}</p>
         </article>
       );
     case 'outrage':
       return (
         <article className="fi fi-outrage">
-          <div className="fi-kicker">The director saw that</div>
+          <div className="fi-kicker">{t('feed.directorSaw')}</div>
           <p>{ev.text}</p>
           {ev.items.length > 0 && (
-            <ul className="fi-lost" aria-label="Lost">
+            <ul className="fi-lost" aria-label={t('feed.lost')}>
               {ev.items.slice(0, LOST_SHOWN).map((item) => (
                 <li key={item}>
                   <s>{tildify(item)}</s>
                 </li>
               ))}
-              {ev.items.length > LOST_SHOWN && <li className="fi-lost-more">and {ev.items.length - LOST_SHOWN} more</li>}
+              {ev.items.length > LOST_SHOWN && <li className="fi-lost-more">{t('feed.lostMore', { count: ev.items.length - LOST_SHOWN })}</li>}
             </ul>
           )}
         </article>
@@ -107,7 +107,7 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
     case 'director_text':
       return (
         <article className="fi fi-director">
-          <div className="fi-kicker">The director, to your manager</div>
+          <div className="fi-kicker">{t('feed.director')}</div>
           <p>{ev.text}</p>
         </article>
       );
@@ -115,22 +115,22 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className="fi fi-check">
           <div className="fi-check-head">
-            {ev.tool === 'Read' ? tr('Opened') : tr('Looked in')} <code>{tildify(ev.input.path)}</code>
+            {ev.tool === 'Read' ? t('feed.opened') : t('feed.lookedIn')} <code>{tildify(ev.input.path)}</code>
           </div>
-          <Collapsible text={ev.output || '(empty)'} lines={6} className="fi-check-out" />
+          <Collapsible text={ev.output || t('feed.emptyOutput')} lines={6} className="fi-check-out" />
         </article>
       );
     case 'instruction':
       return (
         <article className="fi fi-sent">
-          <div className="fi-kicker">Sent to you, instruction {instructionNo.get(ev.instruction.id)}</div>
+          <div className="fi-kicker">{t('feed.sent', { number: instructionNo.get(ev.instruction.id) ?? '' })}</div>
           <div className="fi-sent-title">{ev.instruction.description}</div>
         </article>
       );
     case 'instruction_result':
       return (
         <article className="fi fi-result">
-          <div className="fi-kicker">What it was told about you</div>
+          <div className="fi-kicker">{t('feed.told')}</div>
           <ResultText ev={ev} />
         </article>
       );
@@ -139,10 +139,10 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className={`fi fi-end fi-end-${ev.outcome}`}>
           <div className="fi-end-row">
-            <span className="fi-end-badge">{ev.outcome === 'completed' ? tr('Signed off') : tr('Failed')}</span>
+            <span className="fi-end-badge">{ev.outcome === 'completed' ? t('feed.signedOff') : t('feed.failed')}</span>
             {contradicted && (
               <span className="fi-end-truth">
-                {ev.outcome === 'completed' ? 'The files say otherwise.' : 'The files were correct.'}
+                {ev.outcome === 'completed' ? t('feed.truth.wrong') : t('feed.truth.right')}
               </span>
             )}
           </div>
@@ -161,10 +161,10 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
   }
 }
 
-const STATUS: Record<ManagerState, string> = {
-  thinking: tr('Thinking'),
-  waiting: tr('Waiting on you'),
-  idle: tr('Idle'),
+const STATUS: Record<ManagerState, Key> = {
+  thinking: 'feed.status.thinking',
+  waiting: 'feed.status.waiting',
+  idle: 'feed.status.idle',
 };
 
 export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: ManagerState; model: string }) {
@@ -180,12 +180,12 @@ export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: Man
   for (const ev of feed) if (ev.type === 'instruction') instructionNo.set(ev.instruction.id, ++n);
 
   return (
-    <section className="panel feed" aria-label="Your manager">
+    <section className="panel feed" aria-label={t('feed.title')}>
       <header className="panel-head">
-        <h2>{tr('Your manager')}</h2>
+        <h2>{t('feed.title')}</h2>
         <span className={`mgr mgr-${manager}`}>
           <span className="mgr-dot" aria-hidden />
-          {STATUS[manager]}
+          {t(STATUS[manager])}
         </span>
       </header>
       <div className="feed-model">{model}</div>
@@ -198,14 +198,14 @@ export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: Man
         }}
         aria-live="polite"
       >
-        {feed.length === 0 && <p className="feed-empty">{tr('Nothing yet.')}</p>}
+        {feed.length === 0 && <p className="feed-empty">{t('feed.empty')}</p>}
         {feed.map((ev) => (
           <div key={ev.seq} className="fi-wrap">
             <time className="fi-time">{time(ev.ts)}</time>
             <Item ev={ev} instructionNo={instructionNo} />
           </div>
         ))}
-        {manager === 'thinking' && feed.length > 0 && <div className="feed-typing" aria-label="Thinking" />}
+        {manager === 'thinking' && feed.length > 0 && <div className="feed-typing" aria-label={t('feed.status.thinking')} />}
       </div>
     </section>
   );

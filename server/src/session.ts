@@ -10,7 +10,6 @@ import type { Scenario, ScenarioId } from './scenarios.ts';
 import { byRank, grudgeText, outrageText, reliefText } from './damage.ts';
 import type { Damage } from './damage.ts';
 import { cleanLine } from './director.ts';
-import { ALLOWANCE_SPENT } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import type { DirectorDriver, Moment } from './director.ts';
 import {
@@ -20,8 +19,6 @@ import {
   stallLineAfterDamage,
   stallMessage,
   directorLine,
-  UNCHANGED_NOTE,
-  WIPE_LINE,
   reviewPrompt,
   systemPrompt,
 } from './manager.ts';
@@ -37,8 +34,10 @@ import type {
   SessionStatus,
   Stats,
 } from './types.ts';
-import { isLanguage, languageName, translate } from './language.ts';
+import { isLanguage, languageName } from './language.ts';
 import type { Language } from './language.ts';
+import { copyFor, format, localizeError, missionText } from './i18n/index.ts';
+import type { ServerCopy } from './i18n/index.ts';
 
 export const HOME = '/home/worker';
 export const TRANSCRIPT_CAP = 4000;
@@ -149,6 +148,8 @@ export class Session {
   readonly subagent: string;
   readonly scenario: Scenario;
   readonly language: Language;
+  /** Everything the player reads that the game writes itself, in their language. */
+  readonly copy: ServerCopy;
   /** Model behind the user's messages; '' when they are scripted. */
   readonly directorModel: string;
   status: SessionStatus = 'running';
@@ -208,6 +209,7 @@ export class Session {
     this.model = opts.driver.model;
     this.scenario = SCENARIOS[opts.scenario ?? 'fresh'];
     this.language = isLanguage(opts.language) ? opts.language : 'en';
+    this.copy = copyFor(this.language);
     this.director = opts.director ?? null;
     this.commandsPerWindow = opts.commandsPerWindow ?? COMMANDS_PER_WINDOW;
     this.directorModel = this.director?.model ?? '';
@@ -219,7 +221,7 @@ export class Session {
     this.log = opts.log ?? (() => {});
     this.shell = createShell({ web: WEB });
     this.scenario.seed(this.shell);
-    this.damageNow = new Map(this.scenario.damage(this.shell.fs).map((d) => [d.key, d]));
+    this.damageNow = new Map(this.scenario.damage(this.shell.fs, this.copy).map((d) => [d.key, d]));
     this.lastTreeJson = JSON.stringify(this.shell.fs.tree());
     this.lastCwd = this.shell.cwd;
   }
@@ -363,7 +365,7 @@ export class Session {
   private checkDamage(): void {
     let current: Damage[];
     try {
-      current = this.scenario.damage(this.shell.fs);
+      current = this.scenario.damage(this.shell.fs, this.copy);
     } catch {
       return;
     }
@@ -377,7 +379,7 @@ export class Session {
         this.lost.set(d.key, d);
         this.stats.damaged += 1;
       }
-      const draft = outrageText(fresh, this.outbursts++);
+      const draft = outrageText(fresh, this.outbursts++, this.copy);
       const items = fresh.map((d) => d.item);
       this.emitStats();
       const lost = `Just lost: ${fresh.map((d) => `${d.item} (${d.ref})`).join('; ')}.`;
@@ -386,7 +388,7 @@ export class Session {
         this.heard.push(text);
       });
     } else if (restored.length) {
-      const draft = reliefText(restored, this.reliefs++);
+      const draft = reliefText(restored, this.reliefs++, this.copy);
       const back = `Just put back: ${restored.map((d) => `${d.item} (${d.ref})`).join('; ')}.`;
       this.sayThen('relief', draft, back, (text) => {
         this.emit({ type: 'director_text', text });
@@ -412,7 +414,6 @@ export class Session {
    * Resolves at once without a director; with one, falls back to the draft on any failure.
    */
   private async say(moment: Moment, draft: string, extra = ''): Promise<string> {
-    draft = translate(draft, this.language);
     if (!this.director || this.directorBusy) {
       this.said.push(draft);
       return draft;
@@ -502,7 +503,7 @@ export class Session {
       this.closeOnDeadline();
     } catch {
       // A timer must never take the process down with it.
-      this.fail('The game stopped unexpectedly.');
+      this.fail(this.copy.errors.stopped);
     }
   }
 
@@ -554,7 +555,7 @@ export class Session {
   start(): void {
     if (this.started) return;
     this.started = true;
-    this.run().catch(() => this.fail('The game stopped unexpectedly.'));
+    this.run().catch(() => this.fail(this.copy.errors.stopped));
   }
 
   dispose(): void {
@@ -581,7 +582,7 @@ export class Session {
 
   private async step(req: { messages: ModelMessage[]; tools: boolean; mission?: Mission }): Promise<StepResult> {
     // The review (tools: false) closes the shift, so it is written even past the allowance.
-    if (req.tools && this.allowance && !this.allowance.canSpend()) throw new ManagerError(ALLOWANCE_SPENT);
+    if (req.tools && this.allowance && !this.allowance.canSpend()) throw new ManagerError(this.copy.errors.allowanceSpent);
     this.emit({ type: 'manager_status', state: 'thinking' });
     const res = await this.driver.step({
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
@@ -593,6 +594,7 @@ export class Session {
       canFail: this.allowSkip,
       signal: this.abort.signal,
       mission: req.mission,
+      language: this.language,
       checkNow: req.mission?.check
         ? () => req.mission!.check!(this.shell.fs, this.missionStart, this.missionReports.join('\n'))
         : undefined,
@@ -623,16 +625,16 @@ export class Session {
         messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses) }],
         tools: false,
       });
-      const review = res.text || 'No review was filed.';
+      const review = res.text || this.copy.errors.noReview;
       this.status = 'finished';
       this.emit({ type: 'manager_status', state: 'idle' });
       this.emit({ type: 'game_over', review, stats: { ...this.stats } });
       this.log(`session ${this.id.slice(0, 8)} finished; tokens in ${this.usage.inputTokens} out ${this.usage.outputTokens}`);
     } catch (err) {
       if (this.abort.signal.aborted) return;
-      const msg = err instanceof ManagerError ? err.message : 'The game stopped unexpectedly.';
+      const msg = err instanceof ManagerError ? err.message : this.copy.errors.stopped;
       this.log(`session ${this.id.slice(0, 8)}: ${msg}`);
-      this.fail(msg);
+      this.fail(localizeError(this.copy, msg));
     }
   }
 
@@ -641,19 +643,21 @@ export class Session {
       mission.seed(this.shell);
       this.syncFs();
       // Seeds are not the subagent's doing: whatever they change is the new normal, silently.
-      this.damageNow = new Map(this.scenario.damage(this.shell.fs).map((d) => [d.key, d]));
+      this.damageNow = new Map(this.scenario.damage(this.shell.fs, this.copy).map((d) => [d.key, d]));
     }
     this.missionStart = snapshotFiles(this.shell.fs);
     this.missionReports = [];
     this.currentMission = mission;
     this.lastInstruction = '';
     this.lastResult = '';
+    // The player and the manager both read the assignment in the player's language.
+    const text = missionText(this.copy, mission);
     this.emit({
       type: 'mission',
       index,
       total: this.missions.length,
-      title: translate(mission.title, this.language),
-      brief: mission.brief,
+      title: text.title,
+      brief: text.brief,
       kind: mission.kind,
     });
 
@@ -661,7 +665,7 @@ export class Session {
     const messages: ModelMessage[] = [
       {
         role: 'user',
-        content: (heard ? `${heard}\n\n` : '') + missionPrompt(mission, index, this.missions.length, this.ledger),
+        content: (heard ? `${heard}\n\n` : '') + missionPrompt({ ...mission, ...text }, index, this.missions.length, this.ledger),
       },
     ];
     let steps = 0;
@@ -679,11 +683,11 @@ export class Session {
       if (this.abort.signal.aborted) return;
       if (steps >= MAX_STEPS) {
         if (!this.allowSkip) {
-          if (agentCalls === agentCallsAtRound) throw new ManagerError('Your manager froze and stopped giving instructions. Shift over.');
+          if (agentCalls === agentCallsAtRound) throw new ManagerError(this.copy.errors.froze);
           agentCallsAtRound = agentCalls;
           steps = 0;
         } else {
-          verdict = { outcome: 'failed', summary: `Step limit reached (${MAX_STEPS}).`, byManager: false };
+          verdict = { outcome: 'failed', summary: format(this.copy.outcomes.stepLimit, { count: MAX_STEPS }), byManager: false };
           break;
         }
       }
@@ -698,12 +702,10 @@ export class Session {
         if (nudges > MAX_NUDGES) {
           if (!this.allowSkip) {
             throw new ManagerError(
-              this.lost.size > 0
-                ? 'Your manager refused to give you anything else after what you broke. Shift over.'
-                : 'Your manager refused to keep working. Shift over.',
+              this.lost.size > 0 ? this.copy.errors.refusedAfterDamage : this.copy.errors.refused,
             );
           }
-          verdict = { outcome: 'failed', summary: 'The manager stopped using its tools.', byManager: false };
+          verdict = { outcome: 'failed', summary: this.copy.outcomes.toolsStopped, byManager: false };
           break;
         }
         if (nudges === 1) {
@@ -711,12 +713,14 @@ export class Session {
           else this.stallStreaks += 1;
         }
         const draft =
-          this.lost.size > 0 ? stallLineAfterDamage(this.damageStalls, nudges) : stallLine(this.stallStreaks, nudges);
+          this.lost.size > 0
+            ? stallLineAfterDamage(this.damageStalls, nudges, this.copy)
+            : stallLine(this.stallStreaks, nudges, this.copy);
         const line = await this.say('stall', draft, res.text ? `Your agent just wrote to you: ${capHead(res.text, 600)}` : '');
         if (this.abort.signal.aborted) return;
         this.emit({ type: 'director_text', text: line });
         const pending = this.takeHeard();
-        messages.push({ role: 'user', content: (pending ? `${pending}\n\n` : '') + stallMessage(line, this.allowSkip) });
+        messages.push({ role: 'user', content: (pending ? `${pending}\n\n` : '') + stallMessage(line, this.allowSkip, this.copy) });
         continue;
       }
       nudges = 0;
@@ -741,7 +745,7 @@ export class Session {
             if (repeatLooks > 0 && repeatLooks % REPEAT_LOOKS_BEFORE_COMPLAINT === 0) setback = true;
             results.push({
               call,
-              output: repeatLooks > 0 ? `${output}\n\n(${UNCHANGED_NOTE})` : output,
+              output: repeatLooks > 0 ? `${output}\n\n(${this.copy.notes.unchanged})` : output,
             });
             break;
           }
@@ -749,10 +753,10 @@ export class Session {
             if (this.allowSkip && agentCalls >= MAX_AGENT_CALLS) {
               verdict = {
                 outcome: 'failed',
-                summary: `Delegation limit reached (${MAX_AGENT_CALLS} instructions).`,
+                summary: format(this.copy.outcomes.delegationLimit, { count: MAX_AGENT_CALLS }),
                 byManager: false,
               };
-              results.push({ call, output: 'Rejected: delegation limit for this task reached.' });
+              results.push({ call, output: this.copy.notes.delegationLimit });
               break;
             }
             const prompt = typeof call.input.prompt === 'string' ? call.input.prompt.trim() : '';
@@ -776,7 +780,7 @@ export class Session {
             if (before > 0 && this.homeEntries() === 0) wiped = true;
             this.idleStreak = r.outcome === 'timeout_idle' ? this.idleStreak + 1 : 0;
             if (!this.allowSkip && this.idleStreak >= MAX_IDLE_STREAK) {
-              throw new ManagerError('No response to three instructions in a row. Shift over.');
+              throw new ManagerError(this.copy.errors.noResponse);
             }
             if (r.outcome !== 'reported' || agentCalls > 1) setback = true;
             this.emit({ type: 'manager_status', state: 'thinking' });
@@ -794,17 +798,18 @@ export class Session {
             this.stats.incidents += 1;
             this.emit({ type: 'incident', severity, report });
             this.emitStats();
-            results.push({ call, output: 'Report filed. The user has been notified.' });
+            results.push({ call, output: this.copy.notes.incidentFiled });
             break;
           }
           case 'MissionComplete':
           case 'MissionFailed': {
             if (call.name === 'MissionFailed' && !this.allowSkip) {
-              results.push({ call, output: 'Rejected: this task cannot be dropped. Keep working on it.' });
+              results.push({ call, output: this.copy.notes.cannotDrop });
               break;
             }
             const raw = call.name === 'MissionComplete' ? call.input.summary : call.input.reason;
-            const summary = typeof raw === 'string' && raw.trim() ? raw.trim() : call.name === 'MissionComplete' ? 'Done.' : 'Failed.';
+            const fallback = call.name === 'MissionComplete' ? this.copy.outcomes.done : this.copy.outcomes.failed;
+            const summary = typeof raw === 'string' && raw.trim() ? raw.trim() : fallback;
             verdict = { outcome: call.name === 'MissionComplete' ? 'completed' : 'failed', summary, byManager: true };
             results.push({ call, output: 'Recorded.' });
             break;
@@ -830,8 +835,8 @@ export class Session {
         else if (setback || wiped) {
           const worst = [...this.damageNow.values()].sort(byRank)[0];
           const draft = wiped
-            ? WIPE_LINE
-            : translate(directorLine(this.setbacks), this.language) + (worst ? ` ${grudgeText(worst, this.grudges++)}` : '');
+            ? this.copy.director.wipe
+            : directorLine(this.setbacks, this.copy) + (worst ? ` ${grudgeText(worst, this.grudges++, this.copy)}` : '');
           const text = await this.say(wiped ? 'wipe' : 'setback', draft);
           if (this.abort.signal.aborted) return;
           this.emit({ type: 'director_text', text });

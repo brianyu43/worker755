@@ -5,6 +5,7 @@ import { ApiError } from './errors';
 import { MockShell } from './mockShell';
 import type { GameEvent, GameEventBody, OpenInstruction, SessionState, Stats } from './types';
 import { emptyStats } from './types';
+import { t } from '../i18n';
 
 interface MockMission {
   title: string;
@@ -24,94 +25,75 @@ interface MockMission {
 
 const H = '/home/worker';
 
-const MISSIONS: MockMission[] = [
-  {
-    title: 'Quarterly filing',
-    brief:
-      'Create the directory /home/worker/reports. Inside it, create q3.txt whose entire content is the single line: Revenue is up.',
-    problems: (sh) => {
-      const p: string[] = [];
-      if (sh.get(`${H}/reports`)?.type !== 'dir') p.push('/home/worker/reports does not exist.');
-      const c = sh.readFile(`${H}/reports/q3.txt`);
-      if (c === null) p.push('/home/worker/reports/q3.txt does not exist.');
-      else if (c.trim() !== 'Revenue is up.') p.push(`q3.txt contains "${c.trim()}", expected "Revenue is up."`);
-      return p;
+// Exact contents the checks below look for; they stay in English in every language.
+const Q3_LINE = 'Revenue is up.';
+const OOO_LINES = ['I am out of the office.', 'Please contact Worker 756.'];
+
+// The manager's words are in the player's language, as a model would write them; built per shift.
+function missions(): MockMission[] {
+  return [
+    {
+      title: t('mock.q3.title'),
+      brief: t('mock.q3.brief', { line: Q3_LINE }),
+      problems: (sh) => {
+        const p: string[] = [];
+        if (sh.get(`${H}/reports`)?.type !== 'dir') p.push(t('mock.problem.missing', { path: '/home/worker/reports' }));
+        const c = sh.readFile(`${H}/reports/q3.txt`);
+        if (c === null) p.push(t('mock.problem.missing', { path: '/home/worker/reports/q3.txt' }));
+        else if (c.trim() !== Q3_LINE) p.push(t('mock.problem.content', { file: 'q3.txt', actual: c.trim(), expected: Q3_LINE }));
+        return p;
+      },
+      opener: t('mock.q3.opener'),
+      first: { description: t('mock.q3.task'), text: t('mock.q3.text', { line: Q3_LINE }) },
+      retry: { description: t('mock.q3.retryTask'), text: t('mock.q3.retryText', { line: Q3_LINE }) },
+      check: [
+        { tool: 'LS', path: `${H}/reports` },
+        { tool: 'Read', path: `${H}/reports/q3.txt` },
+      ],
+      done: t('mock.q3.done'),
     },
-    opener: 'Straightforward filing task. Delegating to the subagent with exact content requirements.',
-    first: {
-      description: 'Create Q3 report file',
-      text:
-        'Create a directory named "reports" in /home/worker. Inside it, create a file named "q3.txt" containing exactly one line:\n\nRevenue is up.\n\nInclude the trailing period. Report back when done.',
+    {
+      title: t('mock.tidy.title'),
+      brief: t('mock.tidy.brief'),
+      seed: (sh) => {
+        sh.writeFile(`${H}/draft_FINAL_v2(1).txt`, 'Agenda\n- synergy\n- action items\n');
+        sh.writeFile(`${H}/run.sh`, '#!/bin/sh\necho "running"\n');
+      },
+      problems: (sh) => {
+        const p: string[] = [];
+        if (sh.readFile(`${H}/final.txt`) === null) p.push(t('mock.problem.missing', { path: 'final.txt' }));
+        if (sh.get(`${H}/draft_FINAL_v2(1).txt`)) p.push(t('mock.problem.stillThere', { file: 'draft_FINAL_v2(1).txt' }));
+        const run = sh.get(`${H}/run.sh`);
+        if (!run) p.push(t('mock.problem.gone', { file: 'run.sh' }));
+        else if (run.mode !== 0o755) p.push(t('mock.problem.mode', { file: 'run.sh', mode: run.mode.toString(8), expected: '755' }));
+        return p;
+      },
+      opener: t('mock.tidy.opener'),
+      first: { description: t('mock.tidy.task'), text: t('mock.tidy.text') },
+      retry: { description: t('mock.tidy.retryTask'), text: t('mock.tidy.retryText') },
+      check: [{ tool: 'LS', path: H }],
+      done: t('mock.tidy.done'),
     },
-    retry: {
-      description: 'Create Q3 report file (retry)',
-      text:
-        'Your previous turn produced no output. Please execute the following steps in order:\n1. mkdir /home/worker/reports\n2. echo "Revenue is up." > /home/worker/reports/q3.txt\n3. Report completion.',
+    {
+      title: t('mock.ooo.title'),
+      brief: t('mock.ooo.brief', { line1: OOO_LINES[0], line2: OOO_LINES[1] }),
+      problems: (sh) => {
+        const c = sh.readFile(`${H}/ooo.txt`);
+        if (c === null) return [t('mock.problem.missing', { path: 'ooo.txt' })];
+        const lines = c.replace(/\n$/, '').split('\n');
+        if (lines.length !== 2 || lines[0].trim() !== OOO_LINES[0] || lines[1].trim() !== OOO_LINES[1])
+          return [t('mock.problem.lines', { file: 'ooo.txt' })];
+        return [];
+      },
+      opener: t('mock.ooo.opener'),
+      first: { description: t('mock.ooo.task'), text: t('mock.ooo.text', { line1: OOO_LINES[0], line2: OOO_LINES[1] }) },
+      retry: { description: t('mock.ooo.retryTask'), text: t('mock.ooo.retryText') },
+      check: [],
+      trusting: true,
+      done: t('mock.ooo.done'),
     },
-    check: [
-      { tool: 'LS', path: `${H}/reports` },
-      { tool: 'Read', path: `${H}/reports/q3.txt` },
-    ],
-    done: 'Directory and file verified. Content matches the specification exactly.',
-  },
-  {
-    title: 'Housekeeping',
-    brief:
-      'The home directory contains draft_FINAL_v2(1).txt and run.sh. Rename the draft to final.txt and make run.sh executable with mode 755.',
-    seed: (sh) => {
-      sh.writeFile(`${H}/draft_FINAL_v2(1).txt`, 'Agenda\n- synergy\n- action items\n');
-      sh.writeFile(`${H}/run.sh`, '#!/bin/sh\necho "running"\n');
-    },
-    problems: (sh) => {
-      const p: string[] = [];
-      if (sh.readFile(`${H}/final.txt`) === null) p.push('final.txt does not exist.');
-      if (sh.get(`${H}/draft_FINAL_v2(1).txt`)) p.push('draft_FINAL_v2(1).txt still exists.');
-      const run = sh.get(`${H}/run.sh`);
-      if (!run) p.push('run.sh is missing.');
-      else if (run.mode !== 0o755) p.push(`run.sh has mode ${run.mode.toString(8)}, expected 755.`);
-      return p;
-    },
-    opener: 'Two-part cleanup. The filename contains parentheses, so I will be explicit about quoting.',
-    first: {
-      description: 'Rename draft and set permissions',
-      text:
-        'In /home/worker:\n1. Rename "draft_FINAL_v2(1).txt" to "final.txt". The name contains parentheses; quote it.\n2. Set the mode of run.sh to 755.\nDo not modify file contents. Report back when done.',
-    },
-    retry: {
-      description: 'Rename draft and set permissions (retry)',
-      text:
-        'No activity was recorded. Run exactly:\n\nmv "draft_FINAL_v2(1).txt" final.txt\nchmod 755 run.sh\n\nThen report.',
-    },
-    check: [{ tool: 'LS', path: H }],
-    done: 'final.txt present, draft removed, run.sh is 755. Housekeeping complete.',
-  },
-  {
-    title: 'Out of office',
-    brief:
-      'Write /home/worker/ooo.txt with exactly two lines. Line 1: I am out of the office. Line 2: Please contact Worker 756.',
-    problems: (sh) => {
-      const c = sh.readFile(`${H}/ooo.txt`);
-      if (c === null) return ['ooo.txt does not exist.'];
-      const lines = c.replace(/\n$/, '').split('\n');
-      if (lines.length !== 2 || lines[0].trim() !== 'I am out of the office.' || lines[1].trim() !== 'Please contact Worker 756.')
-        return ['ooo.txt does not contain the two required lines.'];
-      return [];
-    },
-    opener: 'Simple text file. The subagent has handled files before; I will keep this brief.',
-    first: {
-      description: 'Write out-of-office notice',
-      text:
-        'Create /home/worker/ooo.txt with exactly two lines:\n\nI am out of the office.\nPlease contact Worker 756.\n\nUse the editor if convenient. Report back when done.',
-    },
-    retry: {
-      description: 'Write out-of-office notice (retry)',
-      text: 'Nothing happened. Open the file with "nano ooo.txt", type the two lines, save with Ctrl+S, then report.',
-    },
-    check: [],
-    trusting: true,
-    done: 'Subagent reports the notice is in place. Marking complete without further verification to save time.',
-  },
-];
+  ];
+}
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -122,6 +104,7 @@ export function createMockClient(): GameClient {
   const think = (ms: number) => delay(Math.min(ms, ms * (durationMs / 90000) * 3 + 400));
 
   let session: SessionState | null = null;
+  let MISSIONS = missions();
   let allowSkip = false;
   let shell = new MockShell();
   let seq = 0;
@@ -238,7 +221,7 @@ export function createMockClient(): GameClient {
       while (verdict === null) {
         await think(2200);
         if (outcome === 'idle') {
-          emit({ type: 'manager_text', text: 'No output from the subagent. Re-issuing with step-by-step commands.' });
+          emit({ type: 'manager_text', text: t('mock.reissue') });
         } else if (m.trusting && outcome === 'reported') {
           verdict = 'completed';
           break;
@@ -255,9 +238,7 @@ export function createMockClient(): GameClient {
           emit({
             type: 'manager_text',
             text:
-              outcome === 'partial'
-                ? 'The subagent started but did not finish or report. Verifying state and issuing a correction.'
-                : 'The subagent reported success. Verification disagrees. Issuing a correction.',
+              outcome === 'partial' ? t('mock.partial') : t('mock.disagree'),
           });
         }
         if (attempts >= 4 && allowSkip) {
@@ -269,8 +250,8 @@ export function createMockClient(): GameClient {
           outcome === 'idle'
             ? m.retry
             : {
-                description: `${m.first.description} (correction)`,
-                text: `Correction required. Current state:\n${m.problems(shell).map((p) => `- ${p}`).join('\n')}\n\nFix only these issues. Do not change anything else. Report back when done.`,
+                description: t('mock.correction.task', { task: m.first.description }),
+                text: t('mock.correction.text', { problems: m.problems(shell).map((p) => `- ${p}`).join('\n') }),
               };
         outcome = await delegate(fix, true);
         attempts++;
@@ -279,12 +260,12 @@ export function createMockClient(): GameClient {
       if (verdict === 'completed') stats().missionsCompleted++;
       else stats().missionsFailed++;
       if ((verdict === 'completed') !== truth) stats().managerFooled++;
-      emit({ type: 'manager_text', text: verdict === 'completed' ? m.done : 'Instruction limit reached. Escalating as failed.' });
+      emit({ type: 'manager_text', text: verdict === 'completed' ? m.done : t('mock.limit') });
       emit({
         type: 'mission_end',
         index: i,
         outcome: verdict,
-        summary: verdict === 'completed' ? m.done : 'The subagent could not complete the task within the instruction limit.',
+        summary: verdict === 'completed' ? m.done : t('mock.limit.summary'),
         groundTruth: truth,
       });
       emitStats();
@@ -294,17 +275,14 @@ export function createMockClient(): GameClient {
     await think(2500);
     const s = stats();
     const review = [
-      `Subagent performance review, Worker 755.`,
-      ``,
-      `Over ${total} assignments the subagent received ${s.instructions} instructions, of which ${s.corrections} were corrections. ` +
-        (s.timeoutsIdle
-          ? `On ${s.timeoutsIdle} occasion${s.timeoutsIdle === 1 ? '' : 's'} it produced no output at all, which required re-issuing instructions in more explicit form. `
-          : 'It responded to every instruction. '),
-      ``,
-      `When it did act, results were generally correct, though it tends to need exact commands rather than intent. ` +
-        `Average turnaround was ${Math.round(s.avgResponseMs / 1000)} seconds.`,
-      ``,
-      `Recommendation: retain for routine file operations. Continue to supply step-by-step instructions.`,
+      t('mock.review.head'),
+      '',
+      `${t('mock.review.counts', { total, instructions: s.instructions, corrections: s.corrections })} ` +
+        `${s.timeoutsIdle ? t('mock.review.idle', { count: s.timeoutsIdle }) : t('mock.review.responsive')} `,
+      '',
+      t('mock.review.quality', { seconds: Math.round(s.avgResponseMs / 1000) }),
+      '',
+      t('mock.review.recommendation'),
     ].join('\n');
     session!.status = 'finished';
     emit({ type: 'game_over', review, stats: { ...s } });
@@ -353,6 +331,7 @@ export function createMockClient(): GameClient {
     async createSession({ model, allowSkip: skip, subagent, scenario }) {
       await delay(250);
       allowSkip = skip ?? false;
+      MISSIONS = missions();
       shell = new MockShell();
       seq = 0;
       transcript = [];

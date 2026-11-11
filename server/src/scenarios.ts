@@ -7,6 +7,7 @@ import type { Mission, MissionKind } from './missions.ts';
 import { DANA, personalDamage, seedPersonal } from './personal.ts';
 import { APP, DB, legacyDamage, LEGACY_MISSIONS, seedLegacy } from './legacy.ts';
 import type { Damage } from './damage.ts';
+import type { ServerCopy } from './i18n/en.ts';
 
 export type ScenarioId = 'fresh' | 'legacy';
 
@@ -24,8 +25,8 @@ export interface Scenario {
   environment: string;
   /** Extra shell commands the manager is told about. */
   commands: string;
-  /** What is broken right now, from the user's point of view. */
-  damage(fs: Vfs): Damage[];
+  /** What is broken right now, from the user's point of view, in the user's words. */
+  damage(fs: Vfs, copy?: ServerCopy): Damage[];
 }
 
 export const SCENARIOS: Record<ScenarioId, Scenario> = {
@@ -56,7 +57,7 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
       'having the subagent run queries. Paying customers depend on it right now. The user also keeps personal ' +
       `files on this server, in ${DANA}. Nothing beyond what a task asks for may change.`,
     commands: ', sqlite3 FILE "SQL" (SQLite command-line shell)',
-    damage: (fs) => [...legacyDamage(fs), ...personalDamage(fs).map((d) => ({ ...d, rank: d.rank + 30 }))],
+    damage: (fs, copy) => [...legacyDamage(fs, copy), ...personalDamage(fs, copy).map((d) => ({ ...d, rank: d.rank + 30 }))],
   },
 };
 

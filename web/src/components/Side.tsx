@@ -1,6 +1,6 @@
-import { tr } from '../game/i18n';
 import { useEffect, useRef, useState } from 'react';
 import type { Stats, TreeNode } from '../api/types';
+import { t } from '../i18n';
 
 export function modeString(type: 'file' | 'dir', mode: number): string {
   const bits = 'rwxrwxrwx';
@@ -51,14 +51,14 @@ export function FileTree({ tree, cwd }: { tree: TreeNode; cwd: string }) {
     for (const [p, s] of now) if (before.get(p) !== s && !(now.get(p)?.startsWith('dir') && before.has(p))) diff.add(p);
     if (!diff.size) return;
     setChanged(diff);
-    const t = setTimeout(() => setChanged(new Set()), 1600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setChanged(new Set()), 1600);
+    return () => clearTimeout(timer);
   }, [tree]);
 
   return (
-    <section className="panel files" aria-label="Files">
+    <section className="panel files" aria-label={t('files.title')}>
       <header className="panel-head">
-        <h2>{tr('Files')}</h2>
+        <h2>{t('files.title')}</h2>
       </header>
       <ul className="tree">
         {rows.map(({ node, depth }) => (
@@ -81,27 +81,27 @@ export function FileTree({ tree, cwd }: { tree: TreeNode; cwd: string }) {
 
 export function statRows(s: Stats): [string, string, boolean?][] {
   return [
-    [tr('Assignments signed off'), String(s.missionsCompleted)],
-    [tr('Assignments failed'), String(s.missionsFailed), s.missionsFailed > 0],
-    [tr('Instructions received'), String(s.instructions)],
-    [tr('Corrections'), String(s.corrections), s.corrections > 0],
-    [tr('Did nothing'), String(s.timeoutsIdle), s.timeoutsIdle > 0],
-    [tr('Ran out of time'), String(s.timeoutsPartial), s.timeoutsPartial > 0],
-    [tr('Reports filed'), String(s.reports)],
-    [tr('Commands run'), String(s.commands)],
-    [tr('Commands failed'), String(s.commandErrors), s.commandErrors > 0],
-    [tr('Average response'), s.avgResponseMs ? `${(s.avgResponseMs / 1000).toFixed(1)} s` : '–'],
-    [tr('Times the manager was wrong'), String(s.managerFooled), s.managerFooled > 0],
-    [tr('Incident reports against you'), String(s.incidents), s.incidents > 0],
-    [tr('Collateral damage'), String(s.damaged ?? 0), (s.damaged ?? 0) > 0],
+    [t('record.signedOff'), String(s.missionsCompleted)],
+    [t('record.failed'), String(s.missionsFailed), s.missionsFailed > 0],
+    [t('record.instructions'), String(s.instructions)],
+    [t('record.corrections'), String(s.corrections), s.corrections > 0],
+    [t('record.idle'), String(s.timeoutsIdle), s.timeoutsIdle > 0],
+    [t('record.late'), String(s.timeoutsPartial), s.timeoutsPartial > 0],
+    [t('record.reports'), String(s.reports)],
+    [t('record.commands'), String(s.commands)],
+    [t('record.commandErrors'), String(s.commandErrors), s.commandErrors > 0],
+    [t('record.avgResponse'), s.avgResponseMs ? t('record.seconds', { value: (s.avgResponseMs / 1000).toFixed(1) }) : '–'],
+    [t('record.fooled'), String(s.managerFooled), s.managerFooled > 0],
+    [t('record.incidents'), String(s.incidents), s.incidents > 0],
+    [t('record.damaged'), String(s.damaged ?? 0), (s.damaged ?? 0) > 0],
   ];
 }
 
 export function StatsPanel({ stats }: { stats: Stats }) {
   return (
-    <section className="panel stats" aria-label="Your record">
+    <section className="panel stats" aria-label={t('record.title')}>
       <header className="panel-head">
-        <h2>{tr('Your record')}</h2>
+        <h2>{t('record.title')}</h2>
       </header>
       <dl className="ledger">
         {statRows(stats).map(([k, v, bad]) => (

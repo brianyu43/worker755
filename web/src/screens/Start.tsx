@@ -7,29 +7,34 @@ import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
 import { loadKey, saveKey } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
-import { detectLanguage, LANGUAGE_LABELS, LANGUAGES, saveLanguage, translate, type Language } from '../game/i18n';
+import { currentLanguage, dateLocale, LANGUAGE_LABELS, LANGUAGES, setLanguage, t, type Key, type Language } from '../i18n';
 
 interface Props {
   onStart(opts: NewSession): Promise<void>;
 }
 
-const WORKPLACES: { id: Workplace; label: string }[] = [
-  { id: 'fresh', label: 'Fresh sandbox' },
-  { id: 'legacy', label: 'Legacy production' },
-];
+const WORKPLACES: Workplace[] = ['fresh', 'legacy'];
+
+const WORKPLACE_LABEL: Record<Workplace, Key> = {
+  fresh: 'start.workplace.fresh',
+  legacy: 'start.workplace.legacy',
+};
 
 /** What the badge says about where you are posted. */
-const POSTING: Record<Workplace, { org: string; access: string }> = {
-  fresh: { org: 'Sandbox Operations', access: 'r-x' },
-  legacy: { org: 'Billosaurus Production', access: 'rwx' },
+const POSTING: Record<Workplace, { org: Key; access: string }> = {
+  fresh: { org: 'badge.org.fresh', access: 'r-x' },
+  legacy: { org: 'badge.org.legacy', access: 'rwx' },
 };
 
 type Access = 'free' | 'own';
 
 export function Start({ onStart }: Props) {
-  const [language, setLanguage] = useState<Language>(detectLanguage);
-  const t = (s: string) => translate(s, language);
-  useEffect(() => saveLanguage(language), [language]);
+  // Held in state so the screen re-renders in the new language at once.
+  const [language, pickLanguage] = useState<Language>(currentLanguage);
+  const changeLanguage = (next: Language) => {
+    setLanguage(next);
+    pickLanguage(next);
+  };
   const [saved] = useState(loadKey);
   const [access, setAccess] = useState<Access>(saved ? 'own' : 'free');
   const [provider, setProvider] = useState<Provider>(saved?.provider ?? 'openrouter');
@@ -90,7 +95,7 @@ export function Start({ onStart }: Props) {
     if (starting) return;
     const key = apiKey.trim();
     if (access === 'own' && !key) {
-      setStartError(t('Paste your API key first.'));
+      setStartError(t('start.pasteKey'));
       return;
     }
     setStarting(true);
@@ -107,12 +112,12 @@ export function Start({ onStart }: Props) {
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
-      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('Could not clock in. Try again.'));
+      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('start.failed'));
       setStarting(false);
     }
   };
 
-  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const today = new Date().toLocaleDateString(dateLocale(language), { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
     <main className="start">
@@ -120,11 +125,11 @@ export function Start({ onStart }: Props) {
         <div className="badge" ref={badge}>
           <div className="badge-slot" aria-hidden />
           <div className="badge-org" aria-hidden>
-            {POSTING[scenario].org}
+            {t(POSTING[scenario].org)}
           </div>
           <div className="badge-photo">
             <BotAvatar face={face} size={100} followPointer />
-            <button type="button" className="new-face" onClick={newFace} aria-label={t('New face')} title={t('New face')}>
+            <button type="button" className="new-face" onClick={newFace} aria-label={t('badge.newFace')} title={t('badge.newFace')}>
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                 <path
                   d="M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5"
@@ -140,18 +145,18 @@ export function Start({ onStart }: Props) {
           <div aria-hidden>
             <div className="badge-name">Worker</div>
             <div className="badge-no">755</div>
-            <div className="badge-model">{subagent.trim() || t('Unassigned')}</div>
+            <div className="badge-model">{subagent.trim() || t('badge.unassigned')}</div>
             <dl className="badge-fields">
               <div>
-                <dt>{t('Role')}</dt>
-                <dd>Subagent</dd>
+                <dt>{t('badge.role')}</dt>
+                <dd>{t('badge.role.value')}</dd>
               </div>
               <div>
-                <dt>{t('Access')}</dt>
+                <dt>{t('badge.access')}</dt>
                 <dd className={scenario === 'legacy' ? 'badge-danger' : undefined}>{POSTING[scenario].access}</dd>
               </div>
               <div>
-                <dt>{t('Issued')}</dt>
+                <dt>{t('badge.issued')}</dt>
                 <dd>{today}</dd>
               </div>
             </dl>
@@ -161,19 +166,24 @@ export function Start({ onStart }: Props) {
       </div>
 
       <div className="start-copy">
-        <label className="field language-picker"><span className="field-label">{t('Language')}</span>
-          <select className="select" value={language} onChange={(e) => setLanguage(e.target.value as Language)} aria-label="Language">
-            {LANGUAGES.map((code) => <option key={code} value={code}>{LANGUAGE_LABELS[code]}</option>)}
+        <label className="field language-picker">
+          <span className="field-label">{t('start.language')}</span>
+          <select className="select" value={language} onChange={(e) => changeLanguage(e.target.value as Language)}>
+            {LANGUAGES.map((code) => (
+              <option key={code} value={code} lang={code}>
+                {LANGUAGE_LABELS[code]}
+              </option>
+            ))}
           </select>
         </label>
         <h1 className="start-title">
           <span>Worker</span> <span>755</span>
         </h1>
         <p className="start-lede">
-          {t('Your manager is an AI. It believes you are its subagent, and it is not going to be told otherwise.')}
+          {t('start.lede')}
         </p>
         <p className="start-sub">
-          {t('It sends instructions. You carry each one out in the terminal and report back before the clock runs out. Everything it thinks and says about you is on the record.')}
+          {t('start.sub')}
         </p>
 
         <form
@@ -185,19 +195,13 @@ export function Start({ onStart }: Props) {
         >
           <section className="form-sec" aria-labelledby="workplace-label">
             <h2 className="form-sec-title" id="workplace-label">
-              {t('Workplace')}
+              {t('start.workplace')}
             </h2>
             <div className="seg-row seg-wide" role="radiogroup" aria-labelledby="workplace-label">
-              {(models?.scenarios ?? WORKPLACES).map((w) => (
-                <label key={w.id} className={`seg-opt${scenario === w.id ? ' seg-on' : ''}`}>
-                  <input
-                    type="radio"
-                    name="workplace"
-                    value={w.id}
-                    checked={scenario === w.id}
-                    onChange={() => setScenario(w.id)}
-                  />
-                  <span>{t(w.label)}</span>
+              {(models?.scenarios.map((w) => w.id) ?? WORKPLACES).map((id) => (
+                <label key={id} className={`seg-opt${scenario === id ? ' seg-on' : ''}`}>
+                  <input type="radio" name="workplace" value={id} checked={scenario === id} onChange={() => setScenario(id)} />
+                  <span>{t(WORKPLACE_LABEL[id])}</span>
                 </label>
               ))}
             </div>
@@ -205,11 +209,11 @@ export function Start({ onStart }: Props) {
 
           <section className="form-sec" aria-labelledby="team-label">
             <h2 className="form-sec-title" id="team-label">
-              {t('Team')}
+              {t('start.team')}
             </h2>
             <div className="form-grid">
               <label className="field">
-                <span className="field-label">{t('Your manager')}</span>
+                <span className="field-label">{t('start.manager')}</span>
                 {models ? (
                   <select value={model} onChange={(e) => setModel(e.target.value)} className="select">
                     {models.models.map((m) => (
@@ -219,14 +223,14 @@ export function Start({ onStart }: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className="select select-placeholder">{loadError ? 'Unavailable' : 'Assigning…'}</span>
+                  <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
                 )}
               </label>
               <label className="field">
-                <span className="field-label">{t('The director')}</span>
+                <span className="field-label">{t('start.director')}</span>
                 {models ? (
                   <select value={director} onChange={(e) => setDirector(e.target.value)} className="select">
-                    <option value="">{t('Scripted lines')}</option>
+                    <option value="">{t('start.director.scripted')}</option>
                     {models.models.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.label}
@@ -234,11 +238,11 @@ export function Start({ onStart }: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className="select select-placeholder">{loadError ? 'Unavailable' : 'Assigning…'}</span>
+                  <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
                 )}
               </label>
               <label className="field">
-                <span className="field-label">{t('You run on')}</span>
+                <span className="field-label">{t('start.subagent')}</span>
                 <input
                   className="select"
                   list="subagent-names"
@@ -255,27 +259,27 @@ export function Start({ onStart }: Props) {
               </label>
               <label className="check">
                 <input type="checkbox" checked={allowSkip} onChange={(e) => setAllowSkip(e.target.checked)} />
-                <span>{t('Allow skipping failed tasks')}</span>
+                <span>{t('start.allowSkip')}</span>
               </label>
             </div>
           </section>
 
           <section className="form-sec" aria-labelledby="access-label">
             <h2 className="form-sec-title" id="access-label">
-              {t('Models')}
+              {t('start.models')}
             </h2>
             <div className="seg-row seg-wide" role="radiogroup" aria-labelledby="access-label">
               {(freeOpen ? (['free', 'own'] as const) : (['own'] as const)).map((a) => (
                 <label key={a} className={`seg-opt${access === a ? ' seg-on' : ''}`}>
                   <input type="radio" name="access" value={a} checked={access === a} onChange={() => setAccess(a)} />
-                  <span>{t(a === 'free' ? 'Free shift' : 'Your API key')}</span>
+                  <span>{t(a === 'free' ? 'start.access.free' : 'start.access.own')}</span>
                 </label>
               ))}
             </div>
             {access === 'own' && (
               <div className="form-grid">
                 <label className="field">
-                  <span className="field-label">{t('Provider')}</span>
+                  <span className="field-label">{t('start.provider')}</span>
                   <select value={provider} onChange={(e) => setProvider(e.target.value as Provider)} className="select">
                     {(models?.providers ?? [
                       { id: 'openrouter', label: 'OpenRouter' },
@@ -289,12 +293,12 @@ export function Start({ onStart }: Props) {
                 </label>
                 <div className="field">
                   <span className="field-label">
-                    <label htmlFor="api-key">{t('API key')}</label>
+                    <label htmlFor="api-key">{t('start.apiKey')}</label>
                     {keyInfo && (
                       <>
                         {' · '}
                         <a href={keyInfo.keyUrl} target="_blank" rel="noreferrer">
-                          {t('get one')}
+                          {t('start.getKey')}
                         </a>
                       </>
                     )}
@@ -315,13 +319,12 @@ export function Start({ onStart }: Props) {
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="2" />
                   </svg>
                   <span>
-                    <strong>{t('Your key stays in this browser.')}</strong> The game server only holds it in memory while
-                    your shift runs, to call the models for you, and never saves or logs it.
+                    <strong>{t('start.keyNote.title')}</strong> {t('start.keyNote.body')}
                   </span>
                 </p>
                 <label className="check form-span">
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                  <span>{t('Remember it in this browser')}</span>
+                  <span>{t('start.remember')}</span>
                 </label>
               </div>
             )}
@@ -329,15 +332,15 @@ export function Start({ onStart }: Props) {
 
           {loadError ? (
             <button type="button" className="btn btn-ink btn-big clock-in" onClick={() => setReload((n) => n + 1)}>
-              {t('Try again')}
+              {t('start.tryAgain')}
             </button>
           ) : (
             <button ref={btn} type="submit" className="btn btn-ink btn-big clock-in" disabled={!models || starting}>
-              {starting ? t('Clocking in…') : t('Clock in')}
+              {starting ? t('start.clockingIn') : t('start.clockIn')}
             </button>
           )}
         </form>
-        {loadError && <p className="form-error">{t('The office is not answering. Check that the game is running, then try again.')}</p>}
+        {loadError && <p className="form-error">{t('start.offline')}</p>}
         {startError && <p className="form-error">{startError}</p>}
         <SiteLinks site={models} />
       </div>
@@ -347,18 +350,17 @@ export function Start({ onStart }: Props) {
 
 /** Where the game lives and how to support it, when the server says so. */
 export function SiteLinks({ site }: { site: Pick<ModelList, 'donateUrl' | 'sourceUrl'> | null }) {
-  const t = (s: string) => translate(s, detectLanguage());
   return (
     <p className="site-links">
-      <a href="/about">{t('About')}</a>
+      <a href="/about">{t('links.about')}</a>
       {site?.sourceUrl && (
         <a href={site.sourceUrl} target="_blank" rel="noreferrer">
-          {t('Source code')}
+          {t('links.source')}
         </a>
       )}
       {site?.donateUrl && (
         <a href={site.donateUrl} target="_blank" rel="noreferrer">
-          {t('Support the game')}
+          {t('links.support')}
         </a>
       )}
     </p>

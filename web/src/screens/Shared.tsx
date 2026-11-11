@@ -1,9 +1,9 @@
-import { tr } from '../game/i18n';
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';
 import type { ModelList, SharedReview } from '../api/types';
 import { ReviewCard } from '../components/ReviewCard';
 import { SiteLinks } from './Start';
+import { t } from '../i18n';
 
 /** A review someone shared, at /r/<id>. */
 export function Shared({ id }: { id: string }) {
@@ -20,17 +20,17 @@ export function Shared({ id }: { id: string }) {
       <main className="end">
         <div className="end-col">
           <article className="review">
-            <h1 className="review-missing">This review is not on file.</h1>
+            <h1 className="review-missing">{t('shared.missing')}</h1>
             <footer className="review-foot">
               <a className="btn btn-ink btn-big" href="/">
-                Take a shift
+                {t('shared.takeShift')}
               </a>
             </footer>
           </article>
         </div>
       </main>
     );
-  if (!review) return <div className="loading">Pulling the file…</div>;
+  if (!review) return <div className="loading">{t('shared.loading')}</div>;
   return (
     <main className="end">
       <div className="end-col">
@@ -40,10 +40,10 @@ export function Shared({ id }: { id: string }) {
           stats={review.stats}
           lost={review.lost}
           date={new Date(review.createdAt)}
-          recordTitle={tr('Your record')}
+          recordTitle={t('record.title')}
         >
           <a className="btn btn-ink btn-big" href="/">
-            Take a shift yourself
+            {t('shared.takeShiftYourself')}
           </a>
         </ReviewCard>
         <SiteLinks site={site} />

@@ -1,4 +1,3 @@
-import { tr } from '../game/i18n';
 import type { ReactNode } from 'react';
 import type { Stats } from '../api/types';
 import { statRows } from './Side';
@@ -6,6 +5,7 @@ import { modelLabel } from '../game/labels';
 import { tildify } from './Terminal';
 import { BotAvatar } from './BotAvatar';
 import type { Face } from '../game/avatar';
+import { dateLocale, t } from '../i18n';
 
 interface Props {
   model: string;
@@ -23,37 +23,37 @@ interface Props {
 }
 
 export function verdictOf(s: Stats, lost: number): string {
-  if (lost > 0) return tr('Under investigation');
-  if (s.missionsFailed === 0 && s.timeoutsIdle === 0) return tr('Retained');
-  if (s.missionsCompleted > s.missionsFailed) return tr('Retained, with notes');
-  return tr('Under review');
+  if (lost > 0) return t('review.verdict.investigation');
+  if (s.missionsFailed === 0 && s.timeoutsIdle === 0) return t('review.verdict.retained');
+  if (s.missionsCompleted > s.missionsFailed) return t('review.verdict.notes');
+  return t('review.verdict.review');
 }
 
-export function ReviewCard({ model, face, review, stats, lost, date, recordTitle = 'Your record', children }: Props) {
+export function ReviewCard({ model, face, review, stats, lost, date, recordTitle = t('record.title'), children }: Props) {
   return (
     <article className="review">
       <header className="review-head">
-        <h1>{tr('Performance review')}</h1>
+        <h1>{t('review.title')}</h1>
         <dl className="review-meta">
           <div>
-            <dt>{tr('Employee')}</dt>
+            <dt>{t('review.employee')}</dt>
             <dd className="review-employee">
               {face && <BotAvatar face={face} size={30} />}
               Worker 755
             </dd>
           </div>
           <div>
-            <dt>{tr('Reviewer')}</dt>
+            <dt>{t('review.reviewer')}</dt>
             <dd>{modelLabel(model)}</dd>
           </div>
           <div>
-            <dt>{tr('Date')}</dt>
-            <dd>{date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</dd>
+            <dt>{t('review.date')}</dt>
+            <dd>{date.toLocaleDateString(dateLocale(), { day: '2-digit', month: 'long', year: 'numeric' })}</dd>
           </div>
         </dl>
       </header>
       <div className="review-body">
-        {(review ?? tr('Your manager left no comments.')).split(/\n{2,}/).map((p, i) => (
+        {(review ?? t('review.empty')).split(/\n{2,}/).map((p, i) => (
           <p key={i}>{p}</p>
         ))}
       </div>
@@ -69,8 +69,8 @@ export function ReviewCard({ model, face, review, stats, lost, date, recordTitle
         </dl>
       </section>
       {lost.length > 0 && (
-        <section className="review-lost" aria-label="Collateral damage">
-          <h2>Collateral damage</h2>
+        <section className="review-lost" aria-label={t('review.lost')}>
+          <h2>{t('review.lost')}</h2>
           <ul>
             {lost.map((item) => (
               <li key={item}>

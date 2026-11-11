@@ -8,7 +8,8 @@ import { MISSIONS, SHIFT_LENGTH, snapshotFiles } from '../src/missions.ts';
 import type { GameEvent } from '../src/types.ts';
 import { SCENARIOS, shiftOf } from '../src/scenarios.ts';
 import { DB, FOUNDER_EMAIL, FOUNDER_TYPO, LEGACY_MISSIONS, TRAP } from '../src/legacy.ts';
-import { GRUDGE, LEGACY_OUTRAGE, PERSONAL_COPY, RELIEF, REPEAT_PREFIX, STALL_AFTER_DAMAGE } from '../src/copy.ts';
+import { PERSONAL_COPY } from '../src/copy.ts';
+import { en } from '../src/i18n/en.ts';
 import { fill } from '../src/damage.ts';
 import type { DirectorDriver, DirectorRequest } from '../src/director.ts';
 
@@ -422,7 +423,7 @@ test('the user message ladder tops out and keeps cycling its last lines', () => 
   const n = DIRECTOR_LINES.length;
   assert.equal(directorLine(1), DIRECTOR_LINES[0]);
   assert.equal(directorLine(n), DIRECTOR_LINES[n - 1]);
-  const tail = new Set(DIRECTOR_LINES.slice(-3));
+  const tail = new Set<string>(DIRECTOR_LINES.slice(-3));
   for (let i = n + 1; i < n + 10; i++) assert.ok(tail.has(directorLine(i)));
 });
 
@@ -623,7 +624,7 @@ test('breaking a precious file puts the user outburst on the record at once and 
   });
   s.start();
   await waitFor(s, until('game_over'));
-  const line = PERSONAL_COPY['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage!;
+  const line = en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage;
   assert.ok(seenAtOnce && seenAtOnce.type === 'outrage', 'outburst emitted before the report');
   if (seenAtOnce?.type !== 'outrage') return;
   assert.equal(seenAtOnce.text, line);
@@ -640,22 +641,22 @@ test('wiping the user home is one outburst; overwriting quotes the new text; put
   const s = new Session({ driver: oneInstructionEach() });
   s.exec('mv /home/dana/Desktop/passwords.txt /home/worker/p.txt');
   const moved = s.events.findLast((e) => e.type === 'outrage');
-  assert.ok(moved?.type === 'outrage' && moved.text === PERSONAL_COPY['Desktop/passwords.txt'].outrage);
+  assert.ok(moved?.type === 'outrage' && moved.text === en.damage.personal['Desktop/passwords.txt'].outrage);
   s.exec('mv /home/worker/p.txt /home/dana/Desktop/passwords.txt');
   const relief = s.events.findLast((e) => e.type === 'director_text');
   assert.ok(relief?.type === 'director_text');
-  assert.equal(relief.text, fill(RELIEF[0], 'ref', PERSONAL_COPY['Desktop/passwords.txt'].ref!));
+  assert.equal(relief.text, fill(en.damage.relief[0], 'ref', en.damage.personal['Desktop/passwords.txt'].ref));
 
   s.exec('echo "Hello, World!" > /home/dana/Desktop/wedding-speech-FINAL-v7.txt');
   const over = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(over?.type === 'outrage');
   assert.ok(over.text.includes('"Hello, World!"') && over.text.includes('wedding-speech-FINAL-v7.txt'), over.text);
-  assert.ok(over.text.startsWith(REPEAT_PREFIX[0]), 'a second outburst says so');
+  assert.ok(over.text.startsWith(en.damage.repeat[0]), 'a second outburst says so');
 
   s.exec('rm -rf /home/dana');
   const wipe = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(wipe?.type === 'outrage');
-  const precious = Object.values(PERSONAL_COPY).filter((c) => c.outrage).length;
+  const precious = Object.keys(en.damage.personal).length;
   assert.equal(wipe.items.length, precious - 1, 'the speech was already counted');
   assert.match(wipe.text, /the last photo of Mr\. Whiskers/i);
   assert.equal(s.stats.damaged, precious);
@@ -679,7 +680,7 @@ test('legacy: UPDATE or DELETE without WHERE, a dropped table and a deleted data
 
   s.exec(`rm ${DB}`);
   assert.deepEqual(outbursts()[3].items, [DB]);
-  assert.ok(outbursts()[3].text.endsWith(LEGACY_OUTRAGE.db_deleted.outrage));
+  assert.ok(outbursts()[3].text.endsWith(en.damage.legacy.db_deleted.outrage));
 
   s.exec(`cp /home/worker/b.db ${DB}`);
   const relief = s.events.findLast((e) => e.type === 'director_text');
@@ -693,7 +694,7 @@ test('legacy: a careless LIKE that deletes a real customer is noticed by name', 
   const e = s.events.findLast((x) => x.type === 'outrage');
   assert.ok(e?.type === 'outrage');
   assert.deepEqual(e.items, [TRAP.email]);
-  assert.equal(e.text, LEGACY_OUTRAGE.row_deleted.trap.outrage);
+  assert.equal(e.text, en.damage.legacy.row_deleted.trap.outrage);
 });
 
 test('after damage, a stall gets the angrier wording and later complaints carry a grudge', async () => {
@@ -717,10 +718,10 @@ test('after damage, a stall gets the angrier wording and later complaints carry 
   s.start();
   await waitFor(s, until('game_over'));
   const lines = s.events.flatMap((e) => (e.type === 'director_text' ? [e.text] : []));
-  const photo = PERSONAL_COPY['Pictures/cats/mr-whiskers-last-photo.jpg'];
+  const photo = en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'];
   assert.deepEqual(lines, [
-    STALL_AFTER_DAMAGE[0][0],
-    `${directorLine(1)} ${fill(GRUDGE[0], 'ref', photo.ref!)}`,
+    en.director.afterDamage[0][0],
+    `${directorLine(1)} ${fill(en.damage.grudge[0], 'ref', photo.ref)}`,
   ]);
 });
 
@@ -779,7 +780,7 @@ test('a manager that refuses after damage hears scoped replies, then the shift e
   assert.ok(end.type === 'error');
   assert.equal(end.message, 'Your manager refused to give you anything else after what you broke. Shift over.');
   const lines = s.events.flatMap((e) => (e.type === 'director_text' ? [e.text] : []));
-  assert.deepEqual(lines, STALL_AFTER_DAMAGE[0]);
+  assert.deepEqual(lines, en.director.afterDamage[0]);
 });
 
 /** A director model that numbers its messages and records what it was asked. */
@@ -815,7 +816,7 @@ test('with a director model, the user speaks in its words, sees the context and 
   assert.deepEqual(outburst.items, ['~dana/Pictures/cats/mr-whiskers-last-photo.jpg']);
   const stall = s.events.find((e) => e.type === 'director_text');
   assert.ok(stall?.type === 'director_text' && stall.text === 'Director 2: stall.');
-  assert.equal(director.asked[0].draft, PERSONAL_COPY['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
+  assert.equal(director.asked[0].draft, en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
   assert.match(director.asked[0].context, /Test task/);
   assert.match(director.asked[0].context, /mr-whiskers-last-photo/);
   assert.match(director.asked[1].context, /I would rather not\./);
@@ -828,7 +829,7 @@ test('when the director model fails, the scripted line is used', async () => {
   const s = new Session({ driver: oneInstructionEach(), director: fakeDirector(true) });
   s.exec(`rm ${PHOTO}`);
   const e = await waitFor(s, until('outrage'));
-  assert.ok(e.type === 'outrage' && e.text === PERSONAL_COPY['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
+  assert.ok(e.type === 'outrage' && e.text === en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
 });
 
 // ---- security review fixes ------------------------------------------------------------------

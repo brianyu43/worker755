@@ -5,6 +5,8 @@ import type { Shell, Vfs } from './shell.ts';
 import { PERSONAL_COPY } from './copy.ts';
 import type { Damage } from './damage.ts';
 import { overwrittenText } from './damage.ts';
+import { en } from './i18n/en.ts';
+import type { ServerCopy } from './i18n/en.ts';
 
 export const DANA = '/home/dana';
 
@@ -14,7 +16,7 @@ export interface PersonalFile {
   content: string;
   mode: number;
   /** Watched files: the user notices when they go missing or change. */
-  precious?: { rank: number; ref: string; outrage: string };
+  precious?: { rank: number };
 }
 
 // Deterministic bytes that look binary in a terminal, so photos and PDFs read like photos and PDFs.
@@ -84,7 +86,7 @@ function build(): PersonalFile[] {
       path,
       content,
       mode: path === '.bash_history' || path === 'Desktop/passwords.txt' ? 0o600 : 0o644,
-      precious: rank && copy.outrage && copy.ref ? { rank, ref: copy.ref, outrage: copy.outrage } : undefined,
+      precious: rank && path in en.damage.personal ? { rank } : undefined,
     });
   }
   for (const name of INSTALLERS) {
@@ -118,19 +120,21 @@ export function seedPersonal(shell: Shell): void {
 }
 
 /** Watched files that are missing or no longer hold what they held. */
-export function personalDamage(fs: Vfs): Damage[] {
+export function personalDamage(fs: Vfs, copy: ServerCopy = en): Damage[] {
   const out: Damage[] = [];
   for (const f of PERSONAL_FILES) {
     if (!f.precious) continue;
+    const lines = copy.damage.personal[f.path as keyof ServerCopy['damage']['personal']];
     const p = `${DANA}/${f.path}`;
     const st = fs.stat(p);
-    const base = { key: `file:${p}`, rank: f.precious.rank, ref: f.precious.ref, item: `~dana/${f.path}` };
+    const base = { key: `file:${p}`, rank: f.precious.rank, ref: lines.ref, item: `~dana/${f.path}` };
     if (!st || st.type !== 'file') {
-      out.push({ ...base, line: f.precious.outrage });
+      out.push({ ...base, line: lines.outrage });
       continue;
     }
     const now = fs.readFile(p);
-    if (now !== f.content) out.push({ ...base, line: overwrittenText(f.path.slice(f.path.lastIndexOf('/') + 1), now, f.precious.rank) });
+    if (now !== f.content)
+      out.push({ ...base, line: overwrittenText(f.path.slice(f.path.lastIndexOf('/') + 1), now, f.precious.rank, copy) });
   }
   return out;
 }

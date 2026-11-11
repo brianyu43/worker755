@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import { MOD } from '../game/keys';
+import { t } from '../i18n';
 
 interface Props {
   sessionId: string;
@@ -34,7 +35,7 @@ export function Editor({ sessionId, path, displayPath, initial, isNew, onSaved, 
       await client.writeFile(sessionId, path, text);
       onSaved(new TextEncoder().encode(text).length);
     } catch (e) {
-      setError(e instanceof ApiError && e.status !== 0 ? e.message : 'Not saved. No connection.');
+      setError(e instanceof ApiError && e.status !== 0 ? e.message : t('editor.offline'));
       setSaving(false);
       ref.current?.focus();
     }
@@ -61,10 +62,10 @@ export function Editor({ sessionId, path, displayPath, initial, isNew, onSaved, 
   const bytes = new TextEncoder().encode(text).length;
 
   return (
-    <div className="editor" role="dialog" aria-label={`Editing ${displayPath}`}>
+    <div className="editor" role="dialog" aria-label={t('editor.label', { path: displayPath })}>
       <div className="editor-head">
         <span className="editor-path">{displayPath}</span>
-        <span className="editor-state">{isNew && !dirty ? 'New file' : dirty ? 'Modified' : 'Unchanged'}</span>
+        <span className="editor-state">{isNew && !dirty ? t('editor.new') : dirty ? t('editor.modified') : t('editor.unchanged')}</span>
       </div>
       <textarea
         ref={ref}
@@ -75,19 +76,19 @@ export function Editor({ sessionId, path, displayPath, initial, isNew, onSaved, 
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
-        aria-label="File contents"
+        aria-label={t('editor.contents')}
       />
       <div className="editor-foot">
         <span className="editor-meta">
-          {lines} {lines === 1 ? 'line' : 'lines'}, {bytes} bytes
+          {t('editor.size', { lines: t('editor.lines', { count: lines }), bytes: t('editor.bytes', { count: bytes }) })}
         </span>
         {error && <span className="editor-error">{error}</span>}
         <span className="editor-actions">
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Cancel <kbd>Esc</kbd>
+            {t('editor.cancel')} <kbd>Esc</kbd>
           </button>
           <button type="button" className="btn btn-ink" onClick={() => void save()} disabled={saving}>
-            {saving ? 'Saving' : 'Save'} <kbd>{MOD} S</kbd>
+            {saving ? t('editor.saving') : t('editor.save')} <kbd>{MOD} S</kbd>
           </button>
         </span>
       </div>

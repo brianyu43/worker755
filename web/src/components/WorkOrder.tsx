@@ -1,7 +1,7 @@
-import { tr } from '../game/i18n';
 import { useEffect, useState } from 'react';
 import type { OpenInstruction } from '../api/types';
 import type { ClosedOutcome, ManagerState } from '../game/useGame';
+import { t, type Key } from '../i18n';
 
 export type Urgency = 'calm' | 'warn' | 'critical' | 'over';
 
@@ -28,15 +28,15 @@ export function useTicker(active: boolean, ms = 100) {
   const [, setT] = useState(0);
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setT((t) => t + 1), ms);
+    const id = setInterval(() => setT((n) => n + 1), ms);
     return () => clearInterval(id);
   }, [active, ms]);
 }
 
-const STAMP: Record<ClosedOutcome, string> = {
-  reported: tr('Received'),
-  timeout_idle: tr('No response'),
-  timeout_partial: tr('Late'),
+const STAMP: Record<ClosedOutcome, Key> = {
+  reported: 'order.stamp.reported',
+  timeout_idle: 'order.stamp.idle',
+  timeout_partial: 'order.stamp.partial',
 };
 
 interface Props {
@@ -53,8 +53,8 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count }: Pr
   useEffect(() => {
     if (!closed) return;
     setShowClosed(true);
-    const t = setTimeout(() => setShowClosed(false), 2600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowClosed(false), 2600);
+    return () => clearTimeout(timer);
   }, [closed]);
 
   useTicker(instruction !== null);
@@ -65,10 +65,10 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count }: Pr
       <section className="order order-empty" aria-live="polite">
         <div className="order-empty-text">
           {manager === 'thinking'
-              ? count === 0
-                ? tr('Your manager is reading the assignment.')
-                : tr('Your manager is deciding what you do next.')
-              : tr('No instruction. Stand by.')}
+            ? count === 0
+              ? t('order.reading')
+              : t('order.deciding')
+            : t('order.standBy')}
         </div>
         <div className="order-empty-dots" aria-hidden />
       </section>
@@ -86,15 +86,15 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count }: Pr
     <section
       className={`order order-${urgency}${outcome ? ` order-closed order-${outcome}` : ''}`}
       key={inst.id}
-      aria-label={tr('Current instruction')}
+      aria-label={t('order.label')}
     >
       <div className="order-drain" style={{ transform: `scaleX(${frac})` }} aria-hidden />
       <header className="order-head">
         <div className="order-meta">
-          <span className="order-no">Instruction {count}</span>
+          <span className="order-no">{t('order.number', { number: count })}</span>
           <h2 className="order-title">{inst.description}</h2>
         </div>
-        <div className="order-clock" role="timer" aria-label={tr('Time left')}>
+        <div className="order-clock" role="timer" aria-label={t('order.timeLeft')}>
           <span key={urgency === 'critical' ? secondKey : 'steady'} className="order-digits">
             {formatClock(remaining, true)}
           </span>
@@ -103,7 +103,7 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count }: Pr
       <div className="order-text">{inst.text}</div>
       {outcome && (
         <div className={`stamp stamp-${outcome}`} role="status">
-          {STAMP[outcome]}
+          {t(STAMP[outcome])}
         </div>
       )}
     </section>

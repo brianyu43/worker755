@@ -1,6 +1,7 @@
 import type { ExecResponse, GameEvent, ModelList, Provider, SessionState, SharedReview, Workplace } from './types';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
+import { t } from '../i18n';
 
 export { ApiError };
 
@@ -54,7 +55,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, 'No connection.');
+    throw new ApiError(0, t('errors.offline'));
   }
   let data: unknown = null;
   try {
@@ -66,7 +67,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     const msg =
       data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
         ? data.error
-        : `Request failed (${res.status}).`;
+        : t('errors.request', { status: res.status });
     throw new ApiError(res.status, msg);
   }
   return data as T;

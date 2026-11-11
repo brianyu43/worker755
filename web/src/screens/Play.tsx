@@ -1,4 +1,3 @@
-import { tr } from '../game/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import { Feed } from '../components/Feed';
@@ -10,6 +9,7 @@ import { modelLabel } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { loadFace } from '../game/avatar';
 import type { Game, GameView } from '../game/useGame';
+import { t } from '../i18n';
 
 interface Props {
   game: Game;
@@ -44,18 +44,18 @@ export function Play({ game, view, onFinish }: Props) {
     () =>
       game.onEvent((ev) => {
         if (ev.type === 'instruction') {
-          term.current?.print(`New instruction: ${ev.instruction.description}`, 'warn');
+          term.current?.print(t('play.newInstruction', { description: ev.instruction.description }), 'warn');
           setFlash('arrive');
         } else if (ev.type === 'outrage') {
-          term.current?.print('The director saw that.', 'err');
+          term.current?.print(t('play.directorSaw'), 'err');
           setFlash('outrage');
         } else if (ev.type === 'instruction_result') {
           const text =
             ev.outcome === 'reported'
-              ? 'Report delivered.'
+              ? t('play.delivered')
               : ev.outcome === 'timeout_idle'
-                ? 'Time is up. You did nothing.'
-                : 'Time is up. Your work so far was handed in without a report.';
+                ? t('play.timeUp.idle')
+                : t('play.timeUp.partial');
           term.current?.print(text, ev.outcome === 'reported' ? 'ok' : 'err');
           setFlash(ev.outcome === 'reported' ? null : 'expire');
           if (ev.outcome === 'reported') setPleased(true);
@@ -65,13 +65,13 @@ export function Play({ game, view, onFinish }: Props) {
   );
   useEffect(() => {
     if (!pleased) return;
-    const t = setTimeout(() => setPleased(false), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setPleased(false), 2500);
+    return () => clearTimeout(timer);
   }, [pleased]);
   useEffect(() => {
     if (!flash) return;
-    const t = setTimeout(() => setFlash(null), flash === 'outrage' ? 1400 : 900);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setFlash(null), flash === 'outrage' ? 1400 : 900);
+    return () => clearTimeout(timer);
   }, [flash]);
 
   const report = useCallback(
@@ -83,7 +83,7 @@ export function Play({ game, view, onFinish }: Props) {
         setNote('');
       } catch (e) {
         term.current?.print(
-          e instanceof ApiError && e.status === 409 ? 'Nothing to report. There is no open instruction.' : 'Report not delivered. No connection.',
+          e instanceof ApiError && e.status === 409 ? t('play.nothingToReport') : t('play.notDelivered'),
           'err',
         );
       } finally {
@@ -97,10 +97,10 @@ export function Play({ game, view, onFinish }: Props) {
   // Keyboard: Ctrl/Cmd+Enter reports from anywhere; stray typing lands in the terminal.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = term.current;
-      if (!t) return;
+      const tm = term.current;
+      if (!tm) return;
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        if (t.isEditing()) return;
+        if (tm.isEditing()) return;
         e.preventDefault();
         void report(noteRef.current?.value ?? '');
         return;
@@ -109,7 +109,7 @@ export function Play({ game, view, onFinish }: Props) {
       const inField = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
       if (!inField && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === 'ArrowUp' || e.key === 'Enter')) {
         if (el instanceof HTMLButtonElement && (e.key === 'Enter' || e.key === ' ')) return;
-        t.focus();
+        tm.focus();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -150,10 +150,10 @@ export function Play({ game, view, onFinish }: Props) {
               <span className="bar-title">{view.mission.title}</span>
             </>
           ) : (
-            <span className="bar-title">Waiting for an assignment</span>
+            <span className="bar-title">{t('play.waiting')}</span>
           )}
         </div>
-        {!game.connected && <span className="bar-offline">Reconnecting</span>}
+        {!game.connected && <span className="bar-offline">{t('play.reconnecting')}</span>}
         {open && (
           <div className={`bar-clock bar-clock-${urgency}`} aria-hidden>
             {formatClock(remaining)}
@@ -165,16 +165,16 @@ export function Play({ game, view, onFinish }: Props) {
         <div className="desk-main">
           {finished ? (
             <section className="order order-empty shift-over">
-              <div className="order-empty-text">{tr('Your shift is over. Your manager has written your review.')}</div>
+              <div className="order-empty-text">{t('play.over')}</div>
               <button type="button" className="btn btn-ink btn-big" onClick={onFinish} autoFocus>
-                Read it
+                {t('play.readIt')}
               </button>
             </section>
           ) : cutShort ? (
             <section className="order order-empty shift-over">
-              <div className="order-empty-text">{view.error ?? tr('Your shift ended early.')}</div>
+              <div className="order-empty-text">{view.error ?? t('play.endedEarly')}</div>
               <button type="button" className="btn btn-ink btn-big" onClick={game.leave} autoFocus>
-                {tr('Clock in again')}
+                {t('app.clockInAgain')}
               </button>
             </section>
           ) : (
@@ -205,12 +205,12 @@ export function Play({ game, view, onFinish }: Props) {
                   term.current?.focus();
                 }
               }}
-              placeholder={tr('Note for your manager (optional)')}
-              aria-label={tr('Note for your manager')}
+              placeholder={t('play.note')}
+              aria-label={t('play.note.label')}
               maxLength={500}
             />
             <button type="submit" className="btn btn-report" disabled={!open || reporting}>
-              {tr('Report done')} <kbd>{MOD} ↵</kbd>
+              {t('play.report')} <kbd>{MOD} ↵</kbd>
             </button>
           </form>
         </div>
