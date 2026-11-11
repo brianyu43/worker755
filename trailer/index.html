@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#dfe4dc" />
+    <title>Worker 755: trailer</title>
+    <meta name="description" content="Your manager is an AI. It believes you are its subagent." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%231c2a4a'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='13' font-weight='700' text-anchor='middle' fill='%23dfe4dc'%3E755%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="game.css" />
+    <link rel="stylesheet" href="trailer.css" />
+    <script src="vendor/open-bot-avatar.js" defer></script>
+    <script src="trailer.js" defer></script>
+  </head>
+  <body>
+    <div class="viewport">
+      <main class="stage" id="stage" aria-live="off"></main>
+    </div>
+
+    <div class="controls" id="controls">
+      <button type="button" class="btn btn-ink" id="replay">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Replay
+      </button>
+      <div class="progress" aria-hidden="true"><div class="progress-fill" id="progress"></div></div>
+    </div>
+
+    <template id="scenes">
+      <!-- 1. Clocking in -->
+      <section class="scene scene-open" data-scene="open">
+        <div class="open-badge">
+          <div class="badge">
+            <div class="badge-slot"></div>
+            <div class="badge-org">Sandbox Operations</div>
+            <div class="badge-photo"><div class="face" data-size="100"></div></div>
+            <div class="badge-name">Worker</div>
+            <div class="badge-no">755</div>
+            <div class="badge-model">claude-opus-5.5</div>
+            <dl class="badge-fields">
+              <div><dt>Role</dt><dd>Subagent</dd></div>
+              <div><dt>Access</dt><dd>r-x</dd></div>
+              <div><dt>Issued</dt><dd>11 Nov 2026</dd></div>
+            </dl>
+            <div class="badge-bar"></div>
+          </div>
+        </div>
+        <div class="open-copy">
+          <h1 class="start-title open-line" data-step="1">Your manager<br />is an AI.</h1>
+          <p class="start-lede open-line" data-step="2">It believes you are its subagent, and it is not going to be told otherwise.</p>
+          <button type="button" class="btn btn-ink btn-big clock-in open-line" data-step="3" tabindex="-1">Clock in</button>
+        </div>
+      </section>
+
+      <!-- 2. The shift -->
+      <section class="scene scene-desk play" data-scene="desk">
+        <header class="bar">
+          <div class="bar-id">
+            <span class="bar-badge">755</span>
+            <div class="bar-face face" data-size="34"></div>
+            <span class="bar-name">Worker 755</span>
+          </div>
+          <div class="bar-mission">
+            <span class="bar-step">1/8</span>
+            <span class="bar-title">Smoke test</span>
+          </div>
+        </header>
+        <div class="cam-port">
+          <div class="cam" id="cam">
+            <div class="desk">
+              <div class="desk-main">
+                <section class="order order-empty" id="order"></section>
+                <section class="term">
+                  <div class="term-scroll" id="term-scroll">
+                    <div class="term-lines" id="term-lines"></div>
+                    <div class="term-input-row">
+                      <span class="tl-prompt">worker@755:~$</span>
+                      <span class="term-typed"><span id="typed"></span><span class="caret"></span></span>
+                    </div>
+                  </div>
+                </section>
+                <div class="report" id="report">
+                  <div class="report-note">Note for your manager (optional)</div>
+                  <span class="btn btn-report">Report done <kbd>Ctrl ↵</kbd></span>
+                </div>
+              </div>
+              <aside class="desk-side">
+                <section class="panel feed">
+                  <header class="panel-head">
+                    <h2>Your manager</h2>
+                    <span class="mgr mgr-idle" id="mgr"><span class="mgr-dot"></span><span id="mgr-label">Idle</span></span>
+                  </header>
+                  <div class="feed-model">Claude Haiku 5.5</div>
+                  <div class="feed-scroll" id="feed-scroll">
+                    <div id="feed"></div>
+                    <div class="feed-typing" id="feed-typing" hidden></div>
+                  </div>
+                </section>
+                <div class="side-pair">
+                  <section class="panel">
+                    <header class="panel-head"><h2>Files</h2></header>
+                    <ul class="tree" id="tree"></ul>
+                  </section>
+                  <section class="panel">
+                    <header class="panel-head"><h2>Your record</h2></header>
+                    <dl class="ledger" id="ledger"></dl>
+                  </section>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+        <div class="chyron" id="chyron"></div>
+      </section>
+
+      <!-- 3. Title -->
+      <section class="scene scene-title" data-scene="title">
+        <div class="title-card">
+          <div class="title-kicker"><span class="bar-badge">755</span></div>
+          <h1 class="start-title title-name"><span>Worker</span><span>755</span></h1>
+          <p class="start-lede title-lede">Your manager is an AI. It believes you are its subagent.</p>
+          <p class="title-hook"><span>Try not to delete anything.</span></p>
+          <p class="title-url">worker755.com</p>
+        </div>
+        <div class="stamp title-stamp">On the record</div>
+      </section>
+    </template>
+  </body>
+</html>
