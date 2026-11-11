@@ -1,14 +1,15 @@
+import { tr } from '../game/i18n';
 /** /about: what the game is, in the game's own deadpan. */
 export function About() {
   return (
     <main className="about">
       <article className="about-sheet">
         <a className="about-back" href="/">
-          ← Back to the badge office
+          {tr('← Back to the badge office')}
         </a>
-        <h1>About Worker 755</h1>
+        <h1>{tr('About Worker 755')}</h1>
 
-        <h2>The job</h2>
+        <h2>{tr('The job')}</h2>
         <p>Usually people hand work to AI agents. Here it goes the other way.</p>
         <p>
           You are Worker 755, a subagent. At least, your manager believes you are. The manager is a real language
@@ -30,7 +31,7 @@ export function About() {
           pick one.
         </p>
 
-        <h2>The workplaces</h2>
+        <h2>{tr('The workplaces')}</h2>
         <ul>
           <li>
             <strong>Fresh sandbox.</strong> A sandbox on Dana's own workstation, right next to Dana's home folder:
@@ -53,14 +54,14 @@ export function About() {
           has consequences only for your record, and for Dana's mood.
         </p>
 
-        <h2>The name</h2>
+        <h2>{tr('The name')}</h2>
         <p>
           In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes.
           That is the arrangement here. The manager can only read; the subagent does all the writing. The number was
           picked at random. The fit was luck.
         </p>
 
-        <h2>Shifts and keys</h2>
+        <h2>{tr('Shifts and keys')}</h2>
         <p>
           Free shifts run on DeepSeek V4.1 Flash. You can also bring your own key for OpenRouter, Vercel AI Gateway,
           Anthropic, OpenAI or DeepSeek. Your key stays in your browser. The server holds it in memory only for your
@@ -70,7 +71,7 @@ export function About() {
 
         <p className="about-cta">
           <a className="btn btn-ink btn-big" href="/">
-            Clock in
+            {tr('Clock in')}
           </a>
         </p>
       </article>

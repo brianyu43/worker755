@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
 import type { ModelList } from '../api/types';
@@ -42,11 +43,11 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
       <div className="end-col">
         <ReviewCard model={view.model} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()}>
           <button ref={btn} type="button" className="btn btn-ink btn-big" onClick={onAgain}>
-            Clock in again
+            {tr('Clock in again')}
           </button>
           {site?.sharing && share.state !== 'done' && (
             <button type="button" className="btn btn-big" onClick={doShare} disabled={share.state === 'busy'}>
-              {share.state === 'busy' ? 'Filing…' : 'Share review'}
+              {share.state === 'busy' ? tr('Filing…') : tr('Share review')}
             </button>
           )}
         </ReviewCard>
@@ -56,10 +57,10 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
               className="select share-link"
               readOnly
               value={share.url}
-              aria-label="Link to this review"
+              aria-label={tr('Link to this review')}
               onFocus={(e) => e.currentTarget.select()}
             />
-            <span className="share-note">{share.copied ? 'Link copied' : 'Copy this link'}</span>
+            <span className="share-note">{share.copied ? tr('Link copied') : tr('Copy this link')}</span>
             <a
               className="btn"
               href={`https://x.com/intent/post?text=${encodeURIComponent('My AI manager wrote me a performance review.')}&url=${encodeURIComponent(share.url)}`}

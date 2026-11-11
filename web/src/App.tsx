@@ -1,3 +1,4 @@
+import { detectLanguage, tr } from './game/i18n';
 import { useEffect, useState } from 'react';
 import { useGame } from './game/useGame';
 import { End } from './screens/End';
@@ -12,6 +13,7 @@ function sharedId(): string | null {
 }
 
 export function App() {
+  useEffect(() => { document.documentElement.lang = detectLanguage(); }, []);
   const shared = sharedId();
   if (shared) return <Shared id={shared} />;
   if (/^\/about\/?$/.test(window.location.pathname)) return <About />;
@@ -36,7 +38,7 @@ function Game() {
     if (view?.status !== 'finished') setEnded(false);
   }, [view?.status, view?.id]);
 
-  if (resuming) return <div className="loading">Finding your desk…</div>;
+  if (resuming) return <div className="loading">{tr("Finding your desk…")}</div>;
   if (!view) return <Start onStart={start} />;
   if (ended && view.status === 'finished')
     return (

@@ -90,7 +90,7 @@ export function Start({ onStart }: Props) {
     if (starting) return;
     const key = apiKey.trim();
     if (access === 'own' && !key) {
-      setStartError('Paste your API key first.');
+      setStartError(t('Paste your API key first.'));
       return;
     }
     setStarting(true);
@@ -107,7 +107,7 @@ export function Start({ onStart }: Props) {
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
-      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : 'Could not clock in. Try again.');
+      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('Could not clock in. Try again.'));
       setStarting(false);
     }
   };
@@ -161,7 +161,7 @@ export function Start({ onStart }: Props) {
       </div>
 
       <div className="start-copy">
-        <label className="field language-picker"><span className="field-label">Language / Langue / Sprache</span>
+        <label className="field language-picker"><span className="field-label">{t('Language')}</span>
           <select className="select" value={language} onChange={(e) => setLanguage(e.target.value as Language)} aria-label="Language">
             {LANGUAGES.map((code) => <option key={code} value={code}>{LANGUAGE_LABELS[code]}</option>)}
           </select>
@@ -170,11 +170,10 @@ export function Start({ onStart }: Props) {
           <span>Worker</span> <span>755</span>
         </h1>
         <p className="start-lede">
-          Your manager is an AI. It believes you are its subagent, and it is not going to be told otherwise.
+          {t('Your manager is an AI. It believes you are its subagent, and it is not going to be told otherwise.')}
         </p>
         <p className="start-sub">
-          It sends instructions. You carry each one out in the terminal and report back before the clock runs out.
-          Everything it thinks and says about you is on the record.
+          {t('It sends instructions. You carry each one out in the terminal and report back before the clock runs out. Everything it thinks and says about you is on the record.')}
         </p>
 
         <form
@@ -290,7 +289,7 @@ export function Start({ onStart }: Props) {
                 </label>
                 <div className="field">
                   <span className="field-label">
-                    <label htmlFor="api-key">API key</label>
+                    <label htmlFor="api-key">{t('API key')}</label>
                     {keyInfo && (
                       <>
                         {' · '}
@@ -338,7 +337,7 @@ export function Start({ onStart }: Props) {
             </button>
           )}
         </form>
-        {loadError && <p className="form-error">The office is not answering. Check that the game is running, then try again.</p>}
+        {loadError && <p className="form-error">{t('The office is not answering. Check that the game is running, then try again.')}</p>}
         {startError && <p className="form-error">{startError}</p>}
         <SiteLinks site={models} />
       </div>
@@ -348,17 +347,18 @@ export function Start({ onStart }: Props) {
 
 /** Where the game lives and how to support it, when the server says so. */
 export function SiteLinks({ site }: { site: Pick<ModelList, 'donateUrl' | 'sourceUrl'> | null }) {
+  const t = (s: string) => translate(s, detectLanguage());
   return (
     <p className="site-links">
-      <a href="/about">About</a>
+      <a href="/about">{t('About')}</a>
       {site?.sourceUrl && (
         <a href={site.sourceUrl} target="_blank" rel="noreferrer">
-          Source code
+          {t('Source code')}
         </a>
       )}
       {site?.donateUrl && (
         <a href={site.donateUrl} target="_blank" rel="noreferrer">
-          Support the game
+          {t('Support the game')}
         </a>
       )}
     </p>

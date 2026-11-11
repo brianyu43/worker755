@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import type { ReactNode } from 'react';
 import type { Stats } from '../api/types';
 import { statRows } from './Side';
@@ -22,37 +23,37 @@ interface Props {
 }
 
 export function verdictOf(s: Stats, lost: number): string {
-  if (lost > 0) return 'Under investigation';
-  if (s.missionsFailed === 0 && s.timeoutsIdle === 0) return 'Retained';
-  if (s.missionsCompleted > s.missionsFailed) return 'Retained, with notes';
-  return 'Under review';
+  if (lost > 0) return tr('Under investigation');
+  if (s.missionsFailed === 0 && s.timeoutsIdle === 0) return tr('Retained');
+  if (s.missionsCompleted > s.missionsFailed) return tr('Retained, with notes');
+  return tr('Under review');
 }
 
 export function ReviewCard({ model, face, review, stats, lost, date, recordTitle = 'Your record', children }: Props) {
   return (
     <article className="review">
       <header className="review-head">
-        <h1>Performance review</h1>
+        <h1>{tr('Performance review')}</h1>
         <dl className="review-meta">
           <div>
-            <dt>Employee</dt>
+            <dt>{tr('Employee')}</dt>
             <dd className="review-employee">
               {face && <BotAvatar face={face} size={30} />}
               Worker 755
             </dd>
           </div>
           <div>
-            <dt>Reviewer</dt>
+            <dt>{tr('Reviewer')}</dt>
             <dd>{modelLabel(model)}</dd>
           </div>
           <div>
-            <dt>Date</dt>
+            <dt>{tr('Date')}</dt>
             <dd>{date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</dd>
           </div>
         </dl>
       </header>
       <div className="review-body">
-        {(review ?? 'Your manager left no comments.').split(/\n{2,}/).map((p, i) => (
+        {(review ?? tr('Your manager left no comments.')).split(/\n{2,}/).map((p, i) => (
           <p key={i}>{p}</p>
         ))}
       </div>

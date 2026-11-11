@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';
 import type { ModelList, SharedReview } from '../api/types';
@@ -39,7 +40,7 @@ export function Shared({ id }: { id: string }) {
           stats={review.stats}
           lost={review.lost}
           date={new Date(review.createdAt)}
-          recordTitle="Record"
+          recordTitle={tr('Your record')}
         >
           <a className="btn btn-ink btn-big" href="/">
             Take a shift yourself

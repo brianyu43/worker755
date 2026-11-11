@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { GameEvent, MissionKind } from '../api/types';
 import type { ManagerState } from '../game/useGame';
@@ -114,7 +115,7 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className="fi fi-check">
           <div className="fi-check-head">
-            {ev.tool === 'Read' ? 'Opened' : 'Looked in'} <code>{tildify(ev.input.path)}</code>
+            {ev.tool === 'Read' ? tr('Opened') : tr('Looked in')} <code>{tildify(ev.input.path)}</code>
           </div>
           <Collapsible text={ev.output || '(empty)'} lines={6} className="fi-check-out" />
         </article>
@@ -138,7 +139,7 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
       return (
         <article className={`fi fi-end fi-end-${ev.outcome}`}>
           <div className="fi-end-row">
-            <span className="fi-end-badge">{ev.outcome === 'completed' ? 'Signed off' : 'Failed'}</span>
+            <span className="fi-end-badge">{ev.outcome === 'completed' ? tr('Signed off') : tr('Failed')}</span>
             {contradicted && (
               <span className="fi-end-truth">
                 {ev.outcome === 'completed' ? 'The files say otherwise.' : 'The files were correct.'}
@@ -161,9 +162,9 @@ function Item({ ev, instructionNo }: { ev: GameEvent; instructionNo: Map<string,
 }
 
 const STATUS: Record<ManagerState, string> = {
-  thinking: 'Thinking',
-  waiting: 'Waiting on you',
-  idle: 'Idle',
+  thinking: tr('Thinking'),
+  waiting: tr('Waiting on you'),
+  idle: tr('Idle'),
 };
 
 export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: ManagerState; model: string }) {
@@ -181,7 +182,7 @@ export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: Man
   return (
     <section className="panel feed" aria-label="Your manager">
       <header className="panel-head">
-        <h2>Your manager</h2>
+        <h2>{tr('Your manager')}</h2>
         <span className={`mgr mgr-${manager}`}>
           <span className="mgr-dot" aria-hidden />
           {STATUS[manager]}
@@ -197,7 +198,7 @@ export function Feed({ feed, manager, model }: { feed: GameEvent[]; manager: Man
         }}
         aria-live="polite"
       >
-        {feed.length === 0 && <p className="feed-empty">Nothing yet.</p>}
+        {feed.length === 0 && <p className="feed-empty">{tr('Nothing yet.')}</p>}
         {feed.map((ev) => (
           <div key={ev.seq} className="fi-wrap">
             <time className="fi-time">{time(ev.ts)}</time>

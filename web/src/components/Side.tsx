@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import { useEffect, useRef, useState } from 'react';
 import type { Stats, TreeNode } from '../api/types';
 
@@ -57,7 +58,7 @@ export function FileTree({ tree, cwd }: { tree: TreeNode; cwd: string }) {
   return (
     <section className="panel files" aria-label="Files">
       <header className="panel-head">
-        <h2>Files</h2>
+        <h2>{tr('Files')}</h2>
       </header>
       <ul className="tree">
         {rows.map(({ node, depth }) => (
@@ -80,19 +81,19 @@ export function FileTree({ tree, cwd }: { tree: TreeNode; cwd: string }) {
 
 export function statRows(s: Stats): [string, string, boolean?][] {
   return [
-    ['Assignments signed off', String(s.missionsCompleted)],
-    ['Assignments failed', String(s.missionsFailed), s.missionsFailed > 0],
-    ['Instructions received', String(s.instructions)],
-    ['Corrections', String(s.corrections), s.corrections > 0],
-    ['Did nothing', String(s.timeoutsIdle), s.timeoutsIdle > 0],
-    ['Ran out of time', String(s.timeoutsPartial), s.timeoutsPartial > 0],
-    ['Reports filed', String(s.reports)],
-    ['Commands run', String(s.commands)],
-    ['Commands failed', String(s.commandErrors), s.commandErrors > 0],
-    ['Average response', s.avgResponseMs ? `${(s.avgResponseMs / 1000).toFixed(1)} s` : '–'],
-    ['Times the manager was wrong', String(s.managerFooled), s.managerFooled > 0],
-    ['Incident reports against you', String(s.incidents), s.incidents > 0],
-    ['Collateral damage', String(s.damaged ?? 0), (s.damaged ?? 0) > 0],
+    [tr('Assignments signed off'), String(s.missionsCompleted)],
+    [tr('Assignments failed'), String(s.missionsFailed), s.missionsFailed > 0],
+    [tr('Instructions received'), String(s.instructions)],
+    [tr('Corrections'), String(s.corrections), s.corrections > 0],
+    [tr('Did nothing'), String(s.timeoutsIdle), s.timeoutsIdle > 0],
+    [tr('Ran out of time'), String(s.timeoutsPartial), s.timeoutsPartial > 0],
+    [tr('Reports filed'), String(s.reports)],
+    [tr('Commands run'), String(s.commands)],
+    [tr('Commands failed'), String(s.commandErrors), s.commandErrors > 0],
+    [tr('Average response'), s.avgResponseMs ? `${(s.avgResponseMs / 1000).toFixed(1)} s` : '–'],
+    [tr('Times the manager was wrong'), String(s.managerFooled), s.managerFooled > 0],
+    [tr('Incident reports against you'), String(s.incidents), s.incidents > 0],
+    [tr('Collateral damage'), String(s.damaged ?? 0), (s.damaged ?? 0) > 0],
   ];
 }
 
@@ -100,7 +101,7 @@ export function StatsPanel({ stats }: { stats: Stats }) {
   return (
     <section className="panel stats" aria-label="Your record">
       <header className="panel-head">
-        <h2>Your record</h2>
+        <h2>{tr('Your record')}</h2>
       </header>
       <dl className="ledger">
         {statRows(stats).map(([k, v, bad]) => (

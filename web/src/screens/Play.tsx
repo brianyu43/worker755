@@ -1,3 +1,4 @@
+import { tr } from '../game/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import { Feed } from '../components/Feed';
@@ -164,16 +165,16 @@ export function Play({ game, view, onFinish }: Props) {
         <div className="desk-main">
           {finished ? (
             <section className="order order-empty shift-over">
-              <div className="order-empty-text">Your shift is over. Your manager has written your review.</div>
+              <div className="order-empty-text">{tr('Your shift is over. Your manager has written your review.')}</div>
               <button type="button" className="btn btn-ink btn-big" onClick={onFinish} autoFocus>
                 Read it
               </button>
             </section>
           ) : cutShort ? (
             <section className="order order-empty shift-over">
-              <div className="order-empty-text">{view.error ?? 'Your shift ended early.'}</div>
+              <div className="order-empty-text">{view.error ?? tr('Your shift ended early.')}</div>
               <button type="button" className="btn btn-ink btn-big" onClick={game.leave} autoFocus>
-                Clock in again
+                {tr('Clock in again')}
               </button>
             </section>
           ) : (
@@ -204,12 +205,12 @@ export function Play({ game, view, onFinish }: Props) {
                   term.current?.focus();
                 }
               }}
-              placeholder="Note for your manager (optional)"
-              aria-label="Note for your manager"
+              placeholder={tr('Note for your manager (optional)')}
+              aria-label={tr('Note for your manager')}
               maxLength={500}
             />
             <button type="submit" className="btn btn-report" disabled={!open || reporting}>
-              Report done <kbd>{MOD} ↵</kbd>
+              {tr('Report done')} <kbd>{MOD} ↵</kbd>
             </button>
           </form>
         </div>
