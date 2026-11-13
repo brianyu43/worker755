@@ -6,7 +6,7 @@ import { Terminal, type TerminalHandle } from '../components/Terminal';
 import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../components/WorkOrder';
 import { MOD } from '../game/keys';
 import { modelLabel } from '../game/labels';
-import { BotAvatar } from '../components/BotAvatar';
+import { HeaderFace } from '../components/HeaderFace';
 import { Splitter, deskSizes } from '../components/Splitter';
 import { KeyPause } from '../components/KeyPause';
 import { EndShift } from '../components/EndShift';
@@ -87,6 +87,8 @@ export function Play({ game, view, onFinish }: Props) {
   // Phone layout: which screen is showing. Wide screens show everything and ignore it.
   const [tab, setTab] = useState<Tab>('work');
   const lastSeq = view.feed.length ? view.feed[view.feed.length - 1].seq : 0;
+  let lastManagerSeq = 0;
+  for (const e of view.feed) if (e.type === 'manager_text' || e.type === 'instruction') lastManagerSeq = e.seq;
   const [seenSeq, setSeenSeq] = useState(lastSeq);
   const [seenIncidents, setSeenIncidents] = useState(view.stats.incidents);
   const open = view.instruction;
@@ -223,11 +225,14 @@ export function Play({ game, view, onFinish }: Props) {
           ) : (
             <span className="bar-badge">755</span>
           )}
-          <BotAvatar
+          <HeaderFace
             face={face}
-            size={34}
-            className="bar-face"
             mood={pleased ? 'happy' : open ? 'thinking' : 'idle'}
+            commands={view.stats.commands}
+            commandErrors={view.stats.commandErrors}
+            reports={view.stats.reports}
+            incidents={view.stats.incidents}
+            managerSeq={lastManagerSeq}
           />
           <span className="bar-who">
             <b className="bar-name">Worker 755</b>

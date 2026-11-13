@@ -9,14 +9,18 @@ interface Props {
   size: number;
   mood?: 'idle' | 'thinking' | 'happy';
   followPointer?: boolean;
+  /** A fixed look direction (-1..1 per axis), over the pointer. */
+  lookAt?: { x: number; y: number } | null;
+  /** Extra head turn in radians. */
+  view?: { yaw: number; pitch: number };
   className?: string;
 }
 
 /** A live avatar, after the React example in the library's README. Decorative: the badge says who it is. */
-export function BotAvatar({ face, size, mood = 'idle', followPointer = false, className }: Props) {
+export function BotAvatar({ face, size, mood = 'idle', followPointer = false, lookAt = null, view, className }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const avatar = useRef<MountedAvatar | null>(null);
-  const options = { definition: definitionOf(face.id), color: face.color, mood, followPointer, label: '' };
+  const options = { definition: definitionOf(face.id), color: face.color, mood, followPointer, lookAt, view: view ?? { yaw: 0, pitch: 0 }, label: '' };
   useEffect(() => {
     avatar.current = mountAvatar(host.current!, options);
     return () => {
