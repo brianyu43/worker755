@@ -1066,9 +1066,10 @@ kbd {
   animation: dots 1.2s steps(4) infinite;
   clip-path: inset(0 100% 0 0);
 }
+/* Four steps over three dots: none, one, two, three. Each step uncovers a whole third. */
 @keyframes dots {
   to {
-    clip-path: inset(0 -10% 0 0);
+    clip-path: inset(0 -33.34% 0 0);
   }
 }
 .order.shift-over {
@@ -3349,6 +3350,11 @@ kbd {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* The dots stand still, all three showing. */
+  .order-empty-dots,
+  .feed-typing {
+    clip-path: none;
   }
 }
 

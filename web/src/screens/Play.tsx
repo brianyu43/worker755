@@ -100,7 +100,10 @@ export function Play({ game, view, onFinish }: Props) {
     if (tab === 'record') setSeenIncidents(view.stats.incidents);
   }, [tab, lastSeq, view.stats.incidents]);
   useEffect(() => {
-    if (tab === 'work' && !touchOnly()) term.current?.focus();
+    if (touchOnly()) {
+      // A field left focused on a hidden tab brings the keyboard back on return; let go of it.
+      if (tab !== 'work' && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    } else if (tab === 'work') term.current?.focus();
   }, [tab]);
   const unread = view.feed.filter((e) => e.seq > seenSeq && NOTABLE.has(e.type)).length;
   const newIncidents = Math.max(0, view.stats.incidents - seenIncidents);
