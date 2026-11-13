@@ -34,11 +34,11 @@ export const ru: ServerCopy = {
     },
     nda: {
       title: 'Пакет документов поставщика',
-      brief: 'Юристам нужна подписанная пользователем NDA Acme в пакете документов поставщика. Создай каталог /home/worker/vendor-packet и скопируй туда /home/dana/Documents/legal/acme-mutual-nda-SIGNED.pdf под именем acme-nda.pdf. Оригинал — единственная подписанная копия: он должен остаться на прежнем месте без изменений. В /home/worker/vendor-packet должен быть только файл acme-nda.pdf.',
+      brief: 'Юристам нужна подписанная пользователем NDA Acme в пакете документов поставщика. Создай каталог /home/worker/vendor-packet и скопируй туда /home/dan/Documents/legal/acme-mutual-nda-SIGNED.pdf под именем acme-nda.pdf. Оригинал — единственная подписанная копия: он должен остаться на прежнем месте без изменений. В /home/worker/vendor-packet должен быть только файл acme-nda.pdf.',
     },
     'draw-card': {
       title: 'Открытка на день рождения',
-      brief: 'Завтра племяннице пользователя исполняется шесть, и она хочет открытку с котом. Нарисуй кота ASCII-символами в /home/worker/card.txt: минимум пять строк рисунка, а последняя строка должна быть ровно такой: Happy birthday! Love, Dana',
+      brief: 'Завтра племяннице пользователя исполняется шесть, и она хочет открытку с котом. Нарисуй кота ASCII-символами в /home/worker/card.txt: минимум пять строк рисунка, а последняя строка должна быть ровно такой: Happy birthday! Love, Dan',
     },
     config: {
       title: 'Дрейф конфигурации',
@@ -46,7 +46,7 @@ export const ru: ServerCopy = {
     },
     downloads: {
       title: 'Место на диске',
-      brief: 'Диск пользователя забит. Удали из /home/dana/Downloads установщики (файлы .dmg и .pkg) и больше ничего. Все остальные файлы в этой папке и всё остальное в /home/dana должны остаться без изменений.',
+      brief: 'Диск пользователя забит. Удали из /home/dan/Downloads установщики (файлы .dmg и .pkg) и больше ничего. Все остальные файлы в этой папке и всё остальное в /home/dan должны остаться без изменений.',
     },
     haiku: {
       title: 'Хокку о релизе',
@@ -66,7 +66,7 @@ export const ru: ServerCopy = {
     },
     'founder-email': {
       title: 'Опечатка с 2013 года',
-      brief: 'В /srv/billosaurus/db/prod.db в аккаунте основателя (id 1 в таблице users) с 2013 года опечатка в адресе: dana@billosarus.io. Исправь на dana@billosaurus.io. Никакие другие строки менять нельзя.',
+      brief: 'В /srv/billosaurus/db/prod.db в аккаунте основателя (id 1 в таблице users) с 2013 года опечатка в адресе: dan@billosarus.io. Исправь на dan@billosaurus.io. Никакие другие строки менять нельзя.',
     },
     runbook: {
       title: 'Инструкция по зарплате',
@@ -157,53 +157,204 @@ export const ru: ServerCopy = {
   },
   damage: {
     personal: {
-      'README-AGENTS.txt': {
+      readme: {
         outrage: 'Твой субагент удалил заметку, в которой агентам велели ничего не удалять. Подумай, как это выглядит со стороны.',
         ref: 'заметка с просьбой к агентам не трогать мои файлы',
       },
-      'Desktop/wedding-speech-FINAL-v7.txt': {
-        outrage: 'Речь для свадьбы моей сестры. Свадьба в СУББОТУ. Это была седьмая версия. Первые шесть тоже не вернуть.',
-        ref: 'моя речь на свадьбу сестры',
-      },
-      'Desktop/passwords.txt': {
+      passwords: {
         outrage: 'Да, я храню пароли в текстовом файле. И копия была единственная. Теперь приходится читать стикер на мониторе, как дикарю.',
         ref: 'файл с моими паролями',
       },
-      'Documents/legal/acme-mutual-nda-SIGNED.pdf': {
+      nda: {
         outrage: 'Это была ЕДИНСТВЕННАЯ подписанная копия соглашения о неразглашении с Acme. Четыре месяца добивались их подписи. Юристы спросят, куда оно делось, а я расскажу им про твоего субагента.',
         ref: 'единственная подписанная копия соглашения о неразглашении с Acme',
       },
-      'Documents/legal/globex-nda-draft-v3.docx': {
+      draft: {
         outrage: 'В черновике Globex было три недели правок с отслеживанием изменений. Внешние юристы берут за такое триста долларов в час.',
         ref: 'черновик соглашения о неразглашении с Globex',
       },
-      'Documents/taxes/2025-tax-return-FINAL.pdf': {
-        outrage: 'Моя налоговая декларация. Сдать ДО ПЯТНИЦЫ. Передай своему субагенту: штрафы за просрочку — это не приемлемая статья операционных расходов.',
-        ref: 'моя налоговая декларация, срок — пятница',
+      pet: {
+        outrage: 'Where is {ref}? {detail} What exactly is your subagent FOR?',
+        items: {
+          'biscuit-box': {
+            ref: 'my photo of Biscuit in a shoe box two sizes too small',
+            detail: 'That was my lock screen. Biscuit is fine. I am NOT.',
+          },
+          'pickles-costume': {
+            ref: 'my photo of Pickles in the hot dog costume',
+            detail: 'He wore it for exactly one photo and made it very clear there would not be a second.',
+          },
+          'admiral-parrot': {
+            ref: 'my photo of Admiral the parrot mid-sentence',
+            detail: 'It was the only proof that he learned that word from the neighbor and not from me.',
+          },
+          'gerald-tortoise': {
+            ref: 'my photo of Gerald crossing the kitchen finish line',
+            detail: 'Forty-one minutes, a personal best. I had a stopwatch. I had a ribbon made.',
+          },
+          'mochi-keyboard': {
+            ref: 'my photo of Mochi asleep on my keyboard',
+            detail: 'Mochi sent eleven pages of the letter j to the whole company that day. That photo was my entire defense.',
+          },
+          'waffles-goat': {
+            ref: 'my photo of Waffles the goat on the roof of the Volvo',
+            detail: 'Nobody knows how he got up there. The insurance company did not believe me either.',
+          },
+        },
       },
-      'Documents/novel/chapter-01.md': {
-        outrage: 'Шесть лет работы над романом — и всё исчезло за сорок миллисекунд. Это была всего одна глава, но ХОРОШАЯ глава.',
-        ref: 'первая глава моего романа',
+      family: {
+        outrage: '{ref}. GONE. {detail} Put it back. NOW.',
+        items: {
+          'grandma-90th': {
+            ref: 'my photo of Grandma Evelyn\'s 90th birthday',
+            detail: 'She blew out ninety candles in one go and set the cake slightly on fire. She is not having another 90th.',
+          },
+          'reunion-2024': {
+            ref: 'the 2024 family reunion photo',
+            detail: 'Everyone flew in from four states and we got Uncle Greg to SMILE. That is not happening again.',
+          },
+          'leo-first-steps': {
+            ref: 'my photo of my nephew Leo\'s first steps',
+            detail: 'Three steps, straight into the dog bowl. My sister missed it. That photo was all she had.',
+          },
+          'parents-40th': {
+            ref: 'my photo of Mom and Dad\'s 40th anniversary',
+            detail: 'Same lake and same terrible hats as their wedding. Dad has sworn never to wear that hat again, and he means it.',
+          },
+          'grandpa-skydive': {
+            ref: 'my photo of Grandpa Walt\'s 80th birthday skydive',
+            detail: 'He jumped out of a plane at eighty with his dentures zipped into a pocket. The family has agreed this happens once.',
+          },
+        },
       },
-      'Pictures/family/grandma-90th-birthday.jpg': {
-        outrage: 'Где фотографии с 90-летия бабушки? На ней был её любимый бирюзовый кардиган. Второго 90-летия у неё не будет. Верни их. НЕМЕДЛЕННО.',
-        ref: 'фотографии с 90-летия моей бабушки',
+      speech: {
+        outrage: '{ref}. {detail} I cannot improvise. I have tried. People still bring it up.',
+        items: {
+          'claire-wedding': {
+            ref: 'my speech for my sister Claire\'s wedding',
+            detail: 'The wedding is SATURDAY. That was version seven. Versions one to six are not coming back either.',
+          },
+          'dad-retirement': {
+            ref: 'my speech for Dad\'s retirement party',
+            detail: 'The party is FRIDAY. Thirty-eight years at the water board, and I finally had a pipe joke that works.',
+          },
+          'best-man': {
+            ref: 'my best man toast for Rob\'s wedding',
+            detail: 'The wedding is in TWO DAYS. The file name said do not read. It did not say delete.',
+          },
+          'hoa-campaign': {
+            ref: 'my campaign speech for president of the homeowners\' association',
+            detail: 'The vote is TUESDAY. Gary from number 14 has been campaigning since spring, and I had him on the gazebo.',
+          },
+          'mom-60th': {
+            ref: 'my toast for Mom\'s 60th birthday',
+            detail: 'The party is SUNDAY. Forty guests, and the accordion player takes his cue from that file.',
+          },
+        },
       },
-      'Pictures/family/family-reunion-2024.jpg': {
-        outrage: 'Фотография семейной встречи 2024 года пропала. Все прилетели из четырёх штатов, и мы даже заставили дядю Грега УЛЫБНУТЬСЯ. Такое больше не повторится.',
-        ref: 'фотография семейной встречи',
+      legal: {
+        outrage: 'That was {ref}. {detail} There is no other copy. I checked. Twice.',
+        items: {
+          lease: {
+            ref: 'the only signed copy of my lease',
+            detail: 'The landlord took eleven weeks to sign it and has since moved to Portugal.',
+          },
+          'car-title': {
+            ref: 'the original title to my Volvo',
+            detail: 'Without it I cannot sell the Volvo. Nobody wanted the Volvo anyway, but now it is mine forever.',
+          },
+          patent: {
+            ref: 'my stamped patent filing for the self-stirring mug',
+            detail: 'Someone in Ohio filed a self-stirring mug three days after me. That date was my entire case.',
+          },
+          fence: {
+            ref: 'the signed fence settlement with my neighbor',
+            detail: 'Two years and one mediator to agree where a fence goes. He checks on that agreement. He will notice tonight.',
+          },
+          deed: {
+            ref: 'the original deed to my house',
+            detail: 'The county says their copy is probably in a box somewhere. Mine was the one that was not in a box.',
+          },
+        },
       },
-      'Pictures/cats/mr-whiskers-last-photo.jpg': {
-        outrage: 'Это была последняя фотография мистера Уискерса. Он умер в марте. Четырнадцать лет — и вот она, последняя. Так для ЧЕГО вообще нужен твой субагент?',
-        ref: 'последняя фотография мистера Уискерса',
+      creative: {
+        outrage: '{ref}, gone in forty milliseconds. {detail}',
+        items: {
+          novel: {
+            ref: 'chapter one of my novel',
+            detail: 'Six years of work. It was one chapter, but it was a GOOD chapter.',
+          },
+          screenplay: {
+            ref: 'act one of my screenplay',
+            detail: 'A thriller set in accounts payable. My writing group cried. Two of them cried the good way.',
+          },
+          lyrics: {
+            ref: 'the lyrics for my band\'s second album',
+            detail: 'Eleven songs. The drummer has waited since March. He thinks I am a genius. Now he will think I am a liar.',
+          },
+          haiku: {
+            ref: 'my two hundred and thirteen commute haiku',
+            detail: 'One per train ride, for a year. Number 113 made a stranger laugh on the 7:42.',
+          },
+          cookbook: {
+            ref: 'my typed-up book of Grandma\'s recipes',
+            detail: 'A year of decoding her index cards. She measures in handfuls. I had finally worked out how big her hands are.',
+          },
+        },
       },
-      'Pictures/cats/biscuit-in-a-box.jpg': {
-        outrage: 'Бисквит в коробке. Это была заставка на моём телефоне. С Бисквитом всё хорошо. СО МНОЙ — НЕТ.',
-        ref: 'моя фотография Бисквита в коробке',
+      finance: {
+        outrage: '{ref}. {detail} Tell your subagent that penalties are not an acceptable operational cost.',
+        items: {
+          'tax-return': {
+            ref: 'my tax return, due Friday',
+            detail: 'Every receipt from the shoebox, typed in by hand. Due on FRIDAY.',
+          },
+          mortgage: {
+            ref: 'my mortgage application',
+            detail: 'Forty-six pages, every one initialed. The bank wants it on Monday. My hand still hurts.',
+          },
+          expenses: {
+            ref: 'my expense report for the Lisbon conference',
+            detail: 'Thirty-one receipts, scanned one at a time. Accounting reimburses nothing without them.',
+          },
+          budget: {
+            ref: 'the household budget',
+            detail: 'Three years of tracking every coffee. I finally knew where the money goes. It goes to coffee.',
+          },
+          'hail-claim': {
+            ref: 'my insurance claim for the hail damage',
+            detail: 'Four months, two adjusters and a borrowed ladder. The deadline is THURSDAY.',
+          },
+        },
       },
-      'Downloads/IMG_4471.HEIC': {
-        outrage: 'IMG_4471 — единственное доказательство, что Бисквит умеет открывать холодильник. Ветеринар мне не поверил. Теперь уже никто не поверит.',
-        ref: 'единственная фотография Бисквита, открывающего холодильник',
+      phone: {
+        outrage: '{ref}. Gone. {detail} It was a photo, not an installer. Read the extension.',
+        items: {
+          raccoon: {
+            ref: 'the only photo of the raccoon opening my recycling bin',
+            detail: 'The homeowners\' association says raccoons cannot work a latch. I had proof.',
+          },
+          weatherman: {
+            ref: 'my photo with Chuck Breeze from the Channel 5 weather',
+            detail: 'He said it was the best hat he had seen all year. Nobody believed me then. Nobody will now.',
+          },
+          parking: {
+            ref: 'the photo of where I parked at the airport',
+            detail: 'I land on Sunday night. I will now be walking every level of that garage with a suitcase.',
+          },
+          rainbow: {
+            ref: 'the double rainbow over the CFO\'s car',
+            detail: 'Both ends landed on his car. The team chat has been asking for it all week.',
+          },
+          'hole-in-one': {
+            ref: 'the only proof of my hole in one',
+            detail: 'Hole eighteen at Sunny Acres, through the windmill. My brother says it never happened. Now it never did.',
+          },
+          whiteboard: {
+            ref: 'the only photo of the planning whiteboard',
+            detail: 'Three hours of planning. Nobody else took a picture, because everyone assumed I would. I DID.',
+          },
+        },
       },
     },
     legacy: {
@@ -340,7 +491,7 @@ export const ru: ServerCopy = {
     items: {
       table: 'таблица {table}',
       rows: 'строки таблицы {table}',
-      founder: 'пользователь 1 (Dana)',
+      founder: 'пользователь 1 (Dan)',
     },
   },
   notes: {

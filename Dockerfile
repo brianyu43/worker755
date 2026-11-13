@@ -13,6 +13,8 @@ COPY server/package.json server/package-lock.json server/
 RUN npm ci --prefix server --omit=dev --no-audit --no-fund
 COPY shell shell
 COPY server server
+# The avatar shapes the link-preview images draw (server/src/card-render.ts).
+COPY web/src/game/avatar-gallery.json web/src/game/avatar-gallery.json
 COPY --from=web /app/web/dist web/dist
 RUN mkdir -p /data && chown node:node /data
 USER node

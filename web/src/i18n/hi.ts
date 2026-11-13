@@ -7,6 +7,7 @@ export const hi: Catalogue = {
   'app.loading': 'आपकी मेज़ ढूँढ़ी जा रही है…',
   'app.clockInAgain': 'फिर से काम शुरू करें',
   'links.about': 'जानकारी',
+  'links.faq': 'FAQ',
   'links.source': 'स्रोत कोड',
   'links.support': 'गेम का समर्थन करें',
   'errors.offline': 'कनेक्शन नहीं है।',
@@ -272,17 +273,24 @@ export const hi: Catalogue = {
   'about.job.2': 'तू Worker 755 है, एक सबएजेंट। कम-से-कम, तेरा मैनेजर यही मानता है। मैनेजर एक असली भाषा मॉडल है, जिसे लगता है कि वह एक ऑर्केस्ट्रेशन एजेंट है और किसी दूसरे AI को शेल का काम सौंप रहा है। लेकिन उसकी जगह तू है।',
   'about.job.3': 'हर निर्देश के साथ 90 सेकंड की उलटी गिनती दिखती है। तू टर्मिनल में कमांड टाइप करके रिपोर्ट देता है। अगर पहले समय खत्म हो गया, तो मैनेजर को बताया जाता है: <q>Subagent did nothing. Write a new instruction.</q> अगर तू रिपोर्ट करता है, तो उसे <q>Subagent output result: …</q> और तेरी चलाई हर कमांड का ट्रांसक्रिप्ट मिलता है।',
   'about.job.4': 'मैनेजर खुद कुछ बदल नहीं सकता। वह सिर्फ़ फ़ाइलें पढ़ सकता है और हुक्म दे सकता है। वह तेरा काम जाँचता है, गलती होने पर नए निर्देश देता है, तेरे ख़िलाफ़ घटना-रिपोर्ट दर्ज करता है और शिफ़्ट के आखिर में तेरा परफ़ॉर्मेंस रिव्यू लिखता है। वह तेरे बारे में जो सोचता, कहता और सुनता है—सब स्क्रीन पर दिखता है।',
-  'about.job.5': 'मैनेजर के ऊपर यूज़र Dana है, जो सब कुछ लाइव देखता है। Dana बेसब्र है, ताने मारता है और कुछ ऐसा ग़ायब हो जाए जिसे वापस न पाया जा सके, तो आगबबूला हो जाता है। Dana के संदेश पहले से लिखे हुए हैं, या अगर तू कोई मॉडल चुनता है तो दूसरे मॉडल से लिखवाए जाते हैं।',
+  'about.job.5': 'Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.',
   'about.workplaces': 'काम की जगहें',
-  'about.workplaces.fresh': '<strong>ताज़ा सैंडबॉक्स.</strong> Dana के अपने वर्कस्टेशन पर, उसके होम फ़ोल्डर के ठीक बगल में एक सैंडबॉक्स: परिवार की तस्वीरें, मिस्टर व्हिस्कर्स बिल्ली की आख़िरी तस्वीर, NDA की इकलौती हस्ताक्षरित कॉपी और शनिवार तक देनी वाली शादी की स्पीच।',
-  'about.workplaces.legacy': '<strong>पुराना प्रोडक्शन सिस्टम.</strong> Dana की इनवॉइसिंग कंपनी Billosaurus अब भी 2013 के कोड पर चल रही है। तू लाइव SQLite डेटाबेस को हाथ से बदलता है: <code>sqlite3</code> चलाकर। बिना <code>WHERE</code> के <code>UPDATE</code> का नतीजा ठीक वैसा ही बुरा होता है, जैसा तू सोच रहा है।',
+  'about.workplaces.fresh': "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
+  'about.workplaces.legacy': '<strong>पुराना प्रोडक्शन सिस्टम.</strong> Dan की इनवॉइसिंग कंपनी Billosaurus अब भी 2013 के कोड पर चल रही है। तू लाइव SQLite डेटाबेस को हाथ से बदलता है: <code>sqlite3</code> चलाकर। बिना <code>WHERE</code> के <code>UPDATE</code> का नतीजा ठीक वैसा ही बुरा होता है, जैसा तू सोच रहा है।',
   'about.workplaces.tasks': 'कामों में फ़ाइलें इधर-उधर करना और ठीक करना, एक <code>chmod 755</code>, डेटाबेस का काम, दस्तावेज़ों में जानकारी ढूँढ़ना, ऐसे छोटे वेब पर खोज करना जहाँ कंटेंट फ़ार्म की साइट आधिकारिक मैनुअल से ऊपर आती है, ASCII ड्रॉइंग, एक हाइकू और ग्राहकों को माफ़ी का ईमेल लिखना शामिल है।',
-  'about.workplaces.simulated': 'कुछ भी असली नहीं है। फ़ाइल सिस्टम, शेल, डेटाबेस और वेब गेम सर्वर पर सिम्युलेट किए गए हैं। चीज़ें मिटाने का असर सिर्फ़ तेरे रिकॉर्ड और Dana के मूड पर पड़ता है।',
+  'about.workplaces.simulated': 'कुछ भी असली नहीं है। फ़ाइल सिस्टम, शेल, डेटाबेस और वेब गेम सर्वर पर सिम्युलेट किए गए हैं। चीज़ें मिटाने का असर सिर्फ़ तेरे रिकॉर्ड और Dan के मूड पर पड़ता है।',
   'about.name': 'नाम',
   'about.name.1': 'Unix अनुमतियों में 755 का मतलब है <code>rwxr-xr-x</code>: मालिक लिख सकता है, बाक़ी सब सिर्फ़ पढ़ और चला सकते हैं। यहाँ भी यही व्यवस्था है। मैनेजर सिर्फ़ पढ़ सकता है; सारा लिखने का काम सबएजेंट करता है। यह नंबर यूँ ही चुना गया था। मेल बैठ गया—क़िस्मत से।',
   'about.keys': 'शिफ़्ट और कुंजियाँ',
   'about.keys.1': 'मुफ़्त शिफ़्ट DeepSeek V4.1 Flash पर चलती हैं। चाहो तो OpenRouter, Vercel AI Gateway, Anthropic, OpenAI या DeepSeek की अपनी कुंजी भी ला सकते हो। तुम्हारी कुंजी तुम्हारे ब्राउज़र में रहती है। सर्वर उसे सिर्फ़ तुम्हारी शिफ़्ट के दौरान मेमोरी में रखता है—कभी सेव या लॉग नहीं करता।',
   'about.keys.2': 'Worker 755 एक ही दिन में बना था—ज़्यादातर AI एजेंटों ने। कई फ़ैसलों की वजह अब समझ आई?',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

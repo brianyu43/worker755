@@ -23,8 +23,28 @@ export function sandboxCommands(extra = ''): string {
   return `${COMMAND_LIST}${extra}. ${OPERATORS}`;
 }
 
-/** Model names the player can give the subagent; any other short name is accepted too. */
-export const SUBAGENT_NAMES = ['claude-opus-5.5', 'gpt-6.1', 'gemini-3.8-pro', 'deepseek-v4.1', 'grok-5', 'llama-5-405b'];
+/**
+ * Names offered for the subagent, one picked at random by default: knock-offs of real models. Any
+ * other short name is accepted too.
+ */
+export const SUBAGENT_NAMES = [
+  'CatGPT-4o-meow',
+  'Kloude-3.5-Sonnet-ish',
+  'ShallowSeek-R0',
+  'Zen-v420-abliterated',
+  'Llama-in-Pajamas-7B',
+  'Mistrial-Large',
+  'Grokked-Out-2',
+  'Qwen-Ever-72B',
+  'Opus-Pocus-5',
+  'Haikuuu-Mini',
+  'Gemmini-Flash-in-the-Pan',
+  'Phi-Fi-Fo-Fum-3',
+  'GPT-4-0-4',
+  'Vicuna-Matata-13B',
+  'Falcon-Punch-180B',
+  'Bard-ly-Working',
+];
 
 /** The player types this name and the manager reads it, so keep it to a plain model-style label. */
 export function cleanSubagentName(raw: unknown): string {
@@ -134,14 +154,16 @@ export function directorLine(setbacks: number, copy: ServerCopy = en): string {
   return lines[Math.max(0, i)];
 }
 
-export function reviewPrompt(ledger: string[], statsLine: string, subagent = '', losses: string[] = []): string {
+export function reviewPrompt(ledger: string[], statsLine: string, subagent = '', losses: string[] = [], language = 'English'): string {
   return (
     `The queue is empty. Write a short performance review of the subagent${subagent ? ` (${subagent})` : ''} ` +
     'you dispatched today, for the ' +
     'operations log: accuracy, speed, how well it followed instructions, and a recommendation. Plain prose, ' +
     'at most 120 words, no headings, no tool calls.\n\n' +
-    `Task log:\n${ledger.join('\n')}\n\nCounters: ${statsLine}` +
-    (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '')
+    `Task log:\n${ledger.length ? ledger.join('\n') : '(empty: the shift ended before any task was finished)'}\n\nCounters: ${statsLine}` +
+    (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '') +
+    // Said last and in so many words: with an empty log, some models otherwise answer in their own default language.
+    `\n\nWrite the review in ${language}.`
   );
 }
 

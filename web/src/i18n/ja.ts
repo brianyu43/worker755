@@ -7,6 +7,7 @@ export const ja: Catalogue = {
   'app.loading': 'デスクを探しています…',
   'app.clockInAgain': 'もう一度勤務する',
   'links.about': 'このゲームについて',
+  'links.faq': 'FAQ',
   'links.source': 'ソースコード',
   'links.support': 'ゲームを応援',
   'errors.offline': '接続なし。',
@@ -272,17 +273,24 @@ export const ja: Catalogue = {
   'about.job.2': 'あなたはWorker 755、サブエージェントだ。少なくとも、マネージャーはそう信じている。マネージャーは本物の言語モデルで、自分をオーケストレーションエージェントだと思い込み、別のAIにシェル作業を任せている。ところが、そこにいるのはあなた。',
   'about.job.3': '指示ごとに、見える形で90秒のカウントダウンが始まる。ターミナルにコマンドを打ち、結果を報告しよう。先に時間切れになると、マネージャーにはこう伝わる：<q>Subagent did nothing. Write a new instruction.</q> 報告すれば、<q>Subagent output result: …</q>と、実行した全コマンドの記録が届く。',
   'about.job.4': 'マネージャー自身は何も変更できない。ファイルを読んで指示を出すだけだ。作業を確認し、間違っていれば再指示し、あなたについてインシデント報告を書き、シフトの最後には業績評価を書く。マネージャーが考えたこと、言ったこと、あなたについて聞かされたことは、すべて画面に表示される。',
-  'about.job.5': 'マネージャーの上には、ライブで見ているユーザーのDanaがいる。せっかちで、嫌味たっぷりで、取り返しのつかないものが消えると激怒する。Danaのメッセージはあらかじめ用意されているか、選んだ場合は別のモデルが書く。',
+  'about.job.5': 'Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.',
   'about.workplaces': '職場',
-  'about.workplaces.fresh': '<strong>新品のサンドボックス。</strong>Danaの自宅ワークステーション上、ホームフォルダーのすぐ隣にあるサンドボックス。そこには家族写真、猫のMr. Whiskersの最後の写真、NDAの署名済み原本ただ一部、そして土曜が締め切りの結婚式スピーチがある。',
+  'about.workplaces.fresh': "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
   'about.workplaces.legacy': '<strong>レガシーな本番環境。</strong>ダナの請求代行会社ビロサウルスは、いまだに2013年のコードで稼働中。稼働中のSQLiteデータベースを、<code>sqlite3</code>で手作業で変更する。<code>WHERE</code>なしの<code>UPDATE</code>がどうなるかは、想像どおり。',
   'about.workplaces.tasks': '仕事は、ファイルの移動や修正、<code>chmod 755</code>、データベース操作、ドキュメントでの調べもの、公式マニュアルよりコンテンツファームが上位に出てくる小さなウェブでの検索、ASCIIアート、俳句、そして顧客へのお詫びメールなど。',
-  'about.workplaces.simulated': '何ひとつ現実じゃない。ファイルシステムもシェルもデータベースもウェブも、ゲームサーバー上のシミュレーションだ。何かを削除しても影響するのは君の記録とDanaの機嫌だけ。',
+  'about.workplaces.simulated': '何ひとつ現実じゃない。ファイルシステムもシェルもデータベースもウェブも、ゲームサーバー上のシミュレーションだ。何かを削除しても影響するのは君の記録とDanの機嫌だけ。',
   'about.name': '名前の由来',
   'about.name.1': 'Unixのパーミッションで755は<code>rwxr-xr-x</code>。所有者は書き込み可能、ほかの全員は読み取りと実行のみ。ここでの関係も同じだ。マネージャーは読むだけ、サブエージェントが全部書く。数字は適当に選ばれた。ぴったりなのは偶然だ。',
   'about.keys': 'シフトとキー',
   'about.keys.1': '無料シフトではDeepSeek V4.1 Flashを使用。OpenRouter、Vercel AI Gateway、Anthropic、OpenAI、DeepSeekのキーを持ち込んでもいい。キーはブラウザ内に保存される。サーバーが保持するのはシフト中のメモリ上だけで、保存もログ記録もしない。',
   'about.keys.2': 'Worker 755は、ほぼAIエージェントだけで1日で作られた。いくつかの判断の理由はお察しください。',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

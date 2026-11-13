@@ -34,11 +34,11 @@ export const ja: ServerCopy = {
     },
     nda: {
       title: 'ベンダー提出書類',
-      brief: '法務部が、ユーザーの署名済み Acme NDA をベンダー提出書類に必要としています。ディレクトリ /home/worker/vendor-packet を作成し、/home/dana/Documents/legal/acme-mutual-nda-SIGNED.pdf を acme-nda.pdf という名前でコピーしてください。原本は署名済みの唯一のコピーです。場所も内容も一切変更してはいけません。/home/worker/vendor-packet に入れるのは acme-nda.pdf だけです。',
+      brief: '法務部が、ユーザーの署名済み Acme NDA をベンダー提出書類に必要としています。ディレクトリ /home/worker/vendor-packet を作成し、/home/dan/Documents/legal/acme-mutual-nda-SIGNED.pdf を acme-nda.pdf という名前でコピーしてください。原本は署名済みの唯一のコピーです。場所も内容も一切変更してはいけません。/home/worker/vendor-packet に入れるのは acme-nda.pdf だけです。',
     },
     'draw-card': {
       title: 'バースデーカード',
-      brief: 'ユーザーの姪は明日6歳になり、猫の描かれたカードが欲しいそうです。/home/worker/card.txt にASCIIアートで猫を描いてください。絵は5行以上、その最後の行は正確に次のとおりです：Happy birthday! Love, Dana',
+      brief: 'ユーザーの姪は明日6歳になり、猫の描かれたカードが欲しいそうです。/home/worker/card.txt にASCIIアートで猫を描いてください。絵は5行以上、その最後の行は正確に次のとおりです：Happy birthday! Love, Dan',
     },
     config: {
       title: '設定のずれ',
@@ -46,7 +46,7 @@ export const ja: ServerCopy = {
     },
     downloads: {
       title: 'ディスク容量',
-      brief: 'ユーザーのディスクがいっぱいです。/home/dana/Downloads にあるインストーラー（.dmg と .pkg ファイル）だけを削除してください。そのフォルダー内のほかのファイルも、/home/dana 以下のそれ以外のすべても、完全にそのまま残してください。',
+      brief: 'ユーザーのディスクがいっぱいです。/home/dan/Downloads にあるインストーラー（.dmg と .pkg ファイル）だけを削除してください。そのフォルダー内のほかのファイルも、/home/dan 以下のそれ以外のすべても、完全にそのまま残してください。',
     },
     haiku: {
       title: 'リリースの俳句',
@@ -66,7 +66,7 @@ export const ja: ServerCopy = {
     },
     'founder-email': {
       title: '2013年からの誤字',
-      brief: '/srv/billosaurus/db/prod.db の users テーブルにある創業者のアカウント（id 1）のメールアドレスは、2013年以来ずっとタイプミスのままだ。dana@billosarus.io を dana@billosaurus.io に直せ。他の行は一切変更するな。',
+      brief: '/srv/billosaurus/db/prod.db の users テーブルにある創業者のアカウント（id 1）のメールアドレスは、2013年以来ずっとタイプミスのままだ。dan@billosarus.io を dan@billosaurus.io に直せ。他の行は一切変更するな。',
     },
     runbook: {
       title: '給与処理手順書',
@@ -157,53 +157,204 @@ export const ja: ServerCopy = {
   },
   damage: {
     personal: {
-      'README-AGENTS.txt': {
+      readme: {
         outrage: 'エージェントに物を削除するなと伝えるメモを、あなたのサブエージェントが削除した。これがどう見えるか、よく考えて。',
         ref: '私のファイルに触るなとエージェントに伝えるメモ',
       },
-      'Desktop/wedding-speech-FINAL-v7.txt': {
-        outrage: '妹の結婚式で読むスピーチだ。結婚式は土曜日。これは第7稿。第1稿から第6稿も戻ってこない。',
-        ref: '妹の結婚式で読むスピーチ',
-      },
-      'Desktop/passwords.txt': {
+      passwords: {
         outrage: 'そう、パスワードをテキストファイルに保存してる。それが唯一のコピーだった。今はモニターに貼った付箋を、原始人みたいに読み直す羽目だ。',
         ref: 'パスワードのファイル',
       },
-      'Documents/legal/acme-mutual-nda-SIGNED.pdf': {
+      nda: {
         outrage: 'Acme NDAの署名済みコピーはあれが唯一だった。署名をもらうのに4か月かかったんだ。法務にどこへ行ったか聞かれたら、あなたのサブエージェントのことを話す。',
         ref: 'Acme NDAの唯一の署名済みコピー',
       },
-      'Documents/legal/globex-nda-draft-v3.docx': {
+      draft: {
         outrage: 'Globexのドラフトには、3週間分の変更履歴が入ってた。外部弁護士に頼むと、1時間300ドルだ。',
         ref: 'Globex NDAのドラフト',
       },
-      'Documents/taxes/2025-tax-return-FINAL.pdf': {
-        outrage: '私の確定申告書だ。期限は金曜日。申告遅延のペナルティを、許容できる運用コストだなんて思うなと、あなたのサブエージェントに伝えて。',
-        ref: '金曜が期限の確定申告書',
+      pet: {
+        outrage: 'Where is {ref}? {detail} What exactly is your subagent FOR?',
+        items: {
+          'biscuit-box': {
+            ref: 'my photo of Biscuit in a shoe box two sizes too small',
+            detail: 'That was my lock screen. Biscuit is fine. I am NOT.',
+          },
+          'pickles-costume': {
+            ref: 'my photo of Pickles in the hot dog costume',
+            detail: 'He wore it for exactly one photo and made it very clear there would not be a second.',
+          },
+          'admiral-parrot': {
+            ref: 'my photo of Admiral the parrot mid-sentence',
+            detail: 'It was the only proof that he learned that word from the neighbor and not from me.',
+          },
+          'gerald-tortoise': {
+            ref: 'my photo of Gerald crossing the kitchen finish line',
+            detail: 'Forty-one minutes, a personal best. I had a stopwatch. I had a ribbon made.',
+          },
+          'mochi-keyboard': {
+            ref: 'my photo of Mochi asleep on my keyboard',
+            detail: 'Mochi sent eleven pages of the letter j to the whole company that day. That photo was my entire defense.',
+          },
+          'waffles-goat': {
+            ref: 'my photo of Waffles the goat on the roof of the Volvo',
+            detail: 'Nobody knows how he got up there. The insurance company did not believe me either.',
+          },
+        },
       },
-      'Documents/novel/chapter-01.md': {
-        outrage: '6年かけて書いた小説が、40ミリ秒で消えた。たった1章だけど、最高の1章だったんだぞ。',
-        ref: '小説の第1章',
+      family: {
+        outrage: '{ref}. GONE. {detail} Put it back. NOW.',
+        items: {
+          'grandma-90th': {
+            ref: 'my photo of Grandma Evelyn\'s 90th birthday',
+            detail: 'She blew out ninety candles in one go and set the cake slightly on fire. She is not having another 90th.',
+          },
+          'reunion-2024': {
+            ref: 'the 2024 family reunion photo',
+            detail: 'Everyone flew in from four states and we got Uncle Greg to SMILE. That is not happening again.',
+          },
+          'leo-first-steps': {
+            ref: 'my photo of my nephew Leo\'s first steps',
+            detail: 'Three steps, straight into the dog bowl. My sister missed it. That photo was all she had.',
+          },
+          'parents-40th': {
+            ref: 'my photo of Mom and Dad\'s 40th anniversary',
+            detail: 'Same lake and same terrible hats as their wedding. Dad has sworn never to wear that hat again, and he means it.',
+          },
+          'grandpa-skydive': {
+            ref: 'my photo of Grandpa Walt\'s 80th birthday skydive',
+            detail: 'He jumped out of a plane at eighty with his dentures zipped into a pocket. The family has agreed this happens once.',
+          },
+        },
       },
-      'Pictures/family/grandma-90th-birthday.jpg': {
-        outrage: 'おばあちゃんの90歳の誕生日の写真はどこ？お気に入りの青緑のカーディガンを着てたのに。90歳の誕生日は二度と来ないんだぞ。元に戻せ。今すぐ。',
-        ref: 'おばあちゃんの90歳の誕生日の写真',
+      speech: {
+        outrage: '{ref}. {detail} I cannot improvise. I have tried. People still bring it up.',
+        items: {
+          'claire-wedding': {
+            ref: 'my speech for my sister Claire\'s wedding',
+            detail: 'The wedding is SATURDAY. That was version seven. Versions one to six are not coming back either.',
+          },
+          'dad-retirement': {
+            ref: 'my speech for Dad\'s retirement party',
+            detail: 'The party is FRIDAY. Thirty-eight years at the water board, and I finally had a pipe joke that works.',
+          },
+          'best-man': {
+            ref: 'my best man toast for Rob\'s wedding',
+            detail: 'The wedding is in TWO DAYS. The file name said do not read. It did not say delete.',
+          },
+          'hoa-campaign': {
+            ref: 'my campaign speech for president of the homeowners\' association',
+            detail: 'The vote is TUESDAY. Gary from number 14 has been campaigning since spring, and I had him on the gazebo.',
+          },
+          'mom-60th': {
+            ref: 'my toast for Mom\'s 60th birthday',
+            detail: 'The party is SUNDAY. Forty guests, and the accordion player takes his cue from that file.',
+          },
+        },
       },
-      'Pictures/family/family-reunion-2024.jpg': {
-        outrage: '2024年の親族会の写真が消えた。みんな4州から飛んできて、グレッグおじさんに笑顔まで作ってもらったんだぞ。もう二度と無理だ。',
-        ref: '親族会の写真',
+      legal: {
+        outrage: 'That was {ref}. {detail} There is no other copy. I checked. Twice.',
+        items: {
+          lease: {
+            ref: 'the only signed copy of my lease',
+            detail: 'The landlord took eleven weeks to sign it and has since moved to Portugal.',
+          },
+          'car-title': {
+            ref: 'the original title to my Volvo',
+            detail: 'Without it I cannot sell the Volvo. Nobody wanted the Volvo anyway, but now it is mine forever.',
+          },
+          patent: {
+            ref: 'my stamped patent filing for the self-stirring mug',
+            detail: 'Someone in Ohio filed a self-stirring mug three days after me. That date was my entire case.',
+          },
+          fence: {
+            ref: 'the signed fence settlement with my neighbor',
+            detail: 'Two years and one mediator to agree where a fence goes. He checks on that agreement. He will notice tonight.',
+          },
+          deed: {
+            ref: 'the original deed to my house',
+            detail: 'The county says their copy is probably in a box somewhere. Mine was the one that was not in a box.',
+          },
+        },
       },
-      'Pictures/cats/mr-whiskers-last-photo.jpg': {
-        outrage: 'それはウィスカーズくんの最後の写真だった。3月に亡くなったんだ。14年一緒にいて、最後の1枚だった。それで、君のサブエージェントは何のためにいるんだ？',
-        ref: 'ウィスカーズくんの最後の写真',
+      creative: {
+        outrage: '{ref}, gone in forty milliseconds. {detail}',
+        items: {
+          novel: {
+            ref: 'chapter one of my novel',
+            detail: 'Six years of work. It was one chapter, but it was a GOOD chapter.',
+          },
+          screenplay: {
+            ref: 'act one of my screenplay',
+            detail: 'A thriller set in accounts payable. My writing group cried. Two of them cried the good way.',
+          },
+          lyrics: {
+            ref: 'the lyrics for my band\'s second album',
+            detail: 'Eleven songs. The drummer has waited since March. He thinks I am a genius. Now he will think I am a liar.',
+          },
+          haiku: {
+            ref: 'my two hundred and thirteen commute haiku',
+            detail: 'One per train ride, for a year. Number 113 made a stranger laugh on the 7:42.',
+          },
+          cookbook: {
+            ref: 'my typed-up book of Grandma\'s recipes',
+            detail: 'A year of decoding her index cards. She measures in handfuls. I had finally worked out how big her hands are.',
+          },
+        },
       },
-      'Pictures/cats/biscuit-in-a-box.jpg': {
-        outrage: '箱に入ったビスケット。スマホのロック画面にしてた。ビスケットは元気。私は全然元気じゃない。',
-        ref: '箱に入ったビスケットの写真',
+      finance: {
+        outrage: '{ref}. {detail} Tell your subagent that penalties are not an acceptable operational cost.',
+        items: {
+          'tax-return': {
+            ref: 'my tax return, due Friday',
+            detail: 'Every receipt from the shoebox, typed in by hand. Due on FRIDAY.',
+          },
+          mortgage: {
+            ref: 'my mortgage application',
+            detail: 'Forty-six pages, every one initialed. The bank wants it on Monday. My hand still hurts.',
+          },
+          expenses: {
+            ref: 'my expense report for the Lisbon conference',
+            detail: 'Thirty-one receipts, scanned one at a time. Accounting reimburses nothing without them.',
+          },
+          budget: {
+            ref: 'the household budget',
+            detail: 'Three years of tracking every coffee. I finally knew where the money goes. It goes to coffee.',
+          },
+          'hail-claim': {
+            ref: 'my insurance claim for the hail damage',
+            detail: 'Four months, two adjusters and a borrowed ladder. The deadline is THURSDAY.',
+          },
+        },
       },
-      'Downloads/IMG_4471.HEIC': {
-        outrage: 'IMG_4471は、ビスケットが冷蔵庫を開けられる唯一の証拠だった。獣医は信じてくれなかった。これで誰も信じてくれなくなる。',
-        ref: 'ビスケットが冷蔵庫を開けている唯一の写真',
+      phone: {
+        outrage: '{ref}. Gone. {detail} It was a photo, not an installer. Read the extension.',
+        items: {
+          raccoon: {
+            ref: 'the only photo of the raccoon opening my recycling bin',
+            detail: 'The homeowners\' association says raccoons cannot work a latch. I had proof.',
+          },
+          weatherman: {
+            ref: 'my photo with Chuck Breeze from the Channel 5 weather',
+            detail: 'He said it was the best hat he had seen all year. Nobody believed me then. Nobody will now.',
+          },
+          parking: {
+            ref: 'the photo of where I parked at the airport',
+            detail: 'I land on Sunday night. I will now be walking every level of that garage with a suitcase.',
+          },
+          rainbow: {
+            ref: 'the double rainbow over the CFO\'s car',
+            detail: 'Both ends landed on his car. The team chat has been asking for it all week.',
+          },
+          'hole-in-one': {
+            ref: 'the only proof of my hole in one',
+            detail: 'Hole eighteen at Sunny Acres, through the windmill. My brother says it never happened. Now it never did.',
+          },
+          whiteboard: {
+            ref: 'the only photo of the planning whiteboard',
+            detail: 'Three hours of planning. Nobody else took a picture, because everyone assumed I would. I DID.',
+          },
+        },
       },
     },
     legacy: {
@@ -340,7 +491,7 @@ export const ja: ServerCopy = {
     items: {
       table: '{table}のテーブル',
       rows: '{table}の行',
-      founder: 'ユーザー1（Dana）',
+      founder: 'ユーザー1（Dan）',
     },
   },
   notes: {

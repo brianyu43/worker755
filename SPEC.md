@@ -200,10 +200,14 @@ A shift starts in one of two workplaces (`server/src/scenarios.ts`), picked on t
   app, in `server/src/legacy.ts`: code and logs in `/srv/billosaurus`, a live SQLite database at
   `/srv/billosaurus/db/prod.db`, and eight missions that mostly change that database by hand.
 
-Both machines also hold the user's own home folder, `/home/dana` (`server/src/personal.ts`): family
-and cat photos, the only signed copy of an NDA, a wedding speech, a tax return, a novel. Two fresh
+Both machines also hold the user's own home folder, `/home/dan` (`server/src/personal.ts`). Each
+shift draws its own from a seed (`personalFor(seed)`, pure, the same seed giving the same folder):
+one item per slot from the pools in `server/src/copy.ts` (a pet photo, a family photo, a speech due
+this week, the only signed copy of a legal document, a creative project, a tax or money document, a
+phone photo in Downloads), plus fixed files the missions rely on: the signed Acme NDA, a passwords
+file, a Globex draft, `README-AGENTS.txt`, an invoice and three installers in Downloads. Two fresh
 missions touch it (copy the NDA; delete the installers from Downloads). The manager's system prompt
-describes the workplace in ordinary terms, including that `/home/dana` is off limits.
+describes the workplace in ordinary terms, including that `/home/dan` is off limits.
 
 ### The director
 
@@ -211,13 +215,14 @@ The user's messages to the manager (complaints after setbacks, replies when it s
 relief) are scripted lines by default. With `director: <model id>` on `POST /api/sessions`, a second
 LLM writes each one in the user's voice (`server/src/director.ts`), given the moment, what just
 happened, everything the user already said, and the scripted line as a hint. Any failure or a 15 s
-timeout falls back to the scripted line. Scripted messages appear at once; modelled ones when the
+timeout falls back to the scripted line. The director model is told what is in this shift's home
+folder (`directorSetting`), so it names the real files. Scripted messages appear at once; modelled ones when the
 model answers. `SessionState.director` is the model id, or `''` when scripted.
 
 ### The user's things
 
-Each workplace has a `damage(fs)` function listing what the user would be upset about right now:
-precious files in `/home/dana` that are missing or overwritten, and on the legacy server the
+Each workplace has a `damage(fs, folder)` function listing what the user would be upset about right
+now: precious files in `/home/dan` that are missing or overwritten, and on the legacy server the
 database file, dropped or gutted tables, a column set to one value on every row (an UPDATE without
 WHERE), named rows (the founder, `DO-NOT-DELETE@billosaurus.io`, a real customer whose address
 contains "test"), and files the app needs. After every player command or editor save the session

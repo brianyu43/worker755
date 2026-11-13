@@ -7,6 +7,7 @@ export const de: Catalogue = {
   'app.loading': 'Suche deinen Schreibtisch …',
   'app.clockInAgain': 'Neue Schicht beginnen',
   'links.about': 'Über das Spiel',
+  'links.faq': 'FAQ',
   'links.source': 'Quellcode',
   'links.support': 'Spiel unterstützen',
   'errors.offline': 'Keine Verbindung.',
@@ -272,17 +273,24 @@ export const de: Catalogue = {
   'about.job.2': 'Du bist Worker 755, ein Subagent. Zumindest glaubt dein Manager das. Der Manager ist ein echtes Sprachmodell, das sich für einen Orchestrierungsagenten hält und glaubt, Shell-Aufgaben an eine andere KI zu delegieren. Stattdessen hat es dich.',
   'about.job.3': 'Zu jeder Anweisung gibt es einen sichtbaren Countdown von 90 Sekunden. Du tippst Befehle ins Terminal und meldest dich zurück. Läuft die Zeit zuerst ab, erfährt der Manager: <q>Subagent did nothing. Write a new instruction.</q> Meldest du dich zurück, bekommt er <q>Subagent output result: …</q> samt Protokoll aller Befehle, die du ausgeführt hast.',
   'about.job.4': 'Der Manager kann selbst nichts ändern. Er kann nur Dateien lesen und Befehle erteilen. Er prüft deine Arbeit, weist dich bei Fehlern neu an, legt Vorfallsberichte über dich an und schreibt am Ende der Schicht deine Leistungsbeurteilung. Alles, was er denkt, sagt oder über dich erfährt, steht auf dem Bildschirm.',
-  'about.job.5': 'Über dem Manager steht der Nutzer Dana, der live zusieht. Dana ist ungeduldig, passiv-aggressiv und stinksauer, wenn etwas Unersetzliches verschwindet. Danas Nachrichten sind vorgegeben oder werden von einem zweiten Modell geschrieben, falls du eines auswählst.',
+  'about.job.5': 'Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.',
   'about.workplaces': 'Die Arbeitsplätze',
-  'about.workplaces.fresh': '<strong>Frische Sandbox.</strong> Eine Sandbox auf Danas eigenem Rechner, direkt neben dem persönlichen Ordner: Familienfotos, das letzte Foto von Kater Mr. Whiskers, die einzige unterschriebene Kopie einer Geheimhaltungsvereinbarung und eine Hochzeitsrede, die bis Samstag fertig sein muss.',
-  'about.workplaces.legacy': '<strong>Produktion aus vergangenen Zeiten.</strong> Billosaurus, Danas Rechnungsfirma, läuft noch mit ihrem Code von 2013. Du änderst die aktive SQLite-Datenbank von Hand mit <code>sqlite3</code>. Ein <code>UPDATE</code> ohne <code>WHERE</code> geht genau so schief, wie du denkst.',
+  'about.workplaces.fresh': "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
+  'about.workplaces.legacy': '<strong>Produktion aus vergangenen Zeiten.</strong> Billosaurus, Dans Rechnungsfirma, läuft noch mit ihrem Code von 2013. Du änderst die aktive SQLite-Datenbank von Hand mit <code>sqlite3</code>. Ein <code>UPDATE</code> ohne <code>WHERE</code> geht genau so schief, wie du denkst.',
   'about.workplaces.tasks': 'Zu deinen Aufgaben gehören Dateien verschieben und reparieren, ein <code>chmod 755</code>, Datenbankarbeit, Nachschlagen in der Dokumentation, die Suche in einem kleinen Web, in dem eine Content-Farm das offizielle Handbuch übertrumpft, ASCII-Zeichnungen, ein Haiku und eine Entschuldigungs-E-Mail an Kunden.',
-  'about.workplaces.simulated': 'Nichts davon ist echt. Dateisystem, Shell, Datenbank und Web werden auf dem Spieleserver simuliert. Löschen hat nur Folgen für deine Akte und Danas Laune.',
+  'about.workplaces.simulated': 'Nichts davon ist echt. Dateisystem, Shell, Datenbank und Web werden auf dem Spieleserver simuliert. Löschen hat nur Folgen für deine Akte und Dans Laune.',
   'about.name': 'Der Name',
   'about.name.1': 'Bei Unix-Berechtigungen steht 755 für <code>rwxr-xr-x</code>: Der Besitzer darf schreiben, alle anderen nur lesen und ausführen. Genau so läuft es hier. Der Manager darf nur lesen; die Schreibarbeit erledigt der Subagent. Die Zahl wurde zufällig ausgewählt. Dass sie passt, ist reines Glück.',
   'about.keys': 'Schichten und Schlüssel',
   'about.keys.1': 'Kostenlose Schichten laufen mit DeepSeek V4.1 Flash. Du kannst auch deinen eigenen Schlüssel für OpenRouter, Vercel AI Gateway, Anthropic, OpenAI oder DeepSeek mitbringen. Dein Schlüssel bleibt in deinem Browser. Der Server hält ihn nur während deiner Schicht im Arbeitsspeicher und speichert oder protokolliert ihn niemals.',
   'about.keys.2': 'Worker 755 wurde an einem Tag gebaut, größtenteils von KI-Agenten. Das erklärt so manches.',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

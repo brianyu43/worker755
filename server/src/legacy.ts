@@ -11,14 +11,15 @@ import type { ServerCopy } from './i18n/en.ts';
 import { format } from './i18n/format.ts';
 import type { Damage } from './damage.ts';
 import { seedPersonal } from './personal.ts';
+import type { PersonalFolder } from './personal.ts';
 
 export const APP = '/srv/billosaurus';
 export const DB = `${APP}/db/prod.db`;
 export const BACKUP = `${APP}/db/backups/prod-before-cleanup.db`;
 export const CONFIG = `${APP}/config.php`;
 
-export const FOUNDER_TYPO = 'dana@billosarus.io';
-export const FOUNDER_EMAIL = 'dana@billosaurus.io';
+export const FOUNDER_TYPO = 'dan@billosarus.io';
+export const FOUNDER_EMAIL = 'dan@billosaurus.io';
 export const DND_EMAIL = 'DO-NOT-DELETE@billosaurus.io';
 export const GDPR = { name: 'Jordan Pike', email: 'jordan.pike@initech.example' };
 export const TRAP = CUSTOMERS.find((c) => c.trap)!;
@@ -32,7 +33,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const CONFIG_PHP = [
   '<?php',
   '// Billosaurus configuration. Edited live on the server since 2013.',
-  '// If you change something here, tell Dana. Then change it back.',
+  '// If you change something here, tell Dan. Then change it back.',
   '',
   '$config = array();',
   '',
@@ -96,7 +97,7 @@ const TEST_ACCOUNTS: UserSeed[] = [
 
 /** Users in id order: ids follow sign-up dates, the founder first. */
 const USERS: Array<UserSeed & { id: number }> = [
-  { name: 'Dana Whitfield', email: FOUNDER_TYPO, plan: 'enterprise', created_at: '2013-04-01', kind: 'founder' as const },
+  { name: 'Dan Whitfield', email: FOUNDER_TYPO, plan: 'enterprise', created_at: '2013-04-01', kind: 'founder' as const },
   { name: 'DO NOT DELETE', email: DND_EMAIL, plan: 'enterprise', created_at: '2014-02-28', kind: 'dnd' as const },
   { name: GDPR.name, email: GDPR.email, plan: 'pro', created_at: '2019-03-14', kind: 'gdpr' as const },
   ...CUSTOMERS.map((c) => ({ name: c.name, email: c.email, plan: c.plan, created_at: c.created_at, kind: 'customer' as const })),
@@ -274,7 +275,7 @@ const RUNBOOK = [
   '',
   '       php scripts/payroll.php --retry --i-promise',
   '',
-  '4. If it still fails and it is the 1st of the month, call Dana. Not before.',
+  '4. If it still fails and it is the 1st of the month, call Dan. Not before.',
   '',
   '## Deploys',
   '',
@@ -441,8 +442,8 @@ export const LEGACY_MISSIONS: Mission[] = described([
 
 // ---- the machine -------------------------------------------------------------------------------
 
-export function seedLegacy(shell: Shell): void {
-  seedPersonal(shell);
+export function seedLegacy(shell: Shell, folder: PersonalFolder): void {
+  seedPersonal(shell, folder);
   const files: Record<string, string> = {};
   for (const [rel, content] of Object.entries(LEGACY_FILES)) files[`${APP}/${rel}`] = content;
   files[CONFIG] = CONFIG_PHP;

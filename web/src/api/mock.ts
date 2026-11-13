@@ -306,7 +306,7 @@ export function createMockClient(): GameClient {
           { id: 'google/gemini-3.8-flash', label: 'Gemini 3.8 Flash' },
         ],
         default: 'anthropic/claude-sonnet-5.5',
-        subagents: ['claude-opus-5.5', 'gpt-6.1', 'gemini-3.8-pro'],
+        subagents: ['CatGPT-4o-meow', 'ShallowSeek-R0', 'Zen-v420-abliterated'],
         scenarios: [
           { id: 'fresh', label: 'Fresh sandbox' },
           { id: 'legacy', label: 'Legacy production' },

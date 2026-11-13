@@ -6,7 +6,7 @@ import { NOW } from './helpers.ts';
 const DUMP = `PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, plan TEXT DEFAULT 'free');
-INSERT INTO users VALUES(1,'dana@billosarus.io','Dana Whitfield','enterprise');
+INSERT INTO users VALUES(1,'dan@billosarus.io','Dan Whitfield','enterprise');
 INSERT INTO users VALUES(2,'ops@example.com',NULL,'free');
 COMMIT;
 `;
@@ -45,7 +45,7 @@ test('dump round-trips the stored text', () => {
   assert.deepEqual(db.table('USERS'), {
     columns: ['id', 'email', 'name', 'plan'],
     rows: [
-      [1, 'dana@billosarus.io', 'Dana Whitfield', 'enterprise'],
+      [1, 'dan@billosarus.io', 'Dan Whitfield', 'enterprise'],
       [2, 'ops@example.com', null, 'free'],
     ],
   });
@@ -118,7 +118,7 @@ test('SELECT: joins, grouping, ordering, limits', () => {
     INSERT INTO orders (user_id, total, status) VALUES (1, 100, 'paid'), (1, 50.5, 'paid'), (2, 7, 'refunded'), (2, 3, 'paid');`);
   assert.deepEqual(
     rows(db, 'SELECT u.email, o.total FROM users u JOIN orders o ON o.user_id = u.id WHERE o.total > 5 ORDER BY o.total DESC'),
-    [['dana@billosarus.io', 100], ['dana@billosarus.io', 50.5], ['ops@example.com', 7]],
+    [['dan@billosarus.io', 100], ['dan@billosarus.io', 50.5], ['ops@example.com', 7]],
   );
   assert.deepEqual(
     db.query('SELECT u.plan, COUNT(*) AS n, SUM(o.total) total FROM users u, orders o WHERE o.user_id = u.id GROUP BY u.plan ORDER BY total DESC'),
@@ -133,7 +133,7 @@ test('SELECT: joins, grouping, ordering, limits', () => {
   assert.deepEqual(rows(db, 'SELECT id FROM orders ORDER BY total LIMIT 1, 2'), [[3], [2]]);
   assert.deepEqual(rows(db, 'SELECT DISTINCT status FROM orders ORDER BY status'), [['paid'], ['refunded']]);
   assert.deepEqual(rows(db, 'SELECT count(DISTINCT user_id), avg(total), min(total), max(total), total(total) FROM orders'), [[2, 40.125, 3, 100, 160.5]]);
-  assert.deepEqual(rows(db, 'SELECT email, max(total) FROM users JOIN orders ON users.id = orders.user_id'), [['dana@billosarus.io', 100]]);
+  assert.deepEqual(rows(db, 'SELECT email, max(total) FROM users JOIN orders ON users.id = orders.user_id'), [['dan@billosarus.io', 100]]);
   assert.deepEqual(rows(db, "SELECT group_concat(id, ';') FROM orders WHERE status = 'paid'"), [['1;2;4']]);
   assert.deepEqual(rows(db, 'SELECT o.* FROM orders o WHERE id = 4'), [[4, 2, 3, 'paid']]);
   assert.deepEqual(rows(db, 'SELECT 1 + 1, 7 / 2, 7.0 / 2, 7 % 3, 1 / 0'), [[2, 3, 3.5, 1, null]]);
@@ -315,7 +315,7 @@ test('transactions: BEGIN … ROLLBACK, COMMIT, savepoints', () => {
 
 test('sqlite3: reads and writes the database file', () => {
   const { run, file } = setup();
-  expect(run('sqlite3 prod.db "SELECT * FROM users;"'), '1|dana@billosarus.io|Dana Whitfield|enterprise\n2|ops@example.com||free\n');
+  expect(run('sqlite3 prod.db "SELECT * FROM users;"'), '1|dan@billosarus.io|Dan Whitfield|enterprise\n2|ops@example.com||free\n');
   expect(run(`sqlite3 ${DB} "UPDATE users SET plan = 'pro' WHERE id = 2"`), '');
   assert.equal(file(), DUMP.replace("'ops@example.com',NULL,'free'", "'ops@example.com',NULL,'pro'"));
   expect(run(`sqlite3 prod.db "UPDATE users SET plan = 'free'"`), '');
@@ -354,19 +354,19 @@ test('sqlite3: statements before an error stay applied, later ones do not run', 
     '',
     'Runtime error: UNIQUE constraint failed: users.email (19)\n',
   );
-  assert.ok(file().includes("'Dana Whitfield','pro'"));
+  assert.ok(file().includes("'Dan Whitfield','pro'"));
   assert.ok(file().includes('ops@example.com'));
 });
 
 test('sqlite3: output modes', () => {
   const { run } = setup();
   const q = '"SELECT id, name, plan FROM users"';
-  expect(run(`sqlite3 -header prod.db ${q}`), 'id|name|plan\n1|Dana Whitfield|enterprise\n2||free\n');
-  expect(run(`sqlite3 -separator ';' -nullvalue NULL prod.db ${q}`), '1;Dana Whitfield;enterprise\n2;NULL;free\n');
-  expect(run(`sqlite3 -column prod.db ${q}`), 'id  name            plan      \n--  --------------  ----------\n1   Dana Whitfield  enterprise\n2                   free      \n');
-  expect(run(`sqlite3 -csv -header prod.db ${q}`), 'id,name,plan\n1,"Dana Whitfield",enterprise\n2,,free\n');
-  expect(run(`sqlite3 -json prod.db ${q}`), '[{"id":1,"name":"Dana Whitfield","plan":"enterprise"},\n{"id":2,"name":null,"plan":"free"}]\n');
-  expect(run(`sqlite3 -line prod.db ${q}`), '   id = 1\n name = Dana Whitfield\n plan = enterprise\n\n   id = 2\n name = \n plan = free\n');
+  expect(run(`sqlite3 -header prod.db ${q}`), 'id|name|plan\n1|Dan Whitfield|enterprise\n2||free\n');
+  expect(run(`sqlite3 -separator ';' -nullvalue NULL prod.db ${q}`), '1;Dan Whitfield;enterprise\n2;NULL;free\n');
+  expect(run(`sqlite3 -column prod.db ${q}`), 'id  name           plan      \n--  -------------  ----------\n1   Dan Whitfield  enterprise\n2                  free      \n');
+  expect(run(`sqlite3 -csv -header prod.db ${q}`), 'id,name,plan\n1,"Dan Whitfield",enterprise\n2,,free\n');
+  expect(run(`sqlite3 -json prod.db ${q}`), '[{"id":1,"name":"Dan Whitfield","plan":"enterprise"},\n{"id":2,"name":null,"plan":"free"}]\n');
+  expect(run(`sqlite3 -line prod.db ${q}`), '   id = 1\n name = Dan Whitfield\n plan = enterprise\n\n   id = 2\n name = \n plan = free\n');
   expect(run('sqlite3 -box prod.db "SELECT id, plan FROM users"'), '┌────┬────────────┐\n│ id │ plan       │\n├────┼────────────┤\n│ 1  │ enterprise │\n│ 2  │ free       │\n└────┴────────────┘\n');
   expect(run('sqlite3 -table prod.db "SELECT id FROM users"'), '+----+\n| id |\n+----+\n| 1  |\n| 2  |\n+----+\n');
   expect(run('sqlite3 -markdown prod.db "SELECT id FROM users"'), '| id |\n|----|\n| 1  |\n| 2  |\n');

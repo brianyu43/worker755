@@ -47,7 +47,9 @@ export function Start({ onStart }: Props) {
   const [models, setModels] = useState<ModelList | null>(null);
   const [model, setModel] = useState<string>('');
   const [allowSkip, setAllowSkip] = useState(false);
-  const [subagent, setSubagent] = useState('claude-opus-5.5');
+  const [subagent, setSubagent] = useState('');
+  /** The badge gets a random knock-off model name once the list arrives, unless the player typed one. */
+  const named = useRef(false);
   const [scenario, setScenario] = useState<Workplace>('fresh');
   const [director, setDirector] = useState('');
   const [face, setFace] = useState(loadFace);
@@ -78,6 +80,10 @@ export function Start({ onStart }: Props) {
           return;
         }
         setModels(m);
+        if (!named.current && m.subagents.length) {
+          named.current = true;
+          setSubagent((cur) => cur || m.subagents[Math.floor(Math.random() * m.subagents.length)]);
+        }
         setModel((cur) => (m.models.some((x) => x.id === cur) ? cur : m.default));
         setDirector((cur) => (!cur || m.models.some((x) => x.id === cur) ? cur : ''));
       })
@@ -176,9 +182,17 @@ export function Start({ onStart }: Props) {
       </div>
 
       <div className="start-copy">
-        <label className="field language-picker">
-          <span className="field-label">{t('start.language')}</span>
-          <select className="select" value={language} onChange={(e) => changeLanguage(e.target.value as Language)}>
+        <label className="language-picker" title={t('start.language')}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M1.5 8h13M8 1.5c2 2 2.6 4.2 2.6 6.5S10 12.5 8 14.5M8 1.5C6 3.5 5.4 5.7 5.4 8S6 12.5 8 14.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
+          <select
+            className="language-select"
+            aria-label={t('start.language')}
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value as Language)}
+          >
             {LANGUAGES.map((code) => (
               <option key={code} value={code} lang={code}>
                 {LANGUAGE_LABELS[code]}
@@ -356,6 +370,7 @@ export function SiteLinks({ site }: { site: Pick<ModelList, 'donateUrl' | 'sourc
   return (
     <p className="site-links">
       <a href="/about">{t('links.about')}</a>
+      <a href="/faq">{t('links.faq')}</a>
       {site?.sourceUrl && (
         <a href={site.sourceUrl} target="_blank" rel="noreferrer">
           {t('links.source')}

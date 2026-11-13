@@ -57,7 +57,8 @@ function newId(): string {
 export class ReviewStore {
   /** Stops accepting new reviews past this many, so a busy or abused server cannot fill its disk. */
   readonly maxReviews: number;
-  private dir: string;
+  /** DATA_DIR/reviews; the reviews' link-preview images are kept here too (cards.ts). */
+  readonly dir: string;
   private count: number | null = null;
 
   constructor(dataDir: string, maxReviews = 100_000) {

@@ -7,7 +7,7 @@ import type { ServerCopy } from './i18n/en.ts';
 import { format } from './i18n/format.ts';
 
 export interface Damage {
-  /** Stable id, e.g. 'file:/home/dana/Desktop/passwords.txt' or 'db:drop:users'. */
+  /** Stable id, e.g. 'file:/home/dan/Desktop/passwords.txt' or 'db:drop:users'. */
   key: string;
   /** Lower is worse; the worst one leads the message. */
   rank: number;
