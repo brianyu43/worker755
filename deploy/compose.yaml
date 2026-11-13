@@ -31,6 +31,7 @@ services:
       PORT: '8755'
       DATA_DIR: /data
       TRUST_PROXY: '1'
+      TRUSTED_PROXIES: tunnel
       PUBLIC_URL: https://worker755.com
     volumes:
       - worker755-data:/data

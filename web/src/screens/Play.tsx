@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import { Eye, Feed, PHASE_LABEL, managerPhase } from '../components/Feed';
+import { Eye, Feed, PHASE_LABEL, activityOf, managerPhase } from '../components/Feed';
 import { FileTree, StatsPanel } from '../components/Side';
 import { Terminal, type TerminalHandle } from '../components/Terminal';
 import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../components/WorkOrder';
@@ -10,6 +10,7 @@ import { BotAvatar } from '../components/BotAvatar';
 import { Splitter, deskSizes } from '../components/Splitter';
 import { KeyPause } from '../components/KeyPause';
 import { EndShift } from '../components/EndShift';
+import { Working } from '../components/Working';
 import { loadFace } from '../game/avatar';
 import type { GameEvent } from '../api/types';
 import type { Game, GameView } from '../game/useGame';
@@ -303,7 +304,7 @@ export function Play({ game, view, onFinish }: Props) {
           ) : view.ending ? (
             <section className="order order-empty shift-over" aria-live="polite">
               <div className="order-empty-text">{t('end.writing')}</div>
-              <div className="order-empty-dots" aria-hidden />
+              <Working activity="reviewing" className="order-working" />
             </section>
           ) : view.paused ? (
             <KeyPause sessionId={view.id} reason={view.paused} model={view.model} />
@@ -314,6 +315,7 @@ export function Play({ game, view, onFinish }: Props) {
               manager={view.manager}
               serverNow={game.serverNow}
               count={instructionCount}
+              activity={activityOf(managerPhase(view.feed, view.manager), instructionCount, false)}
               mission={view.mission ? { index: view.missionIndex, total: view.missionTotal, kind: view.mission.kind } : null}
             />
           )}
@@ -389,6 +391,7 @@ export function Play({ game, view, onFinish }: Props) {
             model={modelLabel(view.model)}
             instruction={view.instruction}
             serverNow={game.serverNow}
+            ending={view.ending}
           />
         </aside>
       </div>

@@ -22,7 +22,7 @@ const ERROR_TEXT: Record<VfsErrorCode, string> = {
  * disk and the number of entries are capped, the way a small container volume would be.
  */
 export const MAX_FILE_BYTES = 1_000_000;
-export const MAX_TOTAL_BYTES = 10_000_000;
+export const MAX_TOTAL_BYTES = 3_000_000;
 export const MAX_NODES = 10_000;
 
 /** The strerror() text for a code, e.g. 'No such file or directory'. */

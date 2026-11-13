@@ -5,14 +5,14 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
-import { createApp, withPreview } from '../src/http.ts';
+import { addressKey, createApp, withPreview } from '../src/http.ts';
 import type { App, AppOptions } from '../src/http.ts';
 import { Session } from '../src/session.ts';
 import { assistant, call, createMockDriver, KEY_REJECTED, ManagerError } from '../src/manager.ts';
 import type { ManagerDriver, StepResult } from '../src/manager.ts';
 import type { Credentials } from '../src/providers.ts';
 import { providerModelId } from '../src/providers.ts';
-import { DailyBudget, freeAllowance, RateLimiter } from '../src/limits.ts';
+import { DailyBudget, freeAllowance, persisted, RateLimiter, TimeBudget } from '../src/limits.ts';
 import { ReviewStore } from '../src/reviews.ts';
 import { copyFor } from '../src/i18n/index.ts';
 import type { Mission } from '../src/missions.ts';
@@ -34,14 +34,25 @@ const HELLO: Mission = {
   solution: ['echo a > a.txt'],
 };
 
+/** Each shift's secret, as the browser that started it keeps it. */
+const tokens = new Map<string, string>();
+
 async function withApp(opts: Partial<AppOptions>, fn: (api: Api, app: App) => Promise<void>): Promise<void> {
-  const app = createApp({ mock: false, timeoutMs: 5000, log: () => {}, models: async () => MODELS, ...opts });
+  const app = createApp({
+    mock: false,
+    timeoutMs: 5000,
+    log: () => {},
+    models: async () => MODELS,
+    keyModels: async () => ({ models: MODELS }),
+    ...opts,
+  });
   await new Promise<void>((r) => app.server.listen(0, '127.0.0.1', () => r()));
   const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
   const api: Api = async (method, path, body) => {
+    const token = tokens.get(/^\/api\/sessions\/([^/?]+)/.exec(path)?.[1] ?? '');
     const res = await fetch(base + path, {
       method,
-      headers: body === undefined ? {} : { 'content-type': 'application/json' },
+      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(token ? { 'x-session-token': token } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const text = await res.text();
@@ -51,6 +62,7 @@ async function withApp(opts: Partial<AppOptions>, fn: (api: Api, app: App) => Pr
     } catch {
       json = null;
     }
+    if (path === '/api/sessions' && json?.token) tokens.set(json.id, json.token);
     return { status: res.status, json, text };
   };
   try {
@@ -290,7 +302,7 @@ test('continue over HTTP: only while paused, with a real-looking key and a plaus
         },
       };
       const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], allowance: { canSpend: () => open, spend: () => {} } });
-      app.sessions.set(s.id, s);
+      tokens.set(s.id, app.adopt(s));
       s.start();
       await waitFor(s, (e) => e.type === 'instruction');
       const body = { provider: 'openrouter', apiKey: KEY, model: 'b/two' };
@@ -325,7 +337,7 @@ test('finish over HTTP ends a running shift mid-instruction, and the review foll
       },
     };
     const s = new Session({ driver, timeoutMs: 60_000, missions: [HELLO, HELLO] });
-    app.sessions.set(s.id, s);
+    tokens.set(s.id, app.adopt(s));
     s.start();
     await waitFor(s, (e) => e.type === 'instruction');
     assert.equal((await api('POST', `/api/sessions/${s.id}/finish`)).status, 200);
@@ -381,7 +393,7 @@ test('a finished shift can be shared once; the page carries the review', async (
         },
       };
       const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], subagent: 'gpt-6.1' });
-      app.sessions.set(s.id, s);
+      tokens.set(s.id, app.adopt(s));
       s.start();
       await waitFor(s, (e) => e.type === 'instruction');
       assert.equal((await api('POST', `/api/sessions/${s.id}/share`)).status, 409);
@@ -435,7 +447,7 @@ test('a shared review keeps the language it was played in and the sharer\'s avat
           },
         };
         const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], language });
-        app.sessions.set(s.id, s);
+        tokens.set(s.id, app.adopt(s));
         s.start();
         await waitFor(s, (e) => e.type === 'instruction');
         s.exec('echo a > a.txt');
@@ -476,6 +488,119 @@ test('withPreview trims long reviews', () => {
   });
   const desc = /og:description" content="([^"]*)"/.exec(html)![1];
   assert.ok(desc.length <= 200 && desc.endsWith('...'));
+});
+
+test('a review cannot smuggle replacement patterns into the page', () => {
+  const page = '<html lang="en"><head><title>x</title></head><body>app</body></html>';
+  const html = withPreview(page, {
+    id: 'a',
+    createdAt: 0,
+    review: 'Grade: $` and $& and $1',
+    stats: {} as never,
+    model: '',
+    director: '',
+    subagent: '',
+    scenario: 'fresh',
+    lost: [],
+  });
+  assert.match(html, /content="Grade: \$` and \$&amp; and \$1"/);
+  assert.equal(html.match(/<html/g)?.length, 1);
+});
+
+test('only the browser that started a shift can play it; the link alone lets someone watch', async () => {
+  await withApp({ mock: true }, async (api) => {
+    const s = (await api('POST', '/api/sessions', {})).json;
+    assert.ok(typeof s.token === 'string' && s.token.length >= 32);
+    const state = await api('GET', `/api/sessions/${s.id}`);
+    assert.equal(state.json.token, undefined, 'the secret is only in the create response');
+    const id = s.id as string;
+    tokens.delete(id);
+    for (const [method, sub] of [['POST', 'exec'], ['PUT', 'file'], ['POST', 'finish'], ['POST', 'share'], ['POST', 'report']]) {
+      const r = await api(method, `/api/sessions/${id}/${sub}`, { line: 'ls', path: '/home/worker/x', content: '' });
+      assert.equal(r.status, 403, sub);
+    }
+    assert.equal((await api('GET', `/api/sessions/${id}`)).status, 200, 'watching still works');
+    tokens.set(id, 'x'.repeat(s.token.length));
+    assert.equal((await api('POST', `/api/sessions/${id}/exec`, { line: 'ls' })).status, 403, 'a wrong secret');
+    tokens.set(id, s.token);
+    assert.equal((await api('POST', `/api/sessions/${id}/exec`, { line: 'ls' })).status, 200);
+  });
+});
+
+test('a key must work before it gets a shift, and one address cannot hold many shifts open', async () => {
+  let checks = 0;
+  await withApp(
+    {
+      openPerAddress: 2,
+      keyModels: async (cred) => {
+        checks++;
+        return cred.apiKey.startsWith('bad') ? { problem: 'key' } : { models: MODELS };
+      },
+      driverFor: () => createMockDriver(0),
+    },
+    async (api) => {
+      const bad = await api('POST', '/api/sessions', { apiKey: `bad${KEY}`, provider: 'openrouter', model: 'b/two' });
+      assert.equal(bad.status, 400);
+      assert.equal(bad.json.error, copyFor('en').errors.keyRejected);
+      assert.equal((await api('POST', '/api/models/check', { provider: 'openrouter', apiKey: KEY })).status, 200);
+      const before = checks;
+      assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'openrouter', model: 'b/two' })).status, 201);
+      assert.equal(checks, before, 'a key checked a moment ago is not asked about again');
+      assert.equal((await api('POST', '/api/sessions', { apiKey: KEY, provider: 'openrouter', model: 'b/two' })).status, 201);
+      const third = await api('POST', '/api/sessions', { apiKey: KEY, provider: 'openrouter', model: 'b/two' });
+      assert.equal(third.status, 429);
+      assert.equal(third.json.error, copyFor('en').errors.tooManyOpen);
+    },
+  );
+});
+
+test('a full server makes room only by dropping finished shifts', async () => {
+  await withApp({ mock: true, maxSessions: 1, openPerAddress: 10 }, async (api, app) => {
+    assert.equal((await api('POST', '/api/sessions', {})).status, 201);
+    const busy = await api('POST', '/api/sessions', {});
+    assert.equal(busy.status, 503);
+    assert.equal(busy.json.error, copyFor('en').errors.serverBusy);
+    const [only] = app.sessions.values();
+    only.status = 'finished';
+    only.lastActivity = Date.now() - 5 * 60_000;
+    assert.equal((await api('POST', '/api/sessions', {})).status, 201);
+    assert.equal(app.sessions.has(only.id), false);
+  });
+});
+
+test('limits survive a restart; IPv6 can be counted per /48; shell time is budgeted', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'w755-limits-'));
+  try {
+    const file = join(dir, 'limits.json');
+    const daily = new DailyBudget(1000);
+    const free = new RateLimiter(3, 60_000);
+    const saver = persisted(file, { daily, free }, () => {});
+    daily.spend(400);
+    free.take('a');
+    free.take('a');
+    saver.flush();
+    const daily2 = new DailyBudget(1000);
+    const free2 = new RateLimiter(3, 60_000);
+    persisted(file, { daily: daily2, free: free2 }, () => {});
+    assert.equal(daily2.used, 400);
+    assert.equal(free2.take('a'), true);
+    assert.equal(free2.take('a'), false, 'two were used before the restart');
+    await writeFile(file, '{not json');
+    const daily3 = new DailyBudget(1000);
+    persisted(file, { daily: daily3 }, () => {});
+    assert.equal(daily3.used, 0, 'a broken file starts from zero');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+  assert.equal(addressKey('2001:db8:aa:bb::1', 48), addressKey('2001:db8:aa:ff::1', 48));
+  assert.notEqual(addressKey('2001:db8:aa:bb::1'), addressKey('2001:db8:aa:ff::1'));
+  let now = 0;
+  const time = new TimeBudget(100, 1000, () => now);
+  time.charge('a', 150);
+  assert.equal(time.allows('a'), false);
+  assert.equal(time.allows('b'), true);
+  now = 1000;
+  assert.equal(time.allows('a'), true);
 });
 
 test('OpenRouter spells some vendors differently', () => {

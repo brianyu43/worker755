@@ -388,6 +388,10 @@ export const de: ServerCopy = {
     notOver: 'Die Schicht ist noch nicht vorbei',
     sharingOff: 'Teilen ist auf diesem Server deaktiviert',
     sharingDown: 'Teilen ist gerade nicht verfügbar',
+    notYours: 'Diese Schicht wurde in einem anderen Browser gestartet. Du kannst zusehen, aber nicht mitspielen.',
+    serverBusy: 'Das Büro ist gerade voll. Versuch es in ein paar Minuten noch mal.',
+    tooManyOpen: 'Du hast bereits mehrere Schichten am Laufen. Beende erst eine davon.',
+    tooManyShares: 'Zu viele Reviews geteilt. Versuch es später noch mal.',
   },
   mock: {
     dispatching: 'Wird weitergeleitet.',

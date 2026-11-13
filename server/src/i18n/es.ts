@@ -388,6 +388,10 @@ export const es: ServerCopy = {
     notOver: 'El turno aún no ha terminado',
     sharingOff: 'Compartir está desactivado en este servidor',
     sharingDown: 'Compartir no está disponible en este momento',
+    notYours: 'Este turno empezó en otro navegador. Puedes verlo, pero no jugar.',
+    serverBusy: 'La oficina está llena ahora mismo. Vuelve a intentarlo en unos minutos.',
+    tooManyOpen: 'Ya tienes varios turnos en marcha. Termina uno primero.',
+    tooManyShares: 'Has compartido demasiadas revisiones. Vuelve a intentarlo más tarde.',
   },
   mock: {
     dispatching: 'Enviando.',

@@ -43,6 +43,8 @@ const app = createApp({
   free,
   shiftsPerHour: envNumber('SHIFTS_PER_HOUR', 30),
   trustProxy: process.env.TRUST_PROXY === '1',
+  trustedProxies: (process.env.TRUSTED_PROXIES ?? '').split(',').map((h) => h.trim()).filter(Boolean),
+  stateDir: dataDir,
   reviews: process.env.SHARING === '0' ? undefined : new ReviewStore(dataDir),
   donateUrl: process.env.DONATE_URL || undefined,
   sourceUrl: process.env.SOURCE_URL || undefined,

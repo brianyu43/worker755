@@ -179,6 +179,12 @@ kbd {
 .badge.badge-held {
   cursor: grabbing;
 }
+/* On touch screens a finger on the badge still scrolls the page; sideways drags swing it. */
+@media (pointer: coarse) {
+  .badge {
+    touch-action: pan-y;
+  }
+}
 .key-note {
   display: flex;
   gap: 8px;
@@ -1079,6 +1085,65 @@ kbd {
   max-width: 34ch;
 }
 
+/* ---------- The manager at work: star, verb, seconds ---------- */
+.working {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+.working-star {
+  flex: none;
+  display: inline-block;
+  width: 1.15em;
+  text-align: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--stamp);
+  animation: star-twitch 1.7s infinite;
+}
+@keyframes star-twitch {
+  0%, 62%, 100% { transform: none; }
+  66% { transform: rotate(-14deg) scale(1.12); }
+  70% { transform: rotate(9deg) scale(0.94); }
+  74% { transform: rotate(-4deg); }
+  80% { transform: none; }
+}
+.working-verb {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* A light sweeping across the words, as in a terminal agent's status line. */
+  background: linear-gradient(90deg, var(--ink-soft) 0 40%, var(--ink) 50%, var(--ink-soft) 60% 100%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    verb-in 0.3s ease-out,
+    verb-shimmer 2.2s linear infinite;
+}
+@keyframes verb-in {
+  from { opacity: 0; transform: translateY(3px); }
+}
+@keyframes verb-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+.working-time {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.9em;
+  color: var(--ink-faint);
+}
+.working-time::before { content: '('; }
+.working-time::after { content: ')'; }
+.order-working {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
 /* ---------- Ending the shift early ---------- */
 .bar-badge-btn {
   border: 0;
@@ -1964,7 +2029,8 @@ kbd {
 .feed-foot .feed-typing {
   flex: none;
   margin: 0;
-  width: 19px;
+  /* Three 7px tiles; the last dot reaches 20.5px, so narrower clips it. */
+  width: 21px;
   height: 6px;
   background: radial-gradient(circle, var(--stamp) 2.5px, transparent 3px) 0 50% / 7px 6px repeat-x;
 }
@@ -3217,12 +3283,13 @@ kbd {
     padding-top: 40px;
     align-content: start;
   }
+  /* Clip sideways swings only: a stretched or swinging badge must not be cut off at the bottom. */
   .start {
-    overflow: hidden;
+    overflow-x: clip;
   }
   .start-badge {
     order: 2;
-    padding-bottom: 12px;
+    padding-bottom: 48px;
   }
   .badge {
     width: 260px;

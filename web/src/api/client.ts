@@ -53,12 +53,43 @@ export interface GameClient {
   checkKey(key: { provider: Provider; apiKey: string; language: string }): Promise<KeyModels>;
 }
 
-async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+/**
+ * The secret the server hands to the browser that starts a shift; only it may play the shift, while
+ * the link alone lets someone watch. Kept per shift id, for the last few shifts.
+ */
+const OWNED = 'w755.owned';
+
+function ownedShifts(): [string, string][] {
+  try {
+    const v = JSON.parse(localStorage.getItem(OWNED) ?? '[]');
+    return Array.isArray(v) ? v.filter((e): e is [string, string] => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberOwner(id: string, token: string): void {
+  try {
+    localStorage.setItem(OWNED, JSON.stringify([[id, token], ...ownedShifts().filter(([k]) => k !== id)].slice(0, 20)));
+  } catch {
+    /* private mode: the shift still works in this tab */
+  }
+  memoryOwned.set(id, token);
+}
+
+const memoryOwned = new Map<string, string>();
+
+function owner(id: string): Record<string, string> {
+  const token = memoryOwned.get(id) ?? ownedShifts().find(([k]) => k === id)?.[1];
+  return token ? { 'X-Session-Token': token } : {};
+}
+
+async function request<T>(method: string, url: string, body?: unknown, extra: Record<string, string> = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, {
       method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...extra },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -86,8 +117,8 @@ function createRealClient(): GameClient {
     kind: 'real',
     getModels: (provider) =>
       request<ModelList>('GET', provider ? `/api/models?provider=${encodeURIComponent(provider)}` : '/api/models'),
-    createSession: ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language }) =>
-      request<SessionState>('POST', '/api/sessions', {
+    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language }) => {
+      const { token, ...state } = await request<SessionState & { token?: string }>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
         ...(apiKey ? { apiKey, provider } : {}),
         allowSkip: allowSkip === true,
@@ -95,17 +126,20 @@ function createRealClient(): GameClient {
         scenario: scenario ?? 'fresh',
         director: director || 'scripted',
         language: language ?? 'en',
-      }),
+      });
+      if (token) rememberOwner(state.id, token);
+      return state;
+    },
     getSession: (id) => request<SessionState>('GET', s(id)),
-    exec: (id, line) => request<ExecResponse>('POST', `${s(id)}/exec`, { line }),
+    exec: (id, line) => request<ExecResponse>('POST', `${s(id)}/exec`, { line }, owner(id)),
     readFile: (id, path) =>
       request<{ path: string; content: string }>('GET', `${s(id)}/file?path=${encodeURIComponent(path)}`),
-    writeFile: (id, path, content) => request<{ ok: true }>('PUT', `${s(id)}/file`, { path, content }),
+    writeFile: (id, path, content) => request<{ ok: true }>('PUT', `${s(id)}/file`, { path, content }, owner(id)),
     report: (id, message) =>
-      request<{ ok: true }>('POST', `${s(id)}/report`, message ? { message } : {}),
-    share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }),
-    continueShift: (id, key) => request<{ ok: true; model: string }>('POST', `${s(id)}/continue`, key),
-    finishShift: (id) => request<{ ok: true }>('POST', `${s(id)}/finish`),
+      request<{ ok: true }>('POST', `${s(id)}/report`, message ? { message } : {}, owner(id)),
+    share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }, owner(id)),
+    continueShift: (id, key) => request<{ ok: true; model: string }>('POST', `${s(id)}/continue`, key, owner(id)),
+    finishShift: (id) => request<{ ok: true }>('POST', `${s(id)}/finish`, undefined, owner(id)),
     checkKey: (key) => request<KeyModels>('POST', '/api/models/check', key),
     getReview: (id) => request<SharedReview>('GET', `/api/reviews/${encodeURIComponent(id)}`),
     subscribe(id, after, handlers) {

@@ -1,3 +1,5 @@
+import { Working } from './Working';
+import type { Activity } from './Working';
 import { modelLabel } from '../game/labels';
 import { useLayoutEffect, useState } from 'react';
 import type { GameEvent, MissionKind, OpenInstruction } from '../api/types';
@@ -217,6 +219,13 @@ export function managerPhase(feed: GameEvent[], manager: ManagerState): ManagerP
   return 'thinking';
 }
 
+/** The working line's verbs: what the manager is busy with, from the phase and how far the shift is. */
+export function activityOf(phase: ManagerPhase, instructions: number, ending: boolean): Activity {
+  if (ending) return 'reviewing';
+  if (phase === 'checking') return 'checking';
+  return instructions === 0 ? 'reading' : 'thinking';
+}
+
 const PHASES: [Exclude<ManagerPhase, 'idle'>, Key][] = [
   ['waiting', 'feed.status.waiting'],
   ['thinking', 'feed.status.thinking'],
@@ -236,9 +245,11 @@ interface FeedProps {
   model: string;
   instruction: OpenInstruction | null;
   serverNow(): number;
+  /** The shift was ended early and the manager is writing the review. */
+  ending?: boolean;
 }
 
-export function Feed({ feed, manager, model, instruction, serverNow }: FeedProps) {
+export function Feed({ feed, manager, model, instruction, serverNow, ending = false }: FeedProps) {
   const { ref, stick, onScroll } = useStickToBottom<HTMLDivElement>(40);
   useLayoutEffect(() => {
     const el = ref.current;
@@ -287,10 +298,14 @@ export function Feed({ feed, manager, model, instruction, serverNow }: FeedProps
       </div>
       {phase !== 'idle' && (
         <div className={`feed-foot feed-foot-${phase}`}>
-          <span className="feed-typing" aria-hidden />
-          <span className="feed-foot-text">
-            {phase === 'waiting' ? t('feed.foot.waiting') : t(PHASE_LABEL[phase])}
-          </span>
+          {phase === 'waiting' ? (
+            <>
+              <span className="feed-typing" aria-hidden />
+              <span className="feed-foot-text">{t('feed.foot.waiting')}</span>
+            </>
+          ) : (
+            <Working activity={activityOf(phase, n, ending)} />
+          )}
           {phase === 'waiting' && instruction && (
             <span className="feed-foot-since">
               {t('feed.foot.since', { time: formatClock(Math.max(0, serverNow() - instruction.issuedAt)) })}

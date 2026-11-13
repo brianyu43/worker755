@@ -418,6 +418,10 @@ export const en = {
     notOver: 'The shift is not over yet',
     sharingOff: 'Sharing is off on this server',
     sharingDown: 'Sharing is unavailable right now',
+    notYours: 'This shift was started in another browser. You can watch it, but not play it.',
+    serverBusy: 'The office is full right now. Try again in a few minutes.',
+    tooManyOpen: 'You already have several shifts running. Finish one first.',
+    tooManyShares: 'Too many reviews shared. Try again later.',
   },
 
   /** The offline manager (MOCK_LLM=1), standing in for a model that writes in the player's language. */

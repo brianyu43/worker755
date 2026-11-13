@@ -15,7 +15,7 @@ let app: App;
 let base = '';
 
 before(async () => {
-  app = createApp({ mock: true, timeoutMs: 5000, mockDelayMs: 0, commandsPerWindow: 10_000, log: () => {} });
+  app = createApp({ mock: true, timeoutMs: 5000, mockDelayMs: 0, commandsPerWindow: 10_000, openPerAddress: 1000, log: () => {} });
   await new Promise<void>((r) => app.server.listen(0, '127.0.0.1', () => r()));
   base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
 });
@@ -30,13 +30,19 @@ function byTitle(pool: Mission[], title: string): Mission {
   return m;
 }
 
+/** Each shift's secret, as the browser that started it keeps it. */
+const tokens = new Map<string, string>();
+
 async function api(method: string, path: string, body?: unknown): Promise<{ status: number; json: any }> {
+  const token = tokens.get(/^\/api\/sessions\/([^/?]+)/.exec(path)?.[1] ?? '');
   const res = await fetch(base + path, {
     method,
-    headers: body === undefined ? {} : { 'content-type': 'application/json' },
+    headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(token ? { 'x-session-token': token } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  return { status: res.status, json: await res.json() };
+  const json = await res.json();
+  if (path === '/api/sessions' && json?.token) tokens.set(json.id, json.token);
+  return { status: res.status, json };
 }
 
 /** Minimal SSE reader: yields parsed GameEvents until aborted. */
@@ -98,11 +104,12 @@ test('errors are JSON with a status', async () => {
   assert.equal((await api('POST', `/api/sessions/${s.id}/exec`, {})).status, 400);
   assert.equal((await api('GET', `/api/sessions/${s.id}/file?path=missing.txt`)).status, 404);
   assert.equal((await api('PUT', `/api/sessions/${s.id}/file`, { path: 'no/such/dir/x', content: '' })).status, 400);
-  const raw = await fetch(`${base}/api/sessions/${s.id}/exec`, { method: 'POST', body: '{not json' });
+  const owner = { 'x-session-token': tokens.get(s.id)! };
+  const raw = await fetch(`${base}/api/sessions/${s.id}/exec`, { method: 'POST', headers: owner, body: '{not json' });
   assert.equal(raw.status, 415, 'a body must say it is JSON');
   const bad = await fetch(`${base}/api/sessions/${s.id}/exec`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...owner },
     body: '{not json',
   });
   assert.equal(bad.status, 400);

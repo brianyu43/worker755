@@ -91,6 +91,8 @@ export async function listModels(provider: ProviderId = 'gateway'): Promise<Mode
     list = wanted.map((id) => ({ id, label: id }));
   }
   if (live && list.length) cache.set(provider, { at: Date.now(), list });
+  // A catalogue that did not answer is asked again in a minute, not on every request.
+  else if (!live) cache.set(provider, { at: Date.now() - CACHE_MS + 60_000, list });
   return list;
 }
 

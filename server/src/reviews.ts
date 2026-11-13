@@ -45,9 +45,12 @@ export function isReviewId(v: string): boolean {
 }
 
 function newId(): string {
-  const bytes = randomBytes(10);
+  // Bytes past the last whole multiple of the alphabet are skipped, so every letter is equally likely.
+  const cut = 256 - (256 % ALPHABET.length);
   let id = '';
-  for (const b of bytes) id += ALPHABET[b % ALPHABET.length];
+  while (id.length < 10) {
+    for (const b of randomBytes(16)) if (b < cut && id.length < 10) id += ALPHABET[b % ALPHABET.length];
+  }
   return id;
 }
 

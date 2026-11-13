@@ -52,6 +52,7 @@ test('sqlite3 refuses huge strings and stops runaway queries', () => {
   }
   sh.exec(`sqlite3 t.db "CREATE TABLE a(x); WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM c LIMIT 3000) INSERT INTO a SELECT n FROM c;"`);
   quick(() => assert.match(sh.exec('sqlite3 t.db "SELECT count(*) FROM a, a AS b, a AS c;"').stderr, /interrupted/), 4000);
+  quick(() => assert.match(sh.exec("sqlite3 :memory: 'WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM c) SELECT count(*) FROM c;'").stderr, /too many rows|interrupted/), 600);
 });
 
 test('patterns that backtrack forever finish at once; grep backreferences are refused', () => {

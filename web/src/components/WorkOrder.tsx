@@ -1,3 +1,5 @@
+import { Working } from './Working';
+import type { Activity } from './Working';
 import { useEffect, useState } from 'react';
 import type { MissionKind, OpenInstruction } from '../api/types';
 import type { ClosedOutcome, ManagerState } from '../game/useGame';
@@ -59,9 +61,11 @@ interface Props {
   serverNow(): number;
   count: number;
   mission: { index: number; total: number; kind?: MissionKind } | null;
+  /** What the manager is busy with while the desk is empty. */
+  activity?: Activity;
 }
 
-export function WorkOrder({ instruction, closed, manager, serverNow, count, mission }: Props) {
+export function WorkOrder({ instruction, closed, manager, serverNow, count, mission, activity }: Props) {
   // Show the stamped, closed instruction for a beat before clearing the desk.
   const [showClosed, setShowClosed] = useState(false);
   // On a phone the brief folds away to leave room for the terminal; a new instruction opens it again.
@@ -87,7 +91,7 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count, miss
               : t('order.deciding')
             : t('order.standBy')}
         </div>
-        <div className="order-empty-dots" aria-hidden />
+        {manager === 'thinking' && activity ? <Working activity={activity} className="order-working" /> : <div className="order-empty-dots" aria-hidden />}
       </section>
     );
   }

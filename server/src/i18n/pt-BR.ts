@@ -388,6 +388,10 @@ export const ptBR: ServerCopy = {
     notOver: 'O turno ainda não terminou',
     sharingOff: 'O compartilhamento está desativado neste servidor',
     sharingDown: 'O compartilhamento está indisponível no momento',
+    notYours: 'Este turno foi iniciado em outro navegador. Você pode assistir, mas não jogar.',
+    serverBusy: 'O escritório está lotado agora. Tente de novo daqui a alguns minutos.',
+    tooManyOpen: 'Você já tem vários turnos em andamento. Termine um primeiro.',
+    tooManyShares: 'Você compartilhou avaliações demais. Tente novamente mais tarde.',
   },
   mock: {
     dispatching: 'Despachando.',

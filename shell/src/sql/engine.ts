@@ -300,6 +300,10 @@ export interface SchemaEntry {
 
 /** Row combinations one statement may visit, about a second of work. */
 export const WORK_LIMIT = 5_000_000;
+/** Wall-clock time one sqlite3 call may take, across all of its statements. */
+export const TIME_LIMIT_MS = 300;
+/** Rows a recursive WITH may build; each one stays in memory until the statement ends. */
+export const MAX_RECURSIVE_ROWS = 100_000;
 
 export class Database {
   /** Refuse writes with "attempt to write a readonly database", as `sqlite3 -readonly` does. */
@@ -316,6 +320,8 @@ export class Database {
   private fnCtx: FnContext;
   /** Row combinations visited by the statement running now; see WORK_LIMIT. */
   private work = 0;
+  /** When the current exec() call must stop; see TIME_LIMIT_MS. */
+  private deadline = Infinity;
 
   constructor(options: DatabaseOptions = {}) {
     this.clock = options.now ?? Date.now;
@@ -349,6 +355,13 @@ export class Database {
     return db;
   }
 
+  /** Counts one step of work and stops the statement when it has run too long. */
+  private tick(): void {
+    if (++this.work > WORK_LIMIT || ((this.work & 1023) === 0 && Date.now() > this.deadline)) {
+      throw runtimeError('interrupted', 9);
+    }
+  }
+
   /** Run every statement; one result per statement that returns rows. Throws the first error. */
   exec(sql: string): SqlResult[] {
     const out: SqlResult[] = [];
@@ -364,6 +377,7 @@ export class Database {
   /** Like exec(), but hands over each result as soon as its statement has run. */
   execStream(sql: string, onResult: (result: SqlResult) => void): void {
     const parser = new Parser(sql);
+    this.deadline = Date.now() + TIME_LIMIT_MS;
     for (;;) {
       const ps = parser.next();
       if (!ps) return;
@@ -853,7 +867,8 @@ export class Database {
               out.push(r);
               if (limit >= 0 && out.length >= limit) break;
             }
-            if (out.length > 1_000_000) throw runtimeError('too many rows in recursive query');
+            if (out.length > MAX_RECURSIVE_ROWS) throw runtimeError('too many rows in recursive query');
+            this.tick();
             working = fresh.map((values, i) => ({ rowid: i + 1, values }));
             batch = rest.run(null);
           }
@@ -1633,7 +1648,7 @@ export class Database {
       for (let k = 0; k < rows.length; k++) {
         // Like sqlite3_interrupt: a statement that would run for minutes stops instead, because this
         // engine shares one thread with every player's game.
-        if (++this.work > WORK_LIMIT) throw runtimeError('interrupted', 9);
+        this.tick();
         const r = rows[k];
         env.rows[i] = r.values;
         env.rowids[i] = r.rowid;

@@ -2,6 +2,7 @@
 // allowance, all of them together share a daily budget, and each address gets a few per day.
 // Shifts on a player's own key are only rate limited.
 
+import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { en } from './i18n/en.ts';
 
 /** What a session may spend on model calls. */
@@ -49,6 +50,22 @@ export class DailyBudget {
   spend(tokens: number): void {
     this.roll();
     this.spent += tokens;
+    this.onChange?.();
+  }
+
+  /** Called after every change, so the count can be saved. */
+  onChange?: () => void;
+
+  save(): { day: string; spent: number } {
+    this.roll();
+    return { day: this.day, spent: this.spent };
+  }
+
+  restore(v: unknown): void {
+    const o = v as { day?: unknown; spent?: unknown } | null;
+    if (!o || typeof o.day !== 'string' || typeof o.spent !== 'number' || !Number.isFinite(o.spent)) return;
+    this.roll();
+    if (o.day === this.day) this.spent = Math.max(this.spent, o.spent);
   }
 }
 
@@ -73,12 +90,100 @@ export class RateLimiter {
     const cur = this.hits.get(key);
     if (!cur || t - cur.start >= this.windowMs) {
       this.hits.set(key, { start: t, count: 1 });
+      this.onChange?.();
       return true;
     }
     if (cur.count >= this.limit) return false;
     cur.count += 1;
+    this.onChange?.();
     return true;
   }
+
+  /** Called after every change, so the counts can be saved. */
+  onChange?: () => void;
+
+  save(): [string, number, number][] {
+    const t = this.now();
+    return [...this.hits].filter(([, v]) => t - v.start < this.windowMs).map(([k, v]) => [k, v.start, v.count]);
+  }
+
+  restore(v: unknown): void {
+    if (!Array.isArray(v)) return;
+    for (const e of v.slice(0, 50_000)) {
+      if (!Array.isArray(e) || typeof e[0] !== 'string' || typeof e[1] !== 'number' || typeof e[2] !== 'number') continue;
+      this.hits.set(e[0], { start: e[1], count: e[2] });
+    }
+  }
+}
+
+/**
+ * Milliseconds of server time per key in a fixed window. The simulated shell runs on the thread that
+ * serves every game, so one address may only keep it busy for a share of each window.
+ */
+export class TimeBudget {
+  readonly limitMs: number;
+  readonly windowMs: number;
+  private now: () => number;
+  private used = new Map<string, { start: number; ms: number }>();
+  constructor(limitMs: number, windowMs: number, now: () => number = Date.now) {
+    this.limitMs = limitMs;
+    this.windowMs = windowMs;
+    this.now = now;
+  }
+
+  private entry(key: string): { start: number; ms: number } {
+    const t = this.now();
+    if (this.used.size > 10_000) {
+      for (const [k, v] of this.used) if (t - v.start >= this.windowMs) this.used.delete(k);
+    }
+    let cur = this.used.get(key);
+    if (!cur || t - cur.start >= this.windowMs) {
+      cur = { start: t, ms: 0 };
+      this.used.set(key, cur);
+    }
+    return cur;
+  }
+
+  /** Whether the key has time left in this window. */
+  allows(key: string): boolean {
+    return this.entry(key).ms < this.limitMs;
+  }
+
+  charge(key: string, ms: number): void {
+    this.entry(key).ms += ms;
+  }
+}
+
+/**
+ * Keeps limits in a JSON file, so a restart does not hand out a fresh daily budget. Loads at once;
+ * saves a couple of seconds after a change, and on flush().
+ */
+export function persisted(file: string, parts: Record<string, { save(): unknown; restore(v: unknown): void; onChange?: () => void }>, log: (line: string) => void) {
+  try {
+    const data = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    for (const [name, part] of Object.entries(parts)) if (data && name in data) part.restore(data[name]);
+  } catch {
+    // No saved limits yet, or an unreadable file: start from zero.
+  }
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const flush = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    try {
+      const out = Object.fromEntries(Object.entries(parts).map(([name, part]) => [name, part.save()]));
+      writeFileSync(`${file}.tmp`, JSON.stringify(out));
+      renameSync(`${file}.tmp`, file);
+    } catch {
+      log('saving limits failed');
+    }
+  };
+  const changed = () => {
+    if (timer) return;
+    timer = setTimeout(flush, 2000);
+    timer.unref();
+  };
+  for (const part of Object.values(parts)) part.onChange = changed;
+  return { flush };
 }
 
 /** A free shift's allowance: its own cap, and the shared daily budget. */

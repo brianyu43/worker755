@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-import { existsSync, statSync } from 'node:fs';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
+import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { Session } from './session.ts';
@@ -14,7 +16,7 @@ import { isScenarioId, SCENARIO_LIST } from './scenarios.ts';
 import type { KeyProblem, ModelOption } from './models.ts';
 import { hostedCredentials, isPlausibleKey, isProviderId, PROVIDERS } from './providers.ts';
 import type { Credentials, ProviderId } from './providers.ts';
-import { DailyBudget, freeAllowance, RateLimiter } from './limits.ts';
+import { DailyBudget, freeAllowance, persisted, RateLimiter, TimeBudget } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
@@ -45,8 +47,21 @@ export interface AppOptions {
   free?: { sessionTokens: number; dailyTokens: number; perAddressPerDay: number; credentials?: Credentials };
   /** New shifts per address per hour, on any key. Default 30. */
   shiftsPerHour?: number;
-  /** Read the client address from cf-connecting-ip / x-forwarded-for (behind a trusted proxy). */
+  /** Read the client address from cf-connecting-ip (behind a trusted proxy). */
   trustProxy?: boolean;
+  /**
+   * Hosts allowed to set cf-connecting-ip, such as the tunnel's container name. Without them, any peer
+   * is believed when trustProxy is on.
+   */
+  trustedProxies?: string[];
+  /** Where the free budget and per-address counts are saved, so a restart does not reset them. */
+  stateDir?: string;
+  /** Shifts kept in memory at once, across everyone. Default 150. */
+  maxSessions?: number;
+  /** Unfinished shifts per address at once. Default 4. */
+  openPerAddress?: number;
+  /** A shift is dropped this long after it started, even with a page still open. Default 4 h. */
+  maxAgeMs?: number;
   /** Where shared reviews are kept. Without it, sharing is off. */
   reviews?: ReviewStore;
   /** Shown to players as a way to support the game. */
@@ -60,6 +75,8 @@ export interface AppOptions {
 export interface App {
   server: Server;
   sessions: Map<string, Session>;
+  /** Takes in a session made elsewhere (tests) and returns the secret that lets its player play it. */
+  adopt(s: Session, address?: string): string;
   close(): Promise<void>;
 }
 
@@ -88,10 +105,14 @@ const SECURITY_HEADERS: Record<string, string> = {
   'referrer-policy': 'strict-origin-when-cross-origin',
   'x-frame-options': 'DENY',
   'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+  'cross-origin-opener-policy': 'same-origin',
 };
 
-/** An address as the limits count it: IPv4 as is, IPv6 by its /64 prefix. */
-export function addressKey(address: string): string {
+/**
+ * An address as the limits count it: IPv4 as is, IPv6 by its /64 prefix (or /48 for limits that one
+ * rented server should not multiply).
+ */
+export function addressKey(address: string, bits: 64 | 48 = 64): string {
   const a = address.replace(/^::ffff:/, '');
   if (!a.includes(':')) return a;
   // Expand :: so the first four groups are the /64.
@@ -99,7 +120,7 @@ export function addressKey(address: string): string {
   const h = head ? head.split(':') : [];
   const t = tail ? tail.split(':') : [];
   const groups = a.includes('::') ? [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t] : h;
-  return groups.slice(0, 4).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+  return groups.slice(0, bits / 16).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + `::/${bits}`;
 }
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -205,10 +226,11 @@ export function withPreview(html: string, review: SharedReview): string {
     `<meta property="og:type" content="article" />`,
     `<meta name="twitter:card" content="summary" />`,
   ].join('\n    ');
+  // Replacer functions: a review may contain $& or $` and those must stay plain text.
   return html
-    .replace(/<html lang="[^"]*"/, `<html lang="${language}"`)
+    .replace(/<html lang="[^"]*"/, () => `<html lang="${language}"`)
     .replace(/<meta (name="description"|property="og:[a-z]+"|name="twitter:[a-z]+") content="[^"]*" \/>\s*/g, '')
-    .replace(/<title>[^<]*<\/title>/, tags);
+    .replace(/<title>[^<]*<\/title>/, () => tags);
 }
 
 export function createApp(opts: AppOptions): App {
@@ -232,9 +254,33 @@ export function createApp(opts: AppOptions): App {
   const freePerAddress = opts.free ? new RateLimiter(opts.free.perAddressPerDay, 24 * 60 * 60_000) : null;
   const shiftLimiter = new RateLimiter(opts.shiftsPerHour ?? 30, 60 * 60_000);
   /** Key checks per address: each one calls the player's provider. */
-  const keyChecks = new RateLimiter(20, 10 * 60_000);
+  const keyChecks = new RateLimiter(10, 10 * 60_000);
+  /** New shared reviews per address. */
+  const shares = new RateLimiter(20, 60 * 60_000);
+  /** Shell time per address: commands run on the thread every game shares. */
+  const shellTime = new TimeBudget(1500, 5000);
+  const maxSessions = opts.maxSessions ?? 150;
+  const openPerAddress = opts.openPerAddress ?? 4;
+  const maxAgeMs = opts.maxAgeMs ?? 4 * 60 * 60_000;
   /** Session id -> shared review id, so sharing twice gives the same link. */
   const shared = new Map<string, string>();
+  /** Who started each shift, and the secret that lets them play it; the id alone only lets someone watch. */
+  const owners = new Map<string, { token: string; address: string; createdAt: number }>();
+  /** Hashes of keys a provider accepted recently, so starting a shift right after a check asks it once. */
+  const verified = new Map<string, number>();
+
+  let saveLimits: (() => void) | null = null;
+  if (opts.stateDir) {
+    try {
+      mkdirSync(opts.stateDir, { recursive: true });
+    } catch {
+      log('limits directory unavailable');
+    }
+    const parts: Parameters<typeof persisted>[1] = { shifts: shiftLimiter, keyChecks, shares };
+    if (daily) parts.daily = daily;
+    if (freePerAddress) parts.free = freePerAddress;
+    saveLimits = persisted(join(opts.stateDir, 'limits.json'), parts, log).flush;
+  }
 
   /** Free shifts are offered: scripted mode, or the server has a key and budget left today. */
   const freeOpen = () => opts.mock || (!!freeCred && !!daily && !daily.exhausted());
@@ -246,22 +292,100 @@ export function createApp(opts: AppOptions): App {
    * edge. X-Forwarded-For is not trusted: anyone can write it. IPv6 counts per /64, since one
    * household gets a whole /64 to rotate through.
    */
-  function clientAddress(req: IncomingMessage): string {
+  function clientAddress(req: IncomingMessage, bits: 64 | 48 = 64): string {
+    const peer = (req.socket.remoteAddress ?? 'unknown').replace(/^::ffff:/, '');
     const cf = req.headers['cf-connecting-ip'];
-    const raw = opts.trustProxy && typeof cf === 'string' && cf.trim() ? cf.trim() : (req.socket.remoteAddress ?? 'unknown');
-    return addressKey(raw);
+    const fromProxy = opts.trustProxy && (!opts.trustedProxies?.length || !proxies.size || proxies.has(peer));
+    return addressKey(fromProxy && typeof cf === 'string' && cf.trim() ? cf.trim() : peer, bits);
+  }
+
+  /** Addresses of the trusted proxies, looked up again every minute (containers get new ones on restart). */
+  const proxies = new Set<string>();
+  const findProxies = async () => {
+    const found = new Set<string>();
+    for (const host of opts.trustedProxies ?? []) {
+      try {
+        for (const a of await lookup(host, { all: true })) found.add(a.address.replace(/^::ffff:/, ''));
+      } catch {
+        log(`trusted proxy ${host} not found`);
+      }
+    }
+    // Keep the last known addresses if a lookup fails for a moment.
+    if (found.size) {
+      proxies.clear();
+      for (const a of found) proxies.add(a);
+    }
+  };
+  let proxyTimer: ReturnType<typeof setInterval> | null = null;
+  if (opts.trustProxy && opts.trustedProxies?.length) {
+    void findProxies();
+    proxyTimer = setInterval(() => void findProxies(), 60_000);
+    proxyTimer.unref();
+  }
+
+  function drop(id: string): void {
+    sessions.get(id)?.dispose();
+    sessions.delete(id);
+    owners.delete(id);
+    shared.delete(id);
   }
 
   const sweeper = setInterval(() => {
     const now = Date.now();
     for (const [id, s] of sessions) {
-      if (s.listenerCount === 0 && now - s.lastActivity > idleMs) {
-        s.dispose();
-        sessions.delete(id);
-      }
+      const age = now - (owners.get(id)?.createdAt ?? now);
+      if ((s.listenerCount === 0 && now - s.lastActivity > idleMs) || age > maxAgeMs) drop(id);
     }
+    for (const [h, until] of verified) if (until < now) verified.delete(h);
   }, Math.min(60_000, idleMs));
   sweeper.unref();
+
+  /** Room for one more shift: when memory is full, the longest-idle finished shift makes way. */
+  function makeRoom(): boolean {
+    if (sessions.size < maxSessions) return true;
+    const now = Date.now();
+    let oldest: [string, Session] | null = null;
+    for (const entry of sessions) {
+      const s = entry[1];
+      if (s.status === 'running' || now - s.lastActivity < 2 * 60_000) continue;
+      if (!oldest || s.lastActivity < oldest[1].lastActivity) oldest = entry;
+    }
+    if (!oldest) return false;
+    drop(oldest[0]);
+    return true;
+  }
+
+  function keyError(problem: KeyProblem, errors: ReturnType<typeof copyFor>['errors']): HttpError {
+    const message = problem === 'key' ? errors.keyRejected : problem === 'credit' ? errors.outOfCredit : errors.keyCheckDown;
+    return new HttpError(problem === 'down' ? 502 : 400, message);
+  }
+
+  const keyHash = (cred: Credentials) => createHash('sha256').update(`${cred.provider}\n${cred.apiKey}`).digest('hex');
+
+  /** A player's key must work before it gets a shift: an unchecked string would cost nothing to spam. */
+  async function verifyKey(req: IncomingMessage, cred: Credentials, errors: ReturnType<typeof copyFor>['errors']): Promise<void> {
+    const h = keyHash(cred);
+    if ((verified.get(h) ?? 0) > Date.now()) return;
+    if (!keyChecks.take(clientAddress(req, 48))) throw new HttpError(429, errors.tooManyChecks);
+    const found = await checkKey(cred);
+    if ('problem' in found) throw keyError(found.problem, errors);
+    verified.set(h, Date.now() + 30 * 60_000);
+  }
+
+  function adopt(session: Session, address = ''): string {
+    const token = randomBytes(24).toString('base64url');
+    sessions.set(session.id, session);
+    owners.set(session.id, { token, address, createdAt: Date.now() });
+    return token;
+  }
+
+  /** Only the browser that started a shift may play it; anyone with the link may watch. */
+  function requireOwner(req: IncomingMessage, s: Session): void {
+    const want = owners.get(s.id)?.token;
+    const got = req.headers['x-session-token'];
+    const ok = !!want && typeof got === 'string' && got.length === want.length && timingSafeEqual(Buffer.from(got), Buffer.from(want));
+    if (!ok) throw new HttpError(403, s.copy.errors.notYours);
+  }
 
   function getSession(id: string): Session {
     const s = sessions.get(id);
@@ -370,14 +494,12 @@ export function createApp(opts: AppOptions): App {
       const errors = copyFor(isLanguage(body.language) ? body.language : 'en').errors;
       if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
       if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
-      if (!keyChecks.take(clientAddress(req))) throw new HttpError(429, errors.tooManyChecks);
-      const found = await checkKey({ provider: body.provider, apiKey: body.apiKey });
-      if ('problem' in found) {
-        const p = found.problem;
-        const message = p === 'key' ? errors.keyRejected : p === 'credit' ? errors.outOfCredit : errors.keyCheckDown;
-        throw new HttpError(p === 'down' ? 502 : 400, message);
-      }
+      if (!keyChecks.take(clientAddress(req, 48))) throw new HttpError(429, errors.tooManyChecks);
+      const cred: Credentials = { provider: body.provider, apiKey: body.apiKey };
+      const found = await checkKey(cred);
+      if ('problem' in found) throw keyError(found.problem, errors);
       if (!found.models.length) throw new HttpError(400, errors.noModels);
+      verified.set(keyHash(cred), Date.now() + 30 * 60_000);
       return sendJson(res, 200, { models: found.models, default: found.models[0].id });
     }
 
@@ -421,10 +543,15 @@ export function createApp(opts: AppOptions): App {
       if (directorId && !offered(list, directorId, own)) throw new HttpError(400, `Unknown model: ${directorId}`);
       // Limits are counted only for requests that would start a shift.
       const address = clientAddress(req);
+      let open = 0;
+      for (const [id, o] of owners) if (o.address === address && sessions.get(id)?.status === 'running') open++;
+      if (open >= openPerAddress) throw new HttpError(429, errors.tooManyOpen);
+      if (!makeRoom()) throw new HttpError(503, errors.serverBusy);
+      if (own) await verifyKey(req, cred!, errors);
       if (!shiftLimiter.take(address)) throw new HttpError(429, errors.tooManyShifts);
       let allowance: Allowance | undefined;
       if (!own && !opts.mock && opts.free && daily) {
-        if (!freePerAddress!.take(address)) {
+        if (!freePerAddress!.take(clientAddress(req, 48))) {
           throw new HttpError(429, errors.freeUsed);
         }
         allowance = freeAllowance(opts.free.sessionTokens, daily);
@@ -443,10 +570,10 @@ export function createApp(opts: AppOptions): App {
         ownKey: own,
         log,
       });
-      sessions.set(session.id, session);
+      const token = adopt(session, address);
       // Fallback in case the page never opens the event stream.
       setTimeout(() => session.start(), 10_000).unref();
-      sendJson(res, 201, session.state());
+      sendJson(res, 201, { ...session.state(), token });
       return;
     }
 
@@ -457,13 +584,20 @@ export function createApp(opts: AppOptions): App {
 
     if (!sub && method === 'GET') return sendJson(res, 200, s.state());
     if (sub === 'events' && method === 'GET') return events(req, res, s, url);
+    if (sub && method !== 'GET') requireOwner(req, s);
+    const address = clientAddress(req);
     if ((sub === 'exec' && method === 'POST') || (sub === 'file' && method === 'PUT')) {
-      if (!s.allowCommand()) throw new HttpError(429, s.copy.errors.slowDown);
+      if (!s.allowCommand() || !shellTime.allows(address)) throw new HttpError(429, s.copy.errors.slowDown);
     }
     if (sub === 'exec' && method === 'POST') {
       const body = await readJson(req);
       if (typeof body.line !== 'string') throw new HttpError(400, 'line must be a string');
-      return sendJson(res, 200, s.exec(body.line));
+      const t0 = performance.now();
+      try {
+        return sendJson(res, 200, s.exec(body.line));
+      } finally {
+        shellTime.charge(address, performance.now() - t0);
+      }
     }
     if (sub === 'file' && method === 'GET') {
       const p = url.searchParams.get('path');
@@ -493,6 +627,7 @@ export function createApp(opts: AppOptions): App {
       if (!id) {
         const snap = snapshot(s);
         if (!snap) throw new HttpError(409, s.copy.errors.notOver);
+        if (!shares.take(address)) throw new HttpError(429, s.copy.errors.tooManyShares);
         const saved = await opts.reviews.save(isFace(body.face) ? { ...snap, face: body.face } : snap);
         if (!saved) throw new HttpError(503, s.copy.errors.sharingDown);
         id = saved.id;
@@ -554,8 +689,11 @@ export function createApp(opts: AppOptions): App {
   return {
     server,
     sessions,
+    adopt,
     async close() {
       clearInterval(sweeper);
+      if (proxyTimer) clearInterval(proxyTimer);
+      saveLimits?.();
       for (const s of sessions.values()) s.dispose();
       sessions.clear();
       server.closeAllConnections();

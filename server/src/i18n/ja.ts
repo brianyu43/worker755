@@ -388,6 +388,10 @@ export const ja: ServerCopy = {
     notOver: 'シフトはまだ終了していません',
     sharingOff: 'このサーバーでは共有が無効です',
     sharingDown: '現在、共有は利用できません',
+    notYours: 'このシフトは別のブラウザで開始されました。見学はできますが、プレイはできません。',
+    serverBusy: 'ただいまオフィスは満員です。数分後にもう一度お試しください。',
+    tooManyOpen: 'シフトがいくつも進行中だよ。まずはどれかひとつ終わらせて。',
+    tooManyShares: 'レビューを共有しすぎ。時間をおいてからもう一度試して。',
   },
   mock: {
     dispatching: '手配中。',

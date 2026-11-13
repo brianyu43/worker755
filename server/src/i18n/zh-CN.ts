@@ -388,6 +388,10 @@ export const zhCN: ServerCopy = {
     notOver: '班次还没结束',
     sharingOff: '此服务器已关闭分享功能',
     sharingDown: '分享功能暂时不可用',
+    notYours: '这个班次是在另一个浏览器里开始的。你可以围观，但不能参与。',
+    serverBusy: '办公室现在人满为患。几分钟后再试。',
+    tooManyOpen: '你已经同时开了好几班。先完成一班再说。',
+    tooManyShares: '分享的评审太多了。过会儿再试。',
   },
   mock: {
     dispatching: '正在派单。',

@@ -388,6 +388,10 @@ export const fr: ServerCopy = {
     notOver: 'Le service n’est pas encore terminé',
     sharingOff: 'Le partage est désactivé sur ce serveur',
     sharingDown: 'Le partage est indisponible pour le moment',
+    notYours: 'Ce service a commencé dans un autre navigateur. Tu peux le regarder, mais pas y jouer.',
+    serverBusy: 'Les bureaux sont pleins pour le moment. Réessaie dans quelques minutes.',
+    tooManyOpen: 'Tu as déjà plusieurs shifts en cours. Termine-en un d’abord.',
+    tooManyShares: 'Trop d’évaluations partagées. Réessaie plus tard.',
   },
   mock: {
     dispatching: 'Envoi en cours.',
