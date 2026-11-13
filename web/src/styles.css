@@ -1342,7 +1342,9 @@ kbd {
 }
 .report-note {
   flex: 1;
-  min-width: 0;
+  /* keeps the placeholder readable; the hint beside it gives way first */
+  min-width: 60%;
+  text-overflow: ellipsis;
   height: 100%;
   padding: 0;
   border: 0;

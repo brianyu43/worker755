@@ -16,6 +16,7 @@ export const KEEP: Record<string, readonly string[]> = {
   fr: ['web:record.corrections', 'web:review.date', 'web:mock.correction.task', 'server:missions.migration.title'],
   de: [
     'web:start.team',
+    'web:play.live',
     'web:badge.role.value',
     'web:badge.org.fresh',
     'web:badge.org.legacy',
