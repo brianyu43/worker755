@@ -131,6 +131,8 @@ export const hi: Catalogue = {
   'term.command': 'कमांड',
   'term.editOffline': 'edit: कनेक्शन नहीं',
   'term.offline': 'कनेक्शन नहीं। कमांड नहीं चली।',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'रिपोर्ट करने के लिए <code>{command}</code> टाइप करो या {keys} दबाओ',
   'term.keys': 'टर्मिनल कीज़',
   'term.saved': { other: '{path} सहेजी ({count} बाइट)' },

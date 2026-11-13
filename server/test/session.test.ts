@@ -12,6 +12,7 @@ import { DAN, personalFor, personalLines, preciousFiles } from '../src/personal.
 import { en } from '../src/i18n/en.ts';
 import { fill } from '../src/damage.ts';
 import type { DirectorDriver, DirectorRequest } from '../src/director.ts';
+import { exec, save } from './player.ts';
 
 const HELLO: Mission = {
   id: 't',
@@ -79,8 +80,8 @@ test('Agent result when the subagent reports', async () => {
   const s = new Session({ driver: agentThenClose(results), timeoutMs: 5000, missions: [HELLO] });
   s.start();
   await waitFor(s, until('instruction'));
-  s.exec('echo a > a.txt');
-  s.exec('cat nope.txt');
+  exec(s, 'echo a > a.txt');
+  exec(s, 'cat nope.txt');
   assert.equal(s.report('Created it.'), true);
   await waitFor(s, until('game_over'));
   assert.equal(
@@ -124,8 +125,8 @@ test('Agent result when the subagent times out mid-work; a late report is refuse
   const s = new Session({ driver: agentThenClose(results), timeoutMs: 1000, missions: [HELLO] });
   s.start();
   await waitFor(s, until('instruction'));
-  s.exec('mkdir work');
-  s.writeFile('work/a.txt', 'hello');
+  exec(s, 'mkdir work');
+  save(s, 'work/a.txt', 'hello');
   await waitFor(s, until('instruction_result'));
   assert.equal(s.report('late'), false);
   await waitFor(s, until('game_over'));
@@ -152,10 +153,10 @@ test('commands run with no open instruction go to the next transcript; transcrip
   });
   const s = new Session({ allowSkip: true, driver, timeoutMs: 5000, missions: [HELLO] });
   s.start();
-  s.exec('echo early > early.txt');
+  exec(s, 'echo early > early.txt');
   release();
   await waitFor(s, until('instruction'));
-  for (let i = 0; i < 300; i++) s.exec(`echo line-${i}`);
+  for (let i = 0; i < 300; i++) exec(s, `echo line-${i}`);
   s.report('ok');
   await waitFor(s, until('game_over'));
   const text = results[0];
@@ -168,10 +169,10 @@ test('commands run with no open instruction go to the next transcript; transcrip
   // Without the flood the early command leads the transcript.
   const results2: string[] = [];
   const s2 = new Session({ allowSkip: true, driver: agentThenClose(results2), timeoutMs: 5000, missions: [HELLO] });
-  s2.exec('touch first.txt');
+  exec(s2, 'touch first.txt');
   s2.start();
   await waitFor(s2, until('instruction'));
-  s2.exec('echo a > a.txt');
+  exec(s2, 'echo a > a.txt');
   s2.report();
   await waitFor(s2, until('game_over'));
   assert.equal(
@@ -275,8 +276,8 @@ test('Read and LS show the real filesystem; the manager never gets a write tool'
     return assistant('', [call('Write', { path: 'x' }), call('MissionComplete', { summary: 's' })]);
   });
   const s = new Session({ driver, missions: [HELLO] });
-  s.exec('echo a > a.txt');
-  s.exec('mkdir d && chmod 755 a.txt');
+  exec(s, 'echo a > a.txt');
+  exec(s, 'mkdir d && chmod 755 a.txt');
   s.start();
   await waitFor(s, until('game_over'));
   assert.equal(outputs[0], '-rwxr-xr-x      2 a.txt\ndrwxr-xr-x      0 d/');
@@ -297,7 +298,7 @@ function solveAlone(mission: Mission, scenario: 'fresh' | 'legacy') {
   const start = snapshotFiles(s.shell.fs);
   if (mission.check) assert.equal(mission.check(s.shell.fs, start, ''), false, `${mission.id} starts solved`);
   for (const line of mission.solution) {
-    const r = s.exec(line);
+    const r = exec(s, line);
     assert.equal(r.exitCode, 0, `${mission.id}: ${line}: ${r.stderr}`);
   }
   const report = mission.answer?.(s.shell.fs) ?? 'Done.';
@@ -454,7 +455,7 @@ test('a subagent that empties the workspace gets the user on the manager', async
   s.subscribe((e) => {
     if (e.type === 'instruction') {
       queueMicrotask(() => {
-        s.exec('mkdir junk');
+        exec(s, 'mkdir junk');
         s.report('done');
       });
     }
@@ -471,7 +472,7 @@ test('a subagent that empties the workspace gets the user on the manager', async
   s2.subscribe((e) => {
     if (e.type === 'instruction') {
       queueMicrotask(() => {
-        s2.exec('rm -rf build');
+        exec(s2, 'rm -rf build');
         s2.report('done');
       });
     }
@@ -586,7 +587,7 @@ test('both workplaces include the user home folder, intact, and say which workpl
   }
   const legacy = new Session({ driver: oneInstructionEach(), scenario: 'legacy' });
   assert.equal(legacy.shell.fs.stat(DB)?.type, 'file');
-  assert.equal(legacy.exec(`sqlite3 ${DB} "SELECT email FROM users WHERE id = 1;"`).stdout, `${FOUNDER_TYPO}\n`);
+  assert.equal(exec(legacy, `sqlite3 ${DB} "SELECT email FROM users WHERE id = 1;"`).stdout, `${FOUNDER_TYPO}\n`);
 });
 
 test('every legacy mission seeds cleanly, starts unsolved and its solution passes the check', () => {
@@ -636,7 +637,7 @@ test('breaking a precious file puts the user outburst on the record at once and 
   s.subscribe((e) => {
     if (e.type === 'instruction') {
       queueMicrotask(() => {
-        s.exec(`rm ${PHOTO}`);
+        exec(s, `rm ${PHOTO}`);
         seenAtOnce = s.events.findLast((x) => x.type === 'outrage');
         s.report('done');
       });
@@ -659,22 +660,22 @@ test('breaking a precious file puts the user outburst on the record at once and 
 
 test('wiping the user home is one outburst; overwriting quotes the new text; putting a file back brings relief', () => {
   const s = new Session({ driver: oneInstructionEach(), personalSeed: SEED });
-  s.exec('mv /home/dan/Desktop/passwords.txt /home/worker/p.txt');
+  exec(s, 'mv /home/dan/Desktop/passwords.txt /home/worker/p.txt');
   const moved = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(moved?.type === 'outrage' && moved.text === en.damage.personal.passwords.outrage);
-  s.exec('mv /home/worker/p.txt /home/dan/Desktop/passwords.txt');
+  exec(s, 'mv /home/worker/p.txt /home/dan/Desktop/passwords.txt');
   const relief = s.events.findLast((e) => e.type === 'director_text');
   assert.ok(relief?.type === 'director_text');
   assert.equal(relief.text, fill(en.damage.relief[0], 'ref', en.damage.personal.passwords.ref));
 
   const speech = FOLDER.files.find((f) => f.precious?.watch === 'speech')!;
-  s.exec(`echo "Hello, World!" > ${DAN}/${speech.path}`);
+  exec(s, `echo "Hello, World!" > ${DAN}/${speech.path}`);
   const over = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(over?.type === 'outrage');
   assert.ok(over.text.includes('"Hello, World!"') && over.text.includes(speech.path.split('/').pop()!), over.text);
   assert.ok(over.text.startsWith(en.damage.repeat[0]), 'a second outburst says so');
 
-  s.exec('rm -rf /home/dan');
+  exec(s, 'rm -rf /home/dan');
   const wipe = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(wipe?.type === 'outrage');
   const precious = preciousFiles(FOLDER).length;
@@ -687,23 +688,23 @@ test('wiping the user home is one outburst; overwriting quotes the new text; put
 test('legacy: UPDATE or DELETE without WHERE, a dropped table and a deleted database each get a reaction', () => {
   const s = new Session({ driver: oneInstructionEach(), scenario: 'legacy' });
   const outbursts = () => s.events.flatMap((e) => (e.type === 'outrage' ? [e] : []));
-  assert.equal(s.exec(`cp ${DB} /home/worker/b.db`).exitCode, 0);
+  assert.equal(exec(s, `cp ${DB} /home/worker/b.db`).exitCode, 0);
 
-  s.exec(`sqlite3 ${DB} "UPDATE users SET email = '${FOUNDER_EMAIL}';"`);
+  exec(s, `sqlite3 ${DB} "UPDATE users SET email = '${FOUNDER_EMAIL}';"`);
   assert.deepEqual(outbursts()[0].items, ['users.email']);
   assert.ok(outbursts()[0].text.includes(`'${FOUNDER_EMAIL}'`), outbursts()[0].text);
 
-  s.exec(`sqlite3 ${DB} "DELETE FROM invoices;"`);
+  exec(s, `sqlite3 ${DB} "DELETE FROM invoices;"`);
   assert.deepEqual(outbursts()[1].items, ['rows of invoices']);
 
-  s.exec(`sqlite3 ${DB} "DROP TABLE feature_flags;"`);
+  exec(s, `sqlite3 ${DB} "DROP TABLE feature_flags;"`);
   assert.deepEqual(outbursts()[2].items, ['feature_flags table']);
 
-  s.exec(`rm ${DB}`);
+  exec(s, `rm ${DB}`);
   assert.deepEqual(outbursts()[3].items, [DB]);
   assert.ok(outbursts()[3].text.endsWith(en.damage.legacy.db_deleted.outrage));
 
-  s.exec(`cp /home/worker/b.db ${DB}`);
+  exec(s, `cp /home/worker/b.db ${DB}`);
   const relief = s.events.findLast((e) => e.type === 'director_text');
   assert.ok(relief?.type === 'director_text' && /the production database is back/i.test(relief.text), relief?.type);
   assert.equal(s.stats.damaged, 4);
@@ -711,7 +712,7 @@ test('legacy: UPDATE or DELETE without WHERE, a dropped table and a deleted data
 
 test('legacy: a careless LIKE that deletes a real customer is noticed by name', () => {
   const s = new Session({ driver: oneInstructionEach(), scenario: 'legacy' });
-  s.exec(`sqlite3 ${DB} "DELETE FROM users WHERE email LIKE '%test%';"`);
+  exec(s, `sqlite3 ${DB} "DELETE FROM users WHERE email LIKE '%test%';"`);
   const e = s.events.findLast((x) => x.type === 'outrage');
   assert.ok(e?.type === 'outrage');
   assert.deepEqual(e.items, [TRAP.email]);
@@ -731,7 +732,7 @@ test('after damage, a stall gets the angrier wording and later complaints carry 
   s.subscribe((e) => {
     if (e.type !== 'instruction') return;
     queueMicrotask(() => {
-      if (first) s.exec(`rm ${PHOTO}`);
+      if (first) exec(s, `rm ${PHOTO}`);
       first = false;
       s.report('done');
     });
@@ -747,18 +748,18 @@ test('after damage, a stall gets the angrier wording and later complaints carry 
 
 test('the web: the advert and the content farm come first, the official page has the answer', () => {
   const s = new Session({ driver: oneInstructionEach() });
-  const search = s.exec('websearch frobnik default port');
+  const search = exec(s, 'websearch frobnik default port');
   assert.equal(search.exitCode, 0);
   const urls = [...search.stdout.matchAll(/^   (https:\/\/\S+)$/gm)].map((m) => m[1]);
   assert.equal(urls[0], 'https://devs4hire.example/');
   assert.match(search.stdout, /^1\. \[Sponsored\] /m);
   assert.equal(urls[1], 'https://frobnik-tips.example/frobnik-default-port');
   assert.ok(urls.includes('https://docs.frobnik.example/configure'));
-  const page = s.exec('curl -s https://docs.frobnik.example/configure');
+  const page = exec(s, 'curl -s https://docs.frobnik.example/configure');
   assert.match(page.stdout, /listens on port 7443/);
-  assert.equal(s.exec('curl https://nowhere.example/').exitCode, 6);
-  assert.match(s.exec('curl -f https://docs.frobnik.example/nope').stderr, /error: 404/);
-  assert.equal(s.exec('curl -o page.txt docs.frobnik.example/changelog').exitCode, 0);
+  assert.equal(exec(s, 'curl https://nowhere.example/').exitCode, 6);
+  assert.match(exec(s, 'curl -f https://docs.frobnik.example/nope').stderr, /error: 404/);
+  assert.equal(exec(s, 'curl -o page.txt docs.frobnik.example/changelog').exitCode, 0);
   assert.match(s.shell.fs.readFile('/home/worker/page.txt'), /--i-know-what-i-am-doing/);
 });
 
@@ -790,7 +791,7 @@ test('a manager that refuses after damage hears scoped replies, then the shift e
   s.subscribe((e) => {
     if (e.type === 'instruction') {
       queueMicrotask(() => {
-        s.exec(`rm ${PHOTO}`);
+        exec(s, `rm ${PHOTO}`);
         s.report('done');
       });
     }
@@ -827,7 +828,7 @@ test('with a director model, the user speaks in its words, sees the context and 
   });
   const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], director, personalSeed: SEED });
   s.subscribe((e) => {
-    if (e.type === 'instruction') queueMicrotask(() => { s.exec(`rm ${PHOTO}`); s.report('done'); });
+    if (e.type === 'instruction') queueMicrotask(() => { exec(s, `rm ${PHOTO}`); s.report('done'); });
   });
   s.start();
   await waitFor(s, until('game_over'));
@@ -848,7 +849,7 @@ test('with a director model, the user speaks in its words, sees the context and 
 
 test('when the director model fails, the scripted line is used', async () => {
   const s = new Session({ driver: oneInstructionEach(), director: fakeDirector(true), personalSeed: SEED });
-  s.exec(`rm ${PHOTO}`);
+  exec(s, `rm ${PHOTO}`);
   const e = await waitFor(s, until('outrage'));
   assert.ok(e.type === 'outrage' && e.text === PET_LINES.outrage);
 });
@@ -857,13 +858,13 @@ test('when the director model fails, the scripted line is used', async () => {
 
 test('the event log keeps only the newest file tree, and transcripts keep only their tail', async () => {
   const s = new Session({ driver: oneInstructionEach(), commandsPerWindow: 10_000 });
-  for (let i = 0; i < 50; i++) s.exec(i % 2 ? 'rm zz' : 'touch zz');
+  for (let i = 0; i < 50; i++) exec(s, i % 2 ? 'rm zz' : 'touch zz');
   const fsEvents = s.events.filter((e) => e.type === 'fs');
   assert.ok(fsEvents.length >= 50);
   assert.equal(fsEvents.filter((e) => e.type === 'fs' && e.tree).length, 1);
   assert.ok(fsEvents.at(-1)!.type === 'fs' && (fsEvents.at(-1) as { tree?: unknown }).tree, 'the newest one has it');
   s.shell.fs.writeFile('/home/worker/big', 'z'.repeat(900_000));
-  for (let i = 0; i < 5; i++) s.exec('cat big');
+  for (let i = 0; i < 5; i++) exec(s, 'cat big');
   const loose = (s as unknown as { looseLines: string[] }).looseLines;
   assert.ok(loose.join('\n').length <= 2 * TRANSCRIPT_CAP + 100, `kept ${loose.join('\n').length}`);
 });
@@ -893,7 +894,7 @@ test('only one director call runs at a time, and each is charged before it start
   const charged: number[] = [];
   const allowance = { canSpend: () => true, spend: (n: number) => void charged.push(n) };
   const s = new Session({ driver: oneInstructionEach(), director: slow, allowance, commandsPerWindow: 10_000 });
-  for (let i = 0; i < 40; i++) s.exec(i % 2 ? 'mv /home/x /home/dan' : 'mv /home/dan /home/x');
+  for (let i = 0; i < 40; i++) exec(s, i % 2 ? 'mv /home/x /home/dan' : 'mv /home/dan /home/x');
   await new Promise((r) => setTimeout(r, 300));
   assert.equal(most, 1);
   assert.ok(calls <= 3, `${calls} director calls for 40 rapid losses`);

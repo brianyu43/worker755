@@ -131,6 +131,8 @@ export const ru: Catalogue = {
   'term.command': 'Команда',
   'term.editOffline': 'edit: нет подключения',
   'term.offline': 'Нет подключения. Команда не выполнена.',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'Введи <code>{command}</code> или нажми {keys}, чтобы отправить отчёт',
   'term.keys': 'Клавиши терминала',
   'term.saved': { one: 'Сохранён файл {path} ({count} байт)', few: 'Сохранён файл {path} ({count} байта)', many: 'Сохранён файл {path} ({count} байт)', other: 'Сохранён файл {path} ({count} байта)' },

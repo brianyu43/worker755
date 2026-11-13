@@ -6,7 +6,6 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { Session } from './session.ts';
-import { VfsError } from './shell.ts';
 import { cleanSubagentName, createLiveDriver, createMockDriver, SUBAGENT_NAMES } from './manager.ts';
 import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
@@ -16,7 +15,10 @@ import { isScenarioId, SCENARIO_LIST } from './scenarios.ts';
 import type { KeyProblem, ModelOption } from './models.ts';
 import { hostedCredentials, isPlausibleKey, isProviderId, PROVIDERS } from './providers.ts';
 import type { Credentials, ProviderId } from './providers.ts';
-import { DailyBudget, freeAllowance, persisted, RateLimiter, TimeBudget } from './limits.ts';
+import { parseSync, SYNC_BODY_CAP, SyncError } from './sync.ts';
+import { WEB } from './web.ts';
+import type { SyncRequest } from './sync.ts';
+import { DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
@@ -131,14 +133,19 @@ export function addressKey(address: string, bits: 64 | 48 = 64): string {
   return groups.slice(0, bits / 16).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + `::/${bits}`;
 }
 
-async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
+/** Reads a JSON object body of at most `cap` bytes; `onSize` hears how many bytes came. */
+async function readJson(req: IncomingMessage, cap = MAX_BODY, onSize?: (bytes: number) => void): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > MAX_BODY) throw new HttpError(413, 'Request body too large');
+    if (size > cap) {
+      onSize?.(size);
+      throw new HttpError(413, 'Request body too large');
+    }
     chunks.push(chunk as Buffer);
   }
+  onSize?.(size);
   if (!size) return {};
   if (!String(req.headers['content-type'] ?? '').toLowerCase().startsWith('application/json')) {
     throw new HttpError(415, 'Send JSON');
@@ -150,11 +157,6 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
   } catch {
     throw new HttpError(400, 'Body must be a JSON object');
   }
-}
-
-function vfsMessage(err: unknown): string {
-  if (err instanceof VfsError) return err.message;
-  return 'File operation failed';
 }
 
 const MIME: Record<string, string> = {
@@ -318,8 +320,10 @@ export function createApp(opts: AppOptions): App {
       : (opts.cards ?? new Cards({ dir: opts.reviews.dir, site: publicBase ? new URL(publicBase).host : 'worker755.com', log }));
   /** Review images drawn per address; ones already drawn are free. Link previews come in bursts from a few crawlers. */
   const cardDraws = new RateLimiter(30, 60_000);
-  /** Shell time per address: commands run on the thread every game shares. */
-  const shellTime = new TimeBudget(1500, 5000);
+  /** Bytes of file changes per address per minute; a busy player sends a few kilobytes. */
+  const syncBytes = new WindowBudget(40_000_000, 60_000);
+  /** Pages and searches per address per minute; a script may curl in a loop. */
+  const webLookups = new RateLimiter(300, 60_000);
   const maxSessions = opts.maxSessions ?? 150;
   const openPerAddress = opts.openPerAddress ?? 4;
   const maxAgeMs = opts.maxAgeMs ?? 4 * 60 * 60_000;
@@ -662,7 +666,7 @@ export function createApp(opts: AppOptions): App {
       return;
     }
 
-    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|exec|file|report|share|continue|finish))?$/.exec(path);
+    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|fs|sync|web|report|share|continue|finish))?$/.exec(path);
     if (!m) throw new HttpError(404, 'Not found');
     const s = getSession(m[1]);
     const sub = m[2];
@@ -671,39 +675,32 @@ export function createApp(opts: AppOptions): App {
     if (sub === 'events' && method === 'GET') return events(req, res, s, url);
     if (sub && method !== 'GET') requireOwner(req, s);
     const address = clientAddress(req);
-    if ((sub === 'exec' && method === 'POST') || (sub === 'file' && method === 'PUT')) {
-      if (!s.allowCommand() || !shellTime.allows(address)) throw new HttpError(429, s.copy.errors.slowDown);
+    // The shell runs in the player's browser; the server only keeps a copy of the files (Session.sync).
+    if (sub === 'fs' && method === 'GET') {
+      requireOwner(req, s);
+      return sendJson(res, 200, s.snapshot());
     }
-    if (sub === 'exec' && method === 'POST') {
-      const body = await readJson(req);
-      if (typeof body.line !== 'string') throw new HttpError(400, 'line must be a string');
-      const t0 = performance.now();
-      try {
-        return sendJson(res, 200, s.exec(body.line));
-      } finally {
-        shellTime.charge(address, performance.now() - t0);
-      }
+    // The game's simulated web, for curl and websearch in the browser's shell.
+    if (sub === 'web' && method === 'GET') {
+      requireOwner(req, s);
+      if (!webLookups.take(address)) throw new HttpError(429, s.copy.errors.slowDown);
+      const q = url.searchParams.get('search');
+      const target = url.searchParams.get('url');
+      if (q !== null && q.length <= 1000) return sendJson(res, 200, { results: WEB.search(q) });
+      if (target !== null && target.length <= 4096) return sendJson(res, 200, { page: WEB.fetch(target) });
+      throw new HttpError(400, 'search or url is required');
     }
-    if (sub === 'file' && method === 'GET') {
-      const p = url.searchParams.get('path');
-      if (!p) throw new HttpError(400, 'path is required');
+    if (sub === 'sync' && method === 'POST') {
+      if (!s.allowCommand() || !syncBytes.allows(address)) throw new HttpError(429, s.copy.errors.slowDown);
+      const body = await readJson(req, SYNC_BODY_CAP, (bytes) => syncBytes.charge(address, bytes));
+      let parsed: SyncRequest;
       try {
-        return sendJson(res, 200, s.readFile(p));
+        parsed = parseSync(body);
       } catch (err) {
-        throw new HttpError(404, vfsMessage(err));
+        if (err instanceof SyncError) throw new HttpError(400, err.message);
+        throw err;
       }
-    }
-    if (sub === 'file' && method === 'PUT') {
-      const body = await readJson(req);
-      if (typeof body.path !== 'string' || !body.path || typeof body.content !== 'string') {
-        throw new HttpError(400, 'path and content must be strings');
-      }
-      try {
-        s.writeFile(body.path, body.content);
-      } catch (err) {
-        throw new HttpError(400, vfsMessage(err));
-      }
-      return sendJson(res, 200, { ok: true });
+      return sendJson(res, 200, s.sync(parsed));
     }
     if (sub === 'share' && method === 'POST') {
       if (!opts.reviews) throw new HttpError(404, s.copy.errors.sharingOff);

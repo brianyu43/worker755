@@ -1448,6 +1448,21 @@ kbd {
   line-height: inherit;
   caret-color: var(--hl);
 }
+/* Ctrl+R: the prompt holds what is searched for, the match follows it. */
+.term-input-searching {
+  flex: 0 0 auto;
+}
+.term-search-hit {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--term-dim);
+  white-space: pre;
+  text-overflow: ellipsis;
+}
+.term-search-hit::before {
+  content: ': ';
+}
 .term-busy {
   width: 8px;
   height: 8px;

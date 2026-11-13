@@ -131,6 +131,8 @@ export const ja: Catalogue = {
   'term.command': 'コマンド',
   'term.editOffline': 'edit: 接続なし',
   'term.offline': '接続なし。コマンドは実行されませんでした。',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': '<code>{command}</code>と入力するか、{keys}を押して報告',
   'term.keys': 'ターミナルキー',
   'term.saved': { other: '{path}を保存しました（{count}バイト）' },

@@ -3,6 +3,9 @@ import type { Face } from '../game/avatar';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
 import { t } from '../i18n';
+import { LocalShell } from '../shell/local';
+import type { Snapshot } from '../shell/local';
+import type { Change } from '../shell/protocol';
 
 export { ApiError };
 
@@ -38,9 +41,12 @@ export interface GameClient {
   getSession(id: string): Promise<SessionState>;
   /** Streams events with seq > after. Reconnects on its own, resuming after the last seq seen. */
   subscribe(id: string, after: number, handlers: SubscribeHandlers): Subscription;
+  /** Runs a command line in the player's shell. */
   exec(id: string, line: string): Promise<ExecResponse>;
   readFile(id: string, path: string): Promise<{ path: string; content: string }>;
   writeFile(id: string, path: string, content: string): Promise<{ ok: true }>;
+  /** Every command name the player's shell knows, for Tab completion. */
+  commandNames(id: string): Promise<string[]>;
   report(id: string, message?: string): Promise<{ ok: true }>;
   /** Saves a finished shift's review under a public link. */
   share(id: string, face: Face): Promise<{ id: string; path: string }>;
@@ -111,8 +117,76 @@ async function request<T>(method: string, url: string, body?: unknown, extra: Re
   return data as T;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+interface SyncBody {
+  epoch: number;
+  cwd: string;
+  changes: Change[];
+  command?: { line: string; output: string; exitCode: number };
+  edit?: { path: string; bytes: number };
+}
+
 function createRealClient(): GameClient {
   const s = (id: string) => `/api/sessions/${encodeURIComponent(id)}`;
+
+  // The shell runs here, in a Web Worker; the server keeps a copy of the files for the manager and the
+  // checks. Each shift's shell starts from the server's files.
+  const shells = new Map<string, Promise<LocalShell>>();
+  const snapshot = (id: string) => request<Snapshot>('GET', `${s(id)}/fs`, undefined, owner(id));
+  const shellFor = (id: string): Promise<LocalShell> => {
+    let sh = shells.get(id);
+    if (!sh) {
+      const token = owner(id)['X-Session-Token'];
+      sh = snapshot(id).then((snap) => LocalShell.start(snap, token ? { base: s(id), token } : null));
+      sh.catch(() => shells.delete(id));
+      shells.set(id, sh);
+    }
+    return sh;
+  };
+
+  /**
+   * Sends the server what commands and saves changed, oldest first. A send that cannot get through (no
+   * network, rate limit, server trouble) stays in the backlog and goes first next time, so the server's
+   * copy always follows the shell in order. When the server asks (a mission seed crossed a command, or
+   * changes did not fit), the shell reloads the server's files once the backlog is through, so both sides
+   * agree again. Runs inside the shell's queue. False while something is still waiting to be sent.
+   */
+  const backlogs = new Map<string, SyncBody[]>();
+  const sync = async (id: string, sh: LocalShell, body: SyncBody): Promise<boolean> => {
+    const backlog = backlogs.get(id) ?? [];
+    backlogs.set(id, backlog);
+    backlog.push(body);
+    let reload = false;
+    let attempt = 0;
+    while (backlog.length) {
+      try {
+        const r = await request<{ resync: boolean }>('POST', `${s(id)}/sync`, backlog[0], owner(id));
+        backlog.shift();
+        attempt = 0;
+        if (r.resync) reload = true;
+      } catch (e) {
+        const status = e instanceof ApiError ? e.status : 0;
+        if (status === 400 || status === 413) {
+          backlog.shift();
+          reload = true;
+          continue;
+        }
+        if (status === 403 || status === 404) {
+          backlog.length = 0;
+          break;
+        }
+        if (attempt++ < 4) {
+          await sleep(400 * 2 ** attempt);
+          continue;
+        }
+        return false;
+      }
+    }
+    if (reload) await sh.reload(await snapshot(id));
+    return true;
+  };
+
   return {
     kind: 'real',
     getModels: (provider) =>
@@ -131,10 +205,42 @@ function createRealClient(): GameClient {
       return state;
     },
     getSession: (id) => request<SessionState>('GET', s(id)),
-    exec: (id, line) => request<ExecResponse>('POST', `${s(id)}/exec`, { line }, owner(id)),
-    readFile: (id, path) =>
-      request<{ path: string; content: string }>('GET', `${s(id)}/file?path=${encodeURIComponent(path)}`),
-    writeFile: (id, path, content) => request<{ ok: true }>('PUT', `${s(id)}/file`, { path, content }, owner(id)),
+    async exec(id, line) {
+      const sh = await shellFor(id);
+      // The command and its sync are one step, so the server's copy follows the shell in order.
+      return sh.exclusive(async () => {
+        const r = await sh.execNow(line);
+        let synced = true;
+        if (line.trim() && !r.killed) {
+          synced = await sync(id, sh, {
+            epoch: r.epoch,
+            cwd: r.cwd,
+            changes: r.changes,
+            command: { line, output: r.result.stdout + r.result.stderr, exitCode: r.result.exitCode },
+          });
+        }
+        return { ...r.result, cwd: r.cwd, killed: r.killed, unsynced: !synced };
+      });
+    },
+    async readFile(id, path) {
+      const sh = await shellFor(id);
+      try {
+        return await sh.read(path);
+      } catch (e) {
+        throw new ApiError(404, e instanceof Error ? e.message : 'not found');
+      }
+    },
+    async writeFile(id, path, content) {
+      const sh = await shellFor(id);
+      await sh.exclusive(async () => {
+        const w = await sh.writeNow(path, content);
+        // Saved here either way; without a connection the save waits in the backlog for the server.
+        const bytes = new TextEncoder().encode(content).length;
+        await sync(id, sh, { epoch: w.epoch, cwd: w.cwd, changes: w.changes, edit: { path: w.path, bytes } });
+      });
+      return { ok: true };
+    },
+    commandNames: async (id) => (await shellFor(id)).names(),
     report: (id, message) =>
       request<{ ok: true }>('POST', `${s(id)}/report`, message ? { message } : {}, owner(id)),
     share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }, owner(id)),
@@ -166,6 +272,8 @@ function createRealClient(): GameClient {
             for (const event of data.events ?? []) {
               if (typeof event.seq !== 'number' || event.seq <= lastSeq) continue;
               lastSeq = event.seq;
+              // Only the shift's own browser runs a shell; a watcher has none to update.
+              if (event.type === 'seed' && shells.has(id)) void shellFor(id).then((sh) => sh.applySeed(event.epoch, event.changes));
               handlers.onEvent(event);
             }
           } catch {

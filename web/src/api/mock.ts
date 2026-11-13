@@ -410,6 +410,10 @@ export function createMockClient(): GameClient {
       emitFs();
       return { ok: true };
     },
+    async commandNames(id) {
+      requireSession(id);
+      return ['cat', 'cd', 'chmod', 'clear', 'cp', 'date', 'echo', 'edit', 'help', 'ls', 'mkdir', 'mv', 'nano', 'pwd', 'rm', 'rmdir', 'touch', 'tree', 'vi', 'whoami'];
+    },
     async report(id, message) {
       requireSession(id);
       await delay(60);

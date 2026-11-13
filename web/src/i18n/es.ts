@@ -131,6 +131,8 @@ export const es: Catalogue = {
   'term.command': 'Comando',
   'term.editOffline': 'edit: sin conexión',
   'term.offline': 'Sin conexión. No se ejecutó el comando.',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'Escribe <code>{command}</code> o pulsa {keys} para informar',
   'term.keys': 'Teclas del terminal',
   'term.saved': { one: 'Guardado {path} ({count} byte)', many: 'Guardado {path} ({count} bytes)', other: 'Guardado {path} ({count} bytes)' },

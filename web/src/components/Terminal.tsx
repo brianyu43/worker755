@@ -7,6 +7,7 @@ import { useStickToBottom } from './stick';
 import { Splitter } from './Splitter';
 import { t } from '../i18n';
 import { rich } from '../i18n/rich';
+import { isIncomplete } from '../../../shell/src/parser.ts';
 
 export type LineKind = 'cmd' | 'out' | 'err' | 'sys' | 'ok' | 'warn';
 interface Line {
@@ -98,6 +99,16 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
   const history = useRef<string[]>([]);
   const histIdx = useRef<number>(-1);
   const draft = useRef('');
+  /** Lines typed so far of a command that is not finished yet (an open quote, `if` without `fi`, …). */
+  const [more, setMore] = useState<string | null>(null);
+  /** Ctrl+R: the text searched for in history, and where the match is. */
+  const [search, setSearch] = useState<{ query: string; at: number } | null>(null);
+  /** Every command name the shell knows, for Tab completion of the first word. */
+  const names = useRef<string[]>([]);
+  const loadNames = useCallback(() => {
+    client.commandNames(sessionId).then((n) => (names.current = n), () => {});
+  }, [sessionId]);
+  useEffect(loadNames, [loadNames]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { ref: scrollRef, stick, onScroll } = useStickToBottom<HTMLDivElement>(24);
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -154,9 +165,15 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     setPane('file');
   };
 
-  const run = (line: string) => {
-    const p = prompt;
-    push([{ kind: 'cmd', text: line, prompt: p }]);
+  const run = (typed: string) => {
+    push([{ kind: 'cmd', text: typed, prompt: more === null ? prompt : '>' }]);
+    const line = more === null ? typed : `${more}\n${typed}`;
+    // An unfinished command waits for its next line, as bash does with its > prompt.
+    if (line.trim() && isIncomplete(line)) {
+      setMore(line);
+      return;
+    }
+    setMore(null);
     const trimmed = line.trim();
     if (!trimmed) return;
     if (history.current[history.current.length - 1] !== line) history.current.push(line);
@@ -178,6 +195,9 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
         const add: Omit<Line, 'id'>[] = [];
         if (r.stdout) add.push({ kind: 'out', text: r.stdout.replace(/\n$/, '') });
         if (r.stderr) add.push({ kind: 'err', text: r.stderr.replace(/\n$/, '') });
+        if (r.killed) add.push({ kind: 'warn', text: t('term.killed') });
+        if (r.unsynced) add.push({ kind: 'warn', text: t('term.unsynced') });
+        loadNames();
         if (r.action?.type === 'clear') setLines([]);
         else if (add.length) push(add);
         if (r.action?.type === 'edit') await openEditor(r.action.path);
@@ -197,7 +217,10 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     const quote = /^["']/.test(raw) ? raw[0] : '';
     const word = raw.slice(quote.length);
     const isFirst = before.trim() === raw;
-    if (isFirst && !word.includes('/')) return; // no command completion
+    if (isFirst && !word.includes('/') && !quote) {
+      completeCommand(word, before, after);
+      return;
+    }
     const slash = word.lastIndexOf('/');
     const dirPart = slash >= 0 ? word.slice(0, slash + 1) : '';
     const prefix = slash >= 0 ? word.slice(slash + 1) : word;
@@ -229,16 +252,80 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     requestAnimationFrame(() => inputRef.current?.setSelectionRange(nextBefore.length, nextBefore.length));
   };
 
+  /** Tab on the first word: command names, as bash completes them. */
+  const completeCommand = (word: string, before: string, after: string) => {
+    const hits = names.current.filter((n) => n.startsWith(word));
+    if (!hits.length) return;
+    let common = hits[0];
+    for (const h of hits) while (!h.startsWith(common)) common = common.slice(0, -1);
+    if (common === word && hits.length > 1) {
+      push([
+        { kind: 'cmd', text: input, prompt },
+        { kind: 'out', text: hits.join('  ') },
+      ]);
+      return;
+    }
+    const nextBefore = before.slice(0, before.length - word.length) + common + (hits.length === 1 ? ' ' : '');
+    setInput(nextBefore + after);
+    requestAnimationFrame(() => inputRef.current?.setSelectionRange(nextBefore.length, nextBefore.length));
+  };
+
+  /** The newest history entry at or before `at` that contains `query`; -1 when none. */
+  const searchHistory = (query: string, at: number): number => {
+    for (let i = Math.min(at, history.current.length - 1); i >= 0; i--) if (history.current[i].includes(query)) return i;
+    return -1;
+  };
+  const searchHit = search ? searchHistory(search.query, search.at) : -1;
+
+  /** Leaves Ctrl+R search, putting the match (or what was there before) on the prompt. */
+  const endSearch = (keep: boolean) => {
+    const text = keep && searchHit >= 0 ? history.current[searchHit] : draft.current;
+    setSearch(null);
+    setInput(text);
+    caretTo(text.length);
+  };
+
   const caretTo = (pos: number) => requestAnimationFrame(() => inputRef.current?.setSelectionRange(pos, pos));
 
   /** Runs a key on the prompt; true when it was handled. Shared by the keyboard and the on-screen keys. */
   const handleKey = (key: string, ctrl: boolean): boolean => {
+    if (search) {
+      const k = key.toLowerCase();
+      if (ctrl && k === 'r') {
+        // Older matches, one per press.
+        if (searchHit > 0) setSearch({ query: search.query, at: searchHit - 1 });
+        return true;
+      }
+      if ((ctrl && (k === 'g' || k === 'c')) || key === 'Escape') {
+        endSearch(false);
+        return true;
+      }
+      if (key === 'Enter') {
+        const text = searchHit >= 0 ? history.current[searchHit] : '';
+        setSearch(null);
+        setInput('');
+        run(text);
+        return true;
+      }
+      if (key === 'Tab' || key.startsWith('Arrow')) {
+        endSearch(true);
+        return true;
+      }
+      return false;
+    }
     if (ctrl) {
       const k = key.toLowerCase();
       if (k === 'c' && !window.getSelection()?.toString()) {
-        push([{ kind: 'cmd', text: input + '^C', prompt }]);
+        push([{ kind: 'cmd', text: input + '^C', prompt: more === null ? prompt : '>' }]);
         setInput('');
+        setMore(null);
         histIdx.current = -1;
+        return true;
+      }
+      if (k === 'r') {
+        draft.current = input;
+        setSearch({ query: '', at: history.current.length - 1 });
+        setInput('');
         return true;
       }
       if (k === 'l') {
@@ -292,6 +379,12 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
+    if (search) {
+      // While searching, the prompt holds the text searched for; each change searches from the newest.
+      setSearch({ query: next, at: history.current.length - 1 });
+      setInput(next);
+      return;
+    }
     // A phone keyboard sends no keydown for letters, so a held Ctrl catches the typed letter here.
     if (ctrlHeld && next.length === input.length + 1) {
       const at = (e.target.selectionStart ?? next.length) - 1;
@@ -310,6 +403,10 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     }
     if (key === 'Escape') {
       setCtrlHeld(false);
+      if (search) {
+        endSearch(false);
+        return;
+      }
       setInput('');
       histIdx.current = -1;
       return;
@@ -392,10 +489,11 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
             ))}
           </div>
           <label className="term-input-row">
-            <span className="tl-prompt">{prompt}</span>
+            <span className="tl-prompt">{search ? '(reverse-i-search)' : more === null ? prompt : '>'}</span>
             <input
               ref={inputRef}
-              className="term-input"
+              className={`term-input${search ? ' term-input-searching' : ''}`}
+              style={search ? { width: `${input.length + 1}ch` } : undefined}
               value={input}
               onChange={onChange}
               onKeyDown={onKeyDown}
@@ -406,6 +504,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
               autoFocus
               aria-label={t('term.command')}
             />
+            {search && <span className="term-search-hit">{searchHit >= 0 ? history.current[searchHit] : ''}</span>}
             {busy && <span className="term-busy" aria-hidden />}
           </label>
         </div>

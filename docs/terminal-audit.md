@@ -76,9 +76,15 @@ conditionals and functions all gave a "not supported" error. The machine had no 
 ### The terminal UI
 
 The terminal already had arrow-key history, Tab completion of file names, Ctrl+C, Ctrl+L and Ctrl+U.
-Command-name completion, Ctrl+R history search and multi-line input (the parser's `isIncomplete`)
-come with the move to a browser-side shell (see docs/client-shell.md), where completion can ask the
-shell directly.
+New since the shell moved into the browser (docs/client-shell.md):
+
+- Tab completes command names, from the shell's own list, so functions and aliases are included.
+- Ctrl+R searches history. Pressing it again finds older matches, Enter runs the match, Esc
+  cancels, and an arrow key takes the match onto the prompt to edit.
+- An unfinished line (open quote, `if` without `fi`, trailing `|` or `\`) waits for more under a
+  `>` prompt.
+- A command that will not stop is killed after 7 s. The shell comes back as it was before the
+  command, and the page never freezes.
 
 ## Left out on purpose
 
@@ -94,7 +100,7 @@ shell directly.
 | Package managers, compilers, interpreters (`python`, `node`, `gcc`) | Running arbitrary programs would mean an interpreter per language. The machine is a bare Ubuntu server with bash and coreutils. |
 | `trap` handlers, signals | Nothing can interrupt a command. `trap` is accepted and does nothing. |
 | Locales, `LC_*` collation | Everything is C.UTF-8. `sort` compares the way GNU does in an English locale. |
-| Pathological regexes | `grep`, `sed` and `awk` use JavaScript regexes. On the server, V8's non-backtracking fallback stops runaway patterns. In the browser that flag does not exist, so the Web Worker that runs the shell is terminated and rebuilt instead (docs/client-shell.md). |
+| Pathological regexes | `grep`, `sed` and `awk` use JavaScript regexes, and browsers have no non-backtracking fallback. A pattern that backtracks forever cannot be interrupted from inside, so the Web Worker that runs the shell is terminated after 7 s and rebuilt from the last good state (docs/client-shell.md). |
 
 ## Known differences from GNU
 

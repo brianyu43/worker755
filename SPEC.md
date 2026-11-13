@@ -310,13 +310,15 @@ All JSON. Errors: `{ "error": string }` with a 4xx/5xx status.
 | GET | `/r/:id` | | The app, with the review in its link-preview tags |
 | GET | `/api/sessions/:id` | | `SessionState` |
 | GET | `/api/sessions/:id/events` | | SSE stream of `GameEvent` |
-| POST | `/api/sessions/:id/exec` | `{ line: string }` | `ExecResult & { cwd: string }` |
-| GET | `/api/sessions/:id/file?path=` | | `{ path, content }` |
-| PUT | `/api/sessions/:id/file` | `{ path, content }` | `{ ok: true }` (the editor's save) |
+| GET | `/api/sessions/:id/fs` | | `{ entries: Entry[], cwd, epoch }`: every file, for the browser's shell to start from (owner only) |
+| POST | `/api/sessions/:id/sync` | `{ epoch, cwd, changes: Change[], command?: { line, output, exitCode }, edit?: { path, bytes } }` | `{ resync: boolean }`: what a command or an editor save changed in the browser (owner only; 400 on a bad shape, 413 over 8 MB, 429 past the rate limit) |
+| GET | `/api/sessions/:id/web?search=` / `?url=` | | `{ results }` / `{ page }` from the simulated web, for `curl` and `websearch` (owner only) |
 | POST | `/api/sessions/:id/report` | `{ message?: string }` | `{ ok: true }` (409 if no open instruction) |
 
-An editor save counts as activity and appears in the transcript as
-`$ [edited <path>, <n> bytes]`.
+The shell runs in the player's browser (docs/client-shell.md); the server runs no player command.
+It keeps an in-memory copy of the files that the manager's tools and the checks read. A mission
+that puts files in place sends them to the browser as a `seed` event. An editor save counts as
+activity and appears in the transcript as `$ [edited <path>, <n> bytes]`.
 
 ```ts
 interface SessionState {
@@ -374,6 +376,7 @@ type GameEvent = { seq: number; ts: number } & (
   | { type: 'mission_end'; index: number; outcome: 'completed' | 'failed';
       summary: string; groundTruth?: boolean }
   | { type: 'fs'; tree: TreeNode; cwd: string }                 // after any filesystem change
+  | { type: 'seed'; epoch: number; changes: Change[] }          // files a mission put in place
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
   | { type: 'error'; message: string }

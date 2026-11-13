@@ -12,11 +12,12 @@ import { assistant, call, createMockDriver, KEY_REJECTED, ManagerError } from '.
 import type { ManagerDriver, StepResult } from '../src/manager.ts';
 import type { Credentials } from '../src/providers.ts';
 import { providerModelId } from '../src/providers.ts';
-import { DailyBudget, freeAllowance, persisted, RateLimiter, TimeBudget } from '../src/limits.ts';
+import { DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from '../src/limits.ts';
 import { ReviewStore } from '../src/reviews.ts';
 import { copyFor } from '../src/i18n/index.ts';
 import type { Mission } from '../src/missions.ts';
 import type { GameEvent } from '../src/types.ts';
+import { exec, save } from './player.ts';
 
 const KEY = 'sk-or-v1-0123456789abcdef0123456789abcdef';
 const MODELS = [
@@ -191,7 +192,7 @@ test('a spent allowance pauses the shift; ending it there still gets the review'
   s.start();
   await waitFor(s, (e) => e.type === 'instruction');
   open = false;
-  s.exec('echo a > a.txt');
+  exec(s, 'echo a > a.txt');
   s.report('Done.');
   const paused = await waitFor(s, (e) => e.type === 'paused');
   assert.ok(paused.type === 'paused' && paused.reason === 'allowance');
@@ -219,7 +220,7 @@ test('a paused shift goes on with the player\'s key, where it stopped', async ()
   s.start();
   await waitFor(s, (e) => e.type === 'instruction');
   open = false;
-  s.exec('echo a > a.txt');
+  exec(s, 'echo a > a.txt');
   s.report('Done.');
   await waitFor(s, (e) => e.type === 'paused');
   let sawReport = false;
@@ -308,7 +309,7 @@ test('continue over HTTP: only while paused, with a real-looking key and a plaus
       const body = { provider: 'openrouter', apiKey: KEY, model: 'b/two' };
       assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, body)).status, 409, 'not paused yet');
       open = false;
-      s.exec('echo a > a.txt');
+      exec(s, 'echo a > a.txt');
       s.report('Done.');
       await waitFor(s, (e) => e.type === 'paused');
       assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, apiKey: 'short' })).status, 400);
@@ -397,7 +398,7 @@ test('a finished shift can be shared once; the page carries the review', async (
       s.start();
       await waitFor(s, (e) => e.type === 'instruction');
       assert.equal((await api('POST', `/api/sessions/${s.id}/share`)).status, 409);
-      s.exec('echo a > a.txt');
+      exec(s, 'echo a > a.txt');
       s.report('Done.');
       await waitFor(s, (e) => e.type === 'game_over');
 
@@ -450,7 +451,7 @@ test('a shared review keeps the language it was played in and the sharer\'s avat
         tokens.set(s.id, app.adopt(s));
         s.start();
         await waitFor(s, (e) => e.type === 'instruction');
-        s.exec('echo a > a.txt');
+        exec(s, 'echo a > a.txt');
         s.report('Done.');
         await waitFor(s, (e) => e.type === 'game_over');
         const r = await api('POST', `/api/sessions/${s.id}/share`, { face });
@@ -515,15 +516,17 @@ test('only the browser that started a shift can play it; the link alone lets som
     assert.equal(state.json.token, undefined, 'the secret is only in the create response');
     const id = s.id as string;
     tokens.delete(id);
-    for (const [method, sub] of [['POST', 'exec'], ['PUT', 'file'], ['POST', 'finish'], ['POST', 'share'], ['POST', 'report']]) {
-      const r = await api(method, `/api/sessions/${id}/${sub}`, { line: 'ls', path: '/home/worker/x', content: '' });
+    const sync = { epoch: 0, cwd: '/home/worker', changes: [{ op: 'put', path: '/home/worker/x', entries: [{ path: '/home/worker/x', type: 'file', mode: 0o644, mtime: 1, content: '' }] }] };
+    for (const [method, sub] of [['POST', 'sync'], ['GET', 'fs'], ['POST', 'finish'], ['POST', 'share'], ['POST', 'report']]) {
+      const r = await api(method, `/api/sessions/${id}/${sub}`, method === 'GET' ? undefined : sync);
       assert.equal(r.status, 403, sub);
     }
     assert.equal((await api('GET', `/api/sessions/${id}`)).status, 200, 'watching still works');
     tokens.set(id, 'x'.repeat(s.token.length));
-    assert.equal((await api('POST', `/api/sessions/${id}/exec`, { line: 'ls' })).status, 403, 'a wrong secret');
+    assert.equal((await api('POST', `/api/sessions/${id}/sync`, sync)).status, 403, 'a wrong secret');
     tokens.set(id, s.token);
-    assert.equal((await api('POST', `/api/sessions/${id}/exec`, { line: 'ls' })).status, 200);
+    assert.deepEqual((await api('POST', `/api/sessions/${id}/sync`, sync)).json, { resync: false });
+    assert.equal((await api('GET', `/api/sessions/${id}/fs`)).json.entries.some((e: { path: string }) => e.path === '/home/worker/x'), true);
   });
 });
 
@@ -568,7 +571,7 @@ test('a full server makes room only by dropping finished shifts', async () => {
   });
 });
 
-test('limits survive a restart; IPv6 can be counted per /48; shell time is budgeted', async () => {
+test('limits survive a restart; IPv6 can be counted per /48; sync bytes are budgeted', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'w755-limits-'));
   try {
     const file = join(dir, 'limits.json');
@@ -595,12 +598,12 @@ test('limits survive a restart; IPv6 can be counted per /48; shell time is budge
   assert.equal(addressKey('2001:db8:aa:bb::1', 48), addressKey('2001:db8:aa:ff::1', 48));
   assert.notEqual(addressKey('2001:db8:aa:bb::1'), addressKey('2001:db8:aa:ff::1'));
   let now = 0;
-  const time = new TimeBudget(100, 1000, () => now);
-  time.charge('a', 150);
-  assert.equal(time.allows('a'), false);
-  assert.equal(time.allows('b'), true);
+  const bytes = new WindowBudget(100, 1000, () => now);
+  bytes.charge('a', 150);
+  assert.equal(bytes.allows('a'), false);
+  assert.equal(bytes.allows('b'), true);
   now = 1000;
-  assert.equal(time.allows('a'), true);
+  assert.equal(bytes.allows('a'), true);
 });
 
 test('OpenRouter spells some vendors differently', () => {

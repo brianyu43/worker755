@@ -1,4 +1,6 @@
-// Copied from SPEC.md section 1 and 2. Keep in sync by hand; web/ does not import server/ or shell/.
+// Copied from SPEC.md section 1 and 2. Keep in sync by hand; web/ does not import server/. It runs shell/
+// in a Web Worker (src/shell), and takes the file-change type from there.
+import type { Change } from '../../../shell/src/sync.ts';
 
 export type NodeType = 'file' | 'dir';
 
@@ -70,6 +72,8 @@ export type GameEventBody =
     }
   /** Older fs events in a replayed log carry no tree; the newest one does. */
   | { type: 'fs'; tree?: TreeNode; cwd: string }
+  /** Files a mission put in place; the browser's shell applies them. */
+  | { type: 'seed'; epoch: number; changes: Change[] }
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
   | { type: 'error'; message: string }
@@ -99,6 +103,8 @@ export interface SessionState {
   paused?: PauseReason | null;
   cwd: string;
   tree: TreeNode;
+  /** Mission seeds applied so far. */
+  epoch?: number;
   missionIndex: number;
   missionTotal: number;
   instruction: OpenInstruction | null;
@@ -144,7 +150,13 @@ export interface SharedReview {
   face?: { id: string; color: string };
 }
 
-export type ExecResponse = ExecResult & { cwd: string };
+export type ExecResponse = ExecResult & {
+  cwd: string;
+  /** The command did not stop and was killed; the shell is back as it was before it. */
+  killed?: boolean;
+  /** The command ran, but the server has not heard about it yet (no connection); it will be sent later. */
+  unsynced?: boolean;
+};
 
 export const emptyStats = (): Stats => ({
   missionsCompleted: 0,

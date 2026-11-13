@@ -628,7 +628,7 @@ export const stat: Command = (ctx) => {
     const fmt = opts.values.get('c');
     if (fmt !== undefined) {
       ctx.out(
-        fmt.replace(/%([nsaAFUGYy%])/g, (m, c: string) => {
+        fmt.replace(/%([nsaAFUGYy%])/g, (_m, c: string) => {
           switch (c) {
             case 'n': return arg;
             case 's': return String(size);

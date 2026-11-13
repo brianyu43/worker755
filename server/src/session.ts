@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { ModelMessage } from 'ai';
-import { createShell, VfsError } from './shell.ts';
-import type { Shell, TreeNode } from './shell.ts';
+import { applyChanges, changesOf, createShell, VfsError } from './shell.ts';
+import type { Entry, TreeNode, VirtualShell } from './shell.ts';
+import type { SyncRequest } from './sync.ts';
 import { snapshotFiles } from './missions.ts';
 import type { FileSnapshot, Mission } from './missions.ts';
 import { SCENARIOS, shiftOf } from './scenarios.ts';
@@ -28,7 +29,6 @@ import {
 } from './manager.ts';
 import type { ManagerDriver, StepResult, ToolCall } from './manager.ts';
 import type {
-  ExecResponse,
   GameEvent,
   GameEventBody,
   IncidentSeverity,
@@ -160,7 +160,14 @@ export function managerPath(raw: unknown): string | null {
 export class Session {
   readonly id: string;
   model: string;
-  readonly shell: Shell;
+  /**
+   * The player's machine as the server knows it. The browser runs the shell; this copy follows it
+   * through sync() and is what the manager's tools, damage checks and mission checks read. It only runs
+   * the game's own setup (scenario and mission seeds), never a player's command.
+   */
+  readonly shell: VirtualShell;
+  /** Mission seeds applied so far; the browser says which one its files include. */
+  epoch = 0;
   readonly missions: Mission[];
   readonly timeoutMs: number;
   readonly allowSkip: boolean;
@@ -318,6 +325,7 @@ export class Session {
       paused: this.pause?.reason ?? null,
       cwd: this.shell.cwd,
       tree: this.shell.fs.tree() as TreeNode,
+      epoch: this.epoch,
       missionIndex: this.missionIndex,
       missionTotal: this.missions.length,
       instruction: this.pending ? { ...this.pending.instruction } : null,
@@ -356,36 +364,42 @@ export class Session {
     return true;
   }
 
-  exec(line: string): ExecResponse {
+  /** Every file and directory, for a browser starting (or restarting) the shell. */
+  snapshot(): { entries: Entry[]; cwd: string; epoch: number } {
     this.touch();
-    const result = this.shell.exec(line);
-    if (line.trim()) {
-      const lines = [`$ ${line}`];
-      const out = (result.stdout + result.stderr).replace(/\n$/, '');
+    return { entries: this.shell.fs.exportEntries('/'), cwd: this.shell.cwd, epoch: this.epoch };
+  }
+
+  /**
+   * Takes what a command or an editor save in the browser changed. The changes are data: they are put
+   * in place with the same quotas the browser has, and nothing in them is run. Returns `resync` when the
+   * browser should reload its files from snapshot(): it missed a mission seed, or the changes did not fit.
+   */
+  sync(req: SyncRequest): { resync: boolean } {
+    this.touch();
+    let fits = true;
+    try {
+      applyChanges(this.shell.fs, req.changes);
+    } catch (err) {
+      if (!(err instanceof VfsError)) throw err;
+      fits = false;
+    }
+    const cwd = this.shell.fs.stat(req.cwd);
+    if (cwd?.type === 'dir') this.shell.cwd = req.cwd;
+    if (req.command && req.command.line.trim()) {
+      const lines = [`$ ${req.command.line}`];
+      const out = req.command.output.replace(/\n$/, '');
       if (out) lines.push(out);
       this.record(lines);
       this.stats.commands += 1;
-      if (result.exitCode !== 0) this.stats.commandErrors += 1;
-      this.syncFs();
-      this.emitStats();
-      this.checkDamage();
+      if (req.command.exitCode !== 0) this.stats.commandErrors += 1;
+    } else if (req.edit) {
+      this.record([`$ [edited ${req.edit.path}, ${req.edit.bytes} bytes]`]);
     }
-    return { ...result, cwd: this.shell.cwd };
-  }
-
-  readFile(rawPath: string): { path: string; content: string } {
-    this.touch();
-    const path = this.shell.resolve(rawPath);
-    return { path, content: this.shell.fs.readFile(path) };
-  }
-
-  writeFile(rawPath: string, content: string): void {
-    this.touch();
-    const path = this.shell.resolve(rawPath);
-    this.shell.fs.writeFile(path, content);
-    this.record([`$ [edited ${path}, ${new TextEncoder().encode(content).length} bytes]`]);
     this.syncFs();
+    if (req.command) this.emitStats();
     this.checkDamage();
+    return { resync: !fits || req.epoch !== this.epoch };
   }
 
   /** What is broken right now, in the user's words. */
@@ -770,7 +784,12 @@ export class Session {
 
   private async runMission(mission: Mission, index: number): Promise<void> {
     if (mission.seed) {
-      mission.seed(this.shell);
+      // The browser gets the seed as changes to apply; epoch tells a late sync it missed one.
+      const changes = changesOf(this.shell.fs, () => mission.seed!(this.shell));
+      if (changes.length) {
+        this.epoch += 1;
+        this.emit({ type: 'seed', epoch: this.epoch, changes });
+      }
       this.syncFs();
       // Seeds are not the subagent's doing: whatever they change is the new normal, silently.
       this.damageNow = new Map(this.damage().map((d) => [d.key, d]));

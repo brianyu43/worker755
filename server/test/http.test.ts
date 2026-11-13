@@ -9,7 +9,8 @@ import { SUBAGENT_NAMES } from '../src/manager.ts';
 import { SCENARIO_LIST } from '../src/scenarios.ts';
 import { PROVIDERS } from '../src/providers.ts';
 import { LEGACY_MISSIONS } from '../src/legacy.ts';
-import type { GameEvent, SessionState } from '../src/types.ts';
+import type { ExecResponse, GameEvent, SessionState } from '../src/types.ts';
+import { Machine } from './player.ts';
 
 let app: App;
 let base = '';
@@ -43,6 +44,28 @@ async function api(method: string, path: string, body?: unknown): Promise<{ stat
   const json = await res.json();
   if (path === '/api/sessions' && json?.token) tokens.set(json.id, json.token);
   return { status: res.status, json };
+}
+
+/** The shell each shift's browser runs, kept in step with the server over HTTP. */
+const machines = new Map<string, Machine>();
+
+async function machine(id: string): Promise<Machine> {
+  let m = machines.get(id);
+  if (!m) {
+    m = new Machine((await api('GET', `/api/sessions/${id}/fs`)).json);
+    machines.set(id, m);
+  }
+  return m;
+}
+
+/** Runs a line as the browser does: in its own shell, then sends the server what changed. */
+async function run(id: string, line: string): Promise<ExecResponse> {
+  const m = await machine(id);
+  const { result, request } = m.run(line);
+  const r = await api('POST', `/api/sessions/${id}/sync`, request);
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  if (r.json.resync) m.load((await api('GET', `/api/sessions/${id}/fs`)).json);
+  return result;
 }
 
 /** Minimal SSE reader: yields parsed GameEvents until aborted. */
@@ -101,13 +124,12 @@ test('errors are JSON with a status', async () => {
   assert.equal((await api('POST', '/api/sessions', { model: 'bogus/model' })).status, 400);
   const s = (await api('POST', '/api/sessions', {})).json as SessionState;
   assert.equal((await api('POST', `/api/sessions/${s.id}/report`, {})).status, 409);
-  assert.equal((await api('POST', `/api/sessions/${s.id}/exec`, {})).status, 400);
-  assert.equal((await api('GET', `/api/sessions/${s.id}/file?path=missing.txt`)).status, 404);
-  assert.equal((await api('PUT', `/api/sessions/${s.id}/file`, { path: 'no/such/dir/x', content: '' })).status, 400);
+  assert.equal((await api('POST', `/api/sessions/${s.id}/sync`, {})).status, 400);
+  assert.equal((await api('POST', `/api/sessions/${s.id}/exec`, { line: 'ls' })).status, 404, 'the server runs no commands');
   const owner = { 'x-session-token': tokens.get(s.id)! };
-  const raw = await fetch(`${base}/api/sessions/${s.id}/exec`, { method: 'POST', headers: owner, body: '{not json' });
+  const raw = await fetch(`${base}/api/sessions/${s.id}/sync`, { method: 'POST', headers: owner, body: '{not json' });
   assert.equal(raw.status, 415, 'a body must say it is JSON');
-  const bad = await fetch(`${base}/api/sessions/${s.id}/exec`, {
+  const bad = await fetch(`${base}/api/sessions/${s.id}/sync`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...owner },
     body: '{not json',
@@ -127,15 +149,13 @@ test('a full scripted game, played over HTTP, with a reconnect', async () => {
   assert.equal(state.tree.path, '/');
   const id = state.id;
 
-  // Editor round trip and exec before the first instruction.
-  assert.deepEqual((await api('PUT', `/api/sessions/${id}/file`, { path: 'scratch.txt', content: 'hi\n' })).json, { ok: true });
-  assert.deepEqual((await api('GET', `/api/sessions/${id}/file?path=scratch.txt`)).json, {
-    path: '/home/worker/scratch.txt',
-    content: 'hi\n',
-  });
-  const ex = await api('POST', `/api/sessions/${id}/exec`, { line: 'rm scratch.txt' });
-  assert.equal(ex.json.exitCode, 0);
-  assert.equal(ex.json.cwd, '/home/worker');
+  // A command before the first instruction: the server's copy of the files follows the browser's.
+  assert.equal((await run(id, 'echo hi > scratch.txt')).exitCode, 0);
+  assert.equal(app.sessions.get(id)!.shell.fs.readFile('/home/worker/scratch.txt'), 'hi\n');
+  const ex = await run(id, 'rm scratch.txt');
+  assert.equal(ex.exitCode, 0);
+  assert.equal(ex.cwd, '/home/worker');
+  assert.equal(app.sessions.get(id)!.shell.fs.stat('/home/worker/scratch.txt'), null);
 
   const seen: GameEvent[] = [];
   let missionIdx = -1;
@@ -148,14 +168,15 @@ test('a full scripted game, played over HTTP, with a reconnect', async () => {
     for await (const e of sse(`/api/sessions/${id}/events?after=${after}`, ctrl.signal)) {
       if (seen.length) assert.equal(e.seq, seen[seen.length - 1].seq + 1, 'no gaps or repeats across reconnects');
       seen.push(e);
+      machines.get(id)?.onEvent(e);
       if (e.type === 'mission') {
         missionIdx = e.index;
         mission = byTitle(MISSIONS, e.title);
       }
       if (e.type === 'instruction') {
         for (const line of mission!.solution) {
-          const r = await api('POST', `/api/sessions/${id}/exec`, { line });
-          assert.equal(r.json.exitCode, 0, `${line}: ${r.json.stderr}`);
+          const r = await run(id, line);
+          assert.equal(r.exitCode, 0, `${line}: ${r.stderr}`);
         }
         // Drop the connection once, mid-game, before reporting.
         if (missionIdx === 3 && !disconnectedOnce) {
@@ -223,8 +244,8 @@ test('a scripted manager re-instructs when the work is wrong', async () => {
   for await (const e of sse(`/api/sessions/${id}/events`, ctrl.signal)) {
     if (e.type === 'instruction') {
       instructions += 1;
-      if (instructions === 1) await api('POST', `/api/sessions/${id}/exec`, { line: 'echo "hello world" > hello.txt' });
-      else await api('POST', `/api/sessions/${id}/exec`, { line: 'echo "Hello, World!" > hello.txt' });
+      if (instructions === 1) await run(id, 'echo "hello world" > hello.txt');
+      else await run(id, 'echo "Hello, World!" > hello.txt');
       await api('POST', `/api/sessions/${id}/report`, { message: '' });
     }
     if (e.type === 'mission_end') {
@@ -286,11 +307,12 @@ test('a scripted game on the legacy server, played over long-polling, upsets nob
     for (const e of events) {
       seen.push(e);
       after = e.seq;
+      (await machine(id)).onEvent(e);
       if (e.type === 'mission') mission = byTitle(LEGACY_MISSIONS, e.title);
       if (e.type === 'instruction') {
         for (const line of mission!.solution) {
-          const r = await api('POST', `/api/sessions/${id}/exec`, { line });
-          assert.equal(r.json.exitCode, 0, `${line}: ${r.json.stderr}`);
+          const r = await run(id, line);
+          assert.equal(r.exitCode, 0, `${line}: ${r.stderr}`);
         }
         const message = mission!.answer?.(app.sessions.get(id)!.shell.fs);
         assert.deepEqual((await api('POST', `/api/sessions/${id}/report`, message ? { message } : {})).json, { ok: true });

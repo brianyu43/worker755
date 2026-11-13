@@ -3,6 +3,8 @@ FROM node:24-slim AS web
 WORKDIR /app
 COPY web/package.json web/package-lock.json web/
 RUN npm ci --prefix web --no-audit --no-fund
+# The shell runs in the browser, in a Web Worker the web build bundles.
+COPY shell shell
 COPY web web
 RUN npm run build --prefix web
 

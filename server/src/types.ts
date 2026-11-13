@@ -1,4 +1,4 @@
-import type { ExecResult, TreeNode } from './shell.ts';
+import type { Change, ExecResult, TreeNode } from './shell.ts';
 import type { ScenarioId } from './scenarios.ts';
 import type { MissionKind } from './missions.ts';
 import type { Language } from './language.ts';
@@ -48,6 +48,8 @@ export type GameEventBody =
   | { type: 'mission_end'; index: number; outcome: 'completed' | 'failed'; summary: string; groundTruth?: boolean }
   /** `tree` is dropped from older fs events in the log; the newest one, and the state, carry it. */
   | { type: 'fs'; tree?: TreeNode; cwd: string }
+  /** Files a mission put in place, for the browser's shell to apply. */
+  | { type: 'seed'; epoch: number; changes: Change[] }
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
   /** The manager cannot go on: the free shift's tokens are spent, or the player's key failed. */
@@ -77,6 +79,8 @@ export interface SessionState {
   paused: PauseReason | null;
   cwd: string;
   tree: TreeNode;
+  /** Mission seeds applied so far (see the seed event). */
+  epoch: number;
   missionIndex: number;
   missionTotal: number;
   instruction: OpenInstruction | null;

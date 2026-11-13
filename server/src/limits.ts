@@ -117,40 +117,40 @@ export class RateLimiter {
 }
 
 /**
- * Milliseconds of server time per key in a fixed window. The simulated shell runs on the thread that
- * serves every game, so one address may only keep it busy for a share of each window.
+ * An amount per key in a fixed window: bytes a browser may send to keep the server's copy of its files
+ * up to date, so one address cannot keep the server parsing all day.
  */
-export class TimeBudget {
-  readonly limitMs: number;
+export class WindowBudget {
+  readonly limit: number;
   readonly windowMs: number;
   private now: () => number;
-  private used = new Map<string, { start: number; ms: number }>();
-  constructor(limitMs: number, windowMs: number, now: () => number = Date.now) {
-    this.limitMs = limitMs;
+  private used = new Map<string, { start: number; amount: number }>();
+  constructor(limit: number, windowMs: number, now: () => number = Date.now) {
+    this.limit = limit;
     this.windowMs = windowMs;
     this.now = now;
   }
 
-  private entry(key: string): { start: number; ms: number } {
+  private entry(key: string): { start: number; amount: number } {
     const t = this.now();
     if (this.used.size > 10_000) {
       for (const [k, v] of this.used) if (t - v.start >= this.windowMs) this.used.delete(k);
     }
     let cur = this.used.get(key);
     if (!cur || t - cur.start >= this.windowMs) {
-      cur = { start: t, ms: 0 };
+      cur = { start: t, amount: 0 };
       this.used.set(key, cur);
     }
     return cur;
   }
 
-  /** Whether the key has time left in this window. */
+  /** Whether the key has some left in this window. */
   allows(key: string): boolean {
-    return this.entry(key).ms < this.limitMs;
+    return this.entry(key).amount < this.limit;
   }
 
-  charge(key: string, ms: number): void {
-    this.entry(key).ms += ms;
+  charge(key: string, amount: number): void {
+    this.entry(key).amount += amount;
   }
 }
 

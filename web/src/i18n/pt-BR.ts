@@ -131,6 +131,8 @@ export const ptBR: Catalogue = {
   'term.command': 'Comando',
   'term.editOffline': 'edit: sem conexão',
   'term.offline': 'Sem conexão. Comando não executado.',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'Digite <code>{command}</code> ou pressione {keys} para relatar',
   'term.keys': 'Atalhos do terminal',
   'term.saved': { one: '{path} salvo ({count} byte)', many: '{path} salvo ({count} bytes)', other: '{path} salvo ({count} bytes)' },

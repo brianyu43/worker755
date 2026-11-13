@@ -207,6 +207,7 @@ export class MemoryVfs implements Vfs {
     } else {
       parent.children.set(name, { type: 'file', mode: DEFAULT_FILE_MODE, mtime: t, content: text });
       parent.mtime = t;
+      this.mark(dirname(p), 'meta');
     }
   }
 
@@ -282,6 +283,7 @@ export class MemoryVfs implements Vfs {
           next = { type: 'dir', mode, mtime: this.now(), children: new Map() };
           node.children.set(part, next);
           node.mtime = this.now();
+          this.mark(dirname(sofar), 'meta');
         }
         node = next;
       }
@@ -297,6 +299,7 @@ export class MemoryVfs implements Vfs {
     this.mark(p, 'tree');
     parent.children.set(name, { type: 'dir', mode, mtime: this.now(), children: new Map() });
     parent.mtime = this.now();
+    this.mark(dirname(p), 'meta');
   }
 
   /** Bytes and entries in a subtree. */
@@ -363,6 +366,7 @@ export class MemoryVfs implements Vfs {
       }
     }
     node.mtime = this.now();
+    this.mark(dir, 'meta');
   }
 
   /** Remove an empty directory. */
@@ -379,6 +383,7 @@ export class MemoryVfs implements Vfs {
     this.release(node);
     parent.children.delete(basename(p));
     parent.mtime = this.now();
+    this.mark(dirname(p), 'meta');
   }
 
   /** Remove a file, or a directory and everything in it when `recursive`. */
@@ -402,6 +407,7 @@ export class MemoryVfs implements Vfs {
     this.release(node);
     parent.children.delete(basename(p));
     parent.mtime = this.now();
+    this.mark(dirname(p), 'meta');
   }
 
   /**
@@ -450,6 +456,8 @@ export class MemoryVfs implements Vfs {
     srcParent.children.delete(basename(src));
     dstParent.children.set(basename(dst), node);
     srcParent.mtime = dstParent.mtime = this.now();
+    this.mark(dirname(src), 'meta');
+    this.mark(dirname(dst), 'meta');
   }
 
   /** Copy a file, or a directory tree when `recursive`, to exactly `to`. */
@@ -477,6 +485,7 @@ export class MemoryVfs implements Vfs {
       this.mark(dst, 'tree');
       parent.children.set(basename(dst), clone);
       parent.mtime = this.now();
+      this.mark(dirname(dst), 'meta');
       return;
     }
     const isNew = this.tryLookup(dst) === null;
@@ -566,6 +575,11 @@ export class MemoryVfs implements Vfs {
     this.journal = new Map();
   }
 
+  /** Stops recording; the journal so far is dropped. */
+  stopRecording(): void {
+    this.journal = null;
+  }
+
   /** The paths changed since record() or the last takeJournal(), and starts over. */
   takeJournal(): Map<string, Mark> {
     const j = this.journal ?? new Map<string, Mark>();
@@ -625,8 +639,9 @@ export class MemoryVfs implements Vfs {
         if (node && node.type === 'dir') this.remove(p, true);
         this.writeFile(p, e.content ?? '');
       }
-      this.setMeta(p, e.mode, e.mtime);
     }
+    // Times last: creating a child moves its directory's time.
+    for (const e of entries) this.setMeta(this.abs(e.path), e.mode, e.mtime);
   }
 
   /** Empties the filesystem down to its mount points and system directories. */

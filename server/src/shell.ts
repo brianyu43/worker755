@@ -1,5 +1,7 @@
 // The one place the server imports the shell package from.
-export { createShell, VfsError, Database, SqlError } from '../../shell/src/index.ts';
+export {
+  createShell, VfsError, Database, SqlError, changesOf, applyChanges, validateChanges, SyncError, MAX_FILE_BYTES,
+} from '../../shell/src/index.ts';
 export type {
   Shell,
   Vfs,
@@ -12,4 +14,7 @@ export type {
   Web,
   WebPage,
   WebResult,
+  VirtualShell,
+  Change,
+  Entry,
 } from '../../shell/src/index.ts';

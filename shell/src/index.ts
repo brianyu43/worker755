@@ -21,7 +21,7 @@ export { normalize, resolvePath, dirname, basename } from './path.ts';
 export { parse, parseScript, isIncomplete, ParseError } from './parser.ts';
 export { seedSystem } from './system.ts';
 export type { ShellSnapshot } from './shell.ts';
-export { collectChanges, applyChanges, loadSnapshot, validateChanges, validateSnapshot, SyncError } from './sync.ts';
+export { collectChanges, applyChanges, changesOf, loadSnapshot, validateChanges, validateSnapshot, SyncError } from './sync.ts';
 export type { Change, Entry } from './sync.ts';
 export { MAX_FILE_BYTES, MAX_TOTAL_BYTES, MAX_NODES } from './vfs.ts';
 export { Database, quoteIdent } from './sql/engine.ts';

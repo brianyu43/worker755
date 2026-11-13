@@ -43,6 +43,17 @@ export function collectChanges(fs: MemoryVfs): Change[] {
   return out;
 }
 
+/** Runs `fn` and returns what it changed, without leaving the journal on. */
+export function changesOf(fs: MemoryVfs, fn: () => void): Change[] {
+  fs.record();
+  try {
+    fn();
+    return collectChanges(fs);
+  } finally {
+    fs.stopRecording();
+  }
+}
+
 /** Puts changes in place. Throws VfsError when they break a quota or do not fit the tree. */
 export function applyChanges(fs: MemoryVfs, changes: Change[]): void {
   const order = (c: Change) => (c.op === 'rm' ? 0 : c.op === 'put' ? 1 : 2);
@@ -127,7 +138,7 @@ export function validateChanges(raw: unknown): Change[] {
     if (!c || typeof c !== 'object' || Array.isArray(c)) throw new SyncError('bad change');
     const o = c as Record<string, unknown>;
     const path = checkPath(o.path);
-    if (path === '/') throw new SyncError('cannot replace the root');
+    if (path === '/' && o.op !== 'meta') throw new SyncError('cannot replace the root');
     if (o.op === 'rm') return { op: 'rm', path };
     if (o.op === 'meta') {
       if (typeof o.mode !== 'number' || !Number.isInteger(o.mode) || o.mode < 0 || o.mode > 0o7777) throw new SyncError('bad mode');

@@ -132,6 +132,8 @@ export const en = {
   'term.command': 'Command',
   'term.editOffline': 'edit: no connection',
   'term.offline': 'No connection. Command not run.',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'Type <code>{command}</code> or press {keys} to report',
   'term.keys': 'Terminal keys',
   'term.saved': { one: 'Saved {path} ({count} byte)', other: 'Saved {path} ({count} bytes)' },

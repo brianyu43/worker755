@@ -140,13 +140,13 @@ export const en: Faq = {
           id: 'terminal',
           q: 'Can the terminal touch my computer, or a real server?',
           a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
+            'No. The shell, its files and the database are a simulated Linux machine that runs inside this browser tab, walled off from your computer. Nothing you type runs as a real command, on your computer or on ours. The game keeps a copy of your files on its server, in memory, only so your manager can check your work, and drops it when the shift ends. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
             "Deleting things has consequences only for your record, and for the director's mood.",
         },
         {
           id: 'commands',
           q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>tar</code>, <code>sqlite3</code> and the rest of coreutils, with pipes, redirects, variables, loops and scripts. <code>nano</code> opens an editor. Type <code>help</code> for the full list, or <code>man</code> and <code>--help</code> for a command.',
         },
       ],
     },

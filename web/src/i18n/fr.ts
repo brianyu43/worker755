@@ -131,6 +131,8 @@ export const fr: Catalogue = {
   'term.command': 'Commande',
   'term.editOffline': 'édition : hors connexion',
   'term.offline': 'Aucune connexion. Commande non exécutée.',
+  'term.killed': 'Stopped: the command ran too long. Nothing it changed was kept.',
+  'term.unsynced': 'No connection. The command ran; your manager will see it once the connection is back.',
   'term.hint': 'Tape <code>{command}</code> ou appuie sur {keys} pour signaler',
   'term.keys': 'Touches du terminal',
   'term.saved': { one: '{path} enregistré ({count} octet)', other: '{path} enregistré ({count} octets)' },
