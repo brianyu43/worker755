@@ -50,11 +50,16 @@ export type GameEventBody =
   | { type: 'fs'; tree?: TreeNode; cwd: string }
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
+  /** The manager cannot go on: the free shift's tokens are spent, or the player's key failed. */
+  | { type: 'paused'; reason: PauseReason }
+  /** The player added a key; the manager goes on, maybe as another model. */
+  | { type: 'resumed'; model: string }
   | { type: 'error'; message: string };
 
 export type GameEvent = { seq: number; ts: number } & GameEventBody;
 
 export type SessionStatus = 'running' | 'finished' | 'error';
+export type PauseReason = 'allowance' | 'key' | 'credit';
 
 export interface SessionState {
   id: string;
@@ -66,6 +71,8 @@ export interface SessionState {
   director: string;
   language: Language;
   status: SessionStatus;
+  /** Why the shift is waiting for the player's key; null while it runs. */
+  paused: PauseReason | null;
   cwd: string;
   tree: TreeNode;
   missionIndex: number;

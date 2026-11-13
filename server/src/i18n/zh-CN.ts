@@ -374,6 +374,7 @@ export const zhCN: ServerCopy = {
     requestFailed: '经理模型请求失败',
     requestFailedStatus: '经理模型请求失败（HTTP {status}）',
     notAKey: '这看起来不像 API 密钥。',
+    notPaused: '班次并未暂停等待密钥。',
     keyNeeded: '添加你自己的 API 密钥才能开工。',
     freeClosed: '今天的免费班次已经用完。添加你自己的 API 密钥才能开工。',
     freeUsed: '你今天的免费班次已经用完。添加你自己的 API 密钥，才能继续干活。',

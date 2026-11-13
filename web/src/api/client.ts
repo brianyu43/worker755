@@ -45,6 +45,10 @@ export interface GameClient {
   /** Saves a finished shift's review under a public link. */
   share(id: string, face: Face): Promise<{ id: string; path: string }>;
   getReview(id: string): Promise<SharedReview>;
+  /** Goes on with a paused shift on the player's own key; the manager may become another model. */
+  continueShift(id: string, key: { provider: Provider; apiKey: string; model: string }): Promise<{ ok: true; model: string }>;
+  /** Ends a paused shift now; the manager writes the review. */
+  finishShift(id: string): Promise<{ ok: true }>;
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -98,6 +102,8 @@ function createRealClient(): GameClient {
     report: (id, message) =>
       request<{ ok: true }>('POST', `${s(id)}/report`, message ? { message } : {}),
     share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }),
+    continueShift: (id, key) => request<{ ok: true; model: string }>('POST', `${s(id)}/continue`, key),
+    finishShift: (id) => request<{ ok: true }>('POST', `${s(id)}/finish`),
     getReview: (id) => request<SharedReview>('GET', `/api/reviews/${encodeURIComponent(id)}`),
     subscribe(id, after, handlers) {
       let lastSeq = after;

@@ -1,3 +1,4 @@
+import { modelLabel } from '../game/labels';
 import { useLayoutEffect, useState } from 'react';
 import type { GameEvent, MissionKind, OpenInstruction } from '../api/types';
 import type { ManagerState } from '../game/useGame';
@@ -186,6 +187,13 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
       return (
         <article className="fi fi-error">
           <p>{ev.message}</p>
+        </article>
+      );
+    case 'resumed':
+      return (
+        <article className="fi fi-resumed">
+          <div className="fi-kicker">{t('feed.resumed')}</div>
+          <div className="fi-resumed-model">{modelLabel(ev.model)}</div>
         </article>
       );
     default:

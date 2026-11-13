@@ -8,11 +8,11 @@ import type { AddressInfo } from 'node:net';
 import { createApp, withPreview } from '../src/http.ts';
 import type { App, AppOptions } from '../src/http.ts';
 import { Session } from '../src/session.ts';
-import { assistant, call, createMockDriver } from '../src/manager.ts';
+import { assistant, call, createMockDriver, KEY_REJECTED, ManagerError } from '../src/manager.ts';
 import type { ManagerDriver, StepResult } from '../src/manager.ts';
 import type { Credentials } from '../src/providers.ts';
 import { providerModelId } from '../src/providers.ts';
-import { DailyBudget, freeAllowance, RateLimiter, ALLOWANCE_SPENT } from '../src/limits.ts';
+import { DailyBudget, freeAllowance, RateLimiter } from '../src/limits.ts';
 import { ReviewStore } from '../src/reviews.ts';
 import { copyFor } from '../src/i18n/index.ts';
 import type { Mission } from '../src/missions.ts';
@@ -162,29 +162,154 @@ test('daily budget rolls over at UTC midnight; rate limiter windows expire', () 
   assert.equal(rl.take('x'), true);
 });
 
-test('a spent allowance stops the shift with a message, but not the review', async () => {
+test('a spent allowance pauses the shift; ending it there still gets the review', async () => {
   let open = true;
+  const prompts: string[] = [];
   const driver: ManagerDriver = {
     model: 'test/m',
     async step(req): Promise<StepResult> {
-      if (!req.tools) return assistant('Review.', []);
+      if (!req.tools) {
+        prompts.push(String(req.messages[0].content));
+        return assistant('Review.', []);
+      }
       return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
     },
   };
-  const s = new Session({
-    driver,
-    timeoutMs: 5000,
-    missions: [HELLO],
-    allowance: { canSpend: () => open, spend: () => {} },
-  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], allowance: { canSpend: () => open, spend: () => {} } });
   s.start();
   await waitFor(s, (e) => e.type === 'instruction');
   open = false;
   s.exec('echo a > a.txt');
   s.report('Done.');
-  const err = await waitFor(s, (e) => e.type === 'error');
-  assert.ok(err.type === 'error' && err.message === ALLOWANCE_SPENT);
+  const paused = await waitFor(s, (e) => e.type === 'paused');
+  assert.ok(paused.type === 'paused' && paused.reason === 'allowance');
+  assert.equal(s.state().paused, 'allowance');
+  assert.equal(s.state().status, 'running');
+  assert.equal(s.endEarly(), true);
+  const over = await waitFor(s, (e) => e.type === 'game_over');
+  assert.ok(over.type === 'game_over' && over.review === 'Review.');
+  assert.match(prompts[0], /ended early, during assignment 1 of 1/);
+  assert.equal(s.events.some((e) => e.type === 'error'), false);
+  assert.equal(s.endEarly(), false, 'nothing to end once it is over');
   s.dispose();
+});
+
+test('a paused shift goes on with the player\'s key, where it stopped', async () => {
+  let open = true;
+  const free: ManagerDriver = {
+    model: 'free/m',
+    async step(req): Promise<StepResult> {
+      if (!req.tools) return assistant('Free review.', []);
+      return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+    },
+  };
+  const s = new Session({ driver: free, timeoutMs: 5000, missions: [HELLO], allowance: { canSpend: () => open, spend: () => {} } });
+  s.start();
+  await waitFor(s, (e) => e.type === 'instruction');
+  open = false;
+  s.exec('echo a > a.txt');
+  s.report('Done.');
+  await waitFor(s, (e) => e.type === 'paused');
+  let sawReport = false;
+  const own: ManagerDriver = {
+    model: 'own/m',
+    async step(req): Promise<StepResult> {
+      if (!req.tools) return assistant('Own review.', []);
+      // The conversation carries on: the subagent's report is the last thing the manager heard.
+      sawReport = JSON.stringify(req.messages.at(-1)).includes('Done.');
+      return assistant('', [call('MissionComplete', { summary: 'ok' })]);
+    },
+  };
+  assert.equal(s.continueWith(own, null), true);
+  const resumed = await waitFor(s, (e) => e.type === 'resumed');
+  assert.ok(resumed.type === 'resumed' && resumed.model === 'own/m');
+  const over = await waitFor(s, (e) => e.type === 'game_over');
+  assert.ok(over.type === 'game_over' && over.review === 'Own review.');
+  assert.equal(sawReport, true);
+  assert.equal(s.state().model, 'own/m');
+  assert.equal(s.state().stats.missionsCompleted, 1);
+  s.dispose();
+});
+
+test('on the player\'s own key, a rejected key pauses the shift instead of ending it', async () => {
+  let calls = 0;
+  const bad: ManagerDriver = {
+    model: 'own/m',
+    async step(): Promise<StepResult> {
+      calls += 1;
+      throw new ManagerError(KEY_REJECTED, 401);
+    },
+  };
+  const s = new Session({ driver: bad, timeoutMs: 5000, missions: [HELLO], ownKey: true });
+  s.start();
+  const paused = await waitFor(s, (e) => e.type === 'paused');
+  assert.ok(paused.type === 'paused' && paused.reason === 'key');
+  const good: ManagerDriver = {
+    model: 'own/m',
+    async step(req): Promise<StepResult> {
+      if (!req.tools) return assistant('Review.', []);
+      return assistant('', [call('MissionFailed', { reason: 'x' })]);
+    },
+  };
+  s.continueWith(good, null);
+  await waitFor(s, (e) => e.type === 'resumed');
+  assert.equal(calls, 1);
+  s.dispose();
+
+  // Without ownKey (the server's key), the same failure ends the shift as before.
+  const t = new Session({ driver: bad, timeoutMs: 5000, missions: [HELLO] });
+  t.start();
+  const err = await waitFor(t, (e) => e.type === 'error');
+  assert.ok(err.type === 'error');
+  t.dispose();
+});
+
+test('continue and finish over HTTP: only while paused, with a real-looking key and an offered model', async () => {
+  const used: string[] = [];
+  await withApp(
+    {
+      mock: false,
+      driverFor: (model) => {
+        used.push(model);
+        return {
+          model,
+          async step(req) {
+            if (!req.tools) return assistant('Review.', []);
+            return assistant('', [call('MissionComplete', { summary: 'ok' })]);
+          },
+        };
+      },
+    },
+    async (api, app) => {
+      let open = true;
+      const driver: ManagerDriver = {
+        model: 'free/m',
+        async step(req) {
+          if (!req.tools) return assistant('Review.', []);
+          return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+        },
+      };
+      const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], allowance: { canSpend: () => open, spend: () => {} } });
+      app.sessions.set(s.id, s);
+      s.start();
+      await waitFor(s, (e) => e.type === 'instruction');
+      const body = { provider: 'openrouter', apiKey: KEY, model: 'b/two' };
+      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, body)).status, 409, 'not paused yet');
+      assert.equal((await api('POST', `/api/sessions/${s.id}/finish`)).status, 409);
+      open = false;
+      s.exec('echo a > a.txt');
+      s.report('Done.');
+      await waitFor(s, (e) => e.type === 'paused');
+      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, apiKey: 'short' })).status, 400);
+      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, model: 'z/nope' })).status, 400);
+      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, provider: 'nope' })).status, 400);
+      const ok = await api('POST', `/api/sessions/${s.id}/continue`, body);
+      assert.equal(ok.status, 200);
+      assert.deepEqual(used, ['b/two']);
+      await waitFor(s, (e) => e.type === 'game_over');
+      assert.equal(s.state().model, 'b/two');
+    },
+  );
 });
 
 test('a finished shift can be shared once; the page carries the review', async () => {

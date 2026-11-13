@@ -374,6 +374,7 @@ export const hi: ServerCopy = {
     requestFailed: 'मैनेजर मॉडल का अनुरोध विफल हुआ',
     requestFailedStatus: 'मैनेजर मॉडल का अनुरोध विफल हुआ (HTTP {status})',
     notAKey: 'यह API key जैसी नहीं लगती।',
+    notPaused: 'शिफ्ट किसी key का इंतज़ार नहीं कर रही है।',
     keyNeeded: 'खेलने के लिए अपनी API key जोड़ो।',
     freeClosed: 'आज की मुफ़्त शिफ्टें खत्म हो चुकी हैं। खेलने के लिए अपनी API key जोड़ो।',
     freeUsed: 'आज की मुफ़्त शिफ्टें तुम इस्तेमाल कर चुके हो। खेलते रहने के लिए अपनी API key जोड़ो।',

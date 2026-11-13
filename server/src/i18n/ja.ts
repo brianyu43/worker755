@@ -374,6 +374,7 @@ export const ja: ServerCopy = {
     requestFailed: 'マネージャーモデルへのリクエストに失敗しました',
     requestFailedStatus: 'マネージャーモデルへのリクエストに失敗しました（HTTP {status}）',
     notAKey: 'それ、APIキーには見えないんだけど。',
+    notPaused: 'シフトはキー待ち状態ではありません。',
     keyNeeded: 'プレイするには、自分のAPIキーを追加して。',
     freeClosed: '今日の無料シフトは終了。プレイするには、自分のAPIキーを追加して。',
     freeUsed: '今日の無料シフトは使い切ったよ。続けるなら、自分のAPIキーを追加して。',

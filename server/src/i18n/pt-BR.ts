@@ -374,6 +374,7 @@ export const ptBR: ServerCopy = {
     requestFailed: 'Falha na solicitação ao modelo do gerente',
     requestFailedStatus: 'Falha na solicitação ao modelo do gerente (HTTP {status})',
     notAKey: 'Isso não parece ser uma chave de API.',
+    notPaused: 'O turno não está aguardando uma chave.',
     keyNeeded: 'Adicione sua própria chave de API para jogar.',
     freeClosed: 'Você já gastou seus turnos grátis de hoje. Adicione sua própria chave de API para jogar.',
     freeUsed: 'Você já gastou seus turnos grátis de hoje. Adicione sua própria chave de API para continuar jogando.',

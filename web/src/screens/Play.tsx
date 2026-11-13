@@ -8,6 +8,7 @@ import { MOD } from '../game/keys';
 import { modelLabel } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { Splitter, deskSizes } from '../components/Splitter';
+import { KeyPause } from '../components/KeyPause';
 import { loadFace } from '../game/avatar';
 import type { GameEvent } from '../api/types';
 import type { Game, GameView } from '../game/useGame';
@@ -207,7 +208,7 @@ export function Play({ game, view, onFinish }: Props) {
   ];
 
   return (
-    <div className={`play play-tab-${tab}${urgency ? ` play-${urgency}` : ''}${flash ? ` play-flash-${flash}` : ''}`}>
+    <div className={`play play-tab-${tab}${view.paused ? ' play-paused' : ''}${urgency ? ` play-${urgency}` : ''}${flash ? ` play-flash-${flash}` : ''}`}>
       <header className="bar">
         <div className="bar-id">
           <span className="bar-badge">755</span>
@@ -289,6 +290,8 @@ export function Play({ game, view, onFinish }: Props) {
                 {t('app.clockInAgain')}
               </button>
             </section>
+          ) : view.paused ? (
+            <KeyPause sessionId={view.id} reason={view.paused} model={view.model} />
           ) : (
             <WorkOrder
               instruction={view.instruction}

@@ -416,6 +416,7 @@ export function createApp(opts: AppOptions): App {
         scenario,
         director,
         language,
+        ownKey: own,
         log,
       });
       sessions.set(session.id, session);
@@ -425,7 +426,7 @@ export function createApp(opts: AppOptions): App {
       return;
     }
 
-    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|exec|file|report|share))?$/.exec(path);
+    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|exec|file|report|share|continue|finish))?$/.exec(path);
     if (!m) throw new HttpError(404, 'Not found');
     const s = getSession(m[1]);
     const sub = m[2];
@@ -474,6 +475,27 @@ export function createApp(opts: AppOptions): App {
         shared.set(s.id, id);
       }
       return sendJson(res, 200, { id, path: `/r/${id}` });
+    }
+    if (sub === 'continue' && method === 'POST') {
+      // A paused shift goes on with the player's own key, from where it stopped.
+      const body = await readJson(req);
+      if (!s.paused) throw new HttpError(409, s.copy.errors.notPaused);
+      if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
+      if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, s.copy.errors.notAKey);
+      const cred: Credentials = { provider: body.provider, apiKey: body.apiKey };
+      const list = await models(body.provider);
+      const requested = typeof body.model === 'string' && body.model ? body.model : list[0]?.id;
+      if (!requested || !list.some((m) => m.id === requested)) throw new HttpError(400, `Unknown model: ${requested ?? ''}`);
+      // The user's messages stay with the model that wrote them when the key's provider has it.
+      const state = s.state();
+      const director = state.director && list.some((m) => m.id === state.director) ? directorFor(state.director, state.scenario, cred) : null;
+      if (!s.continueWith(driverFor(requested, cred), director)) throw new HttpError(409, s.copy.errors.notPaused);
+      log(`session ${s.id.slice(0, 8)} continues on the player's key (${body.provider}, ${requested})`);
+      return sendJson(res, 200, { ok: true, model: requested });
+    }
+    if (sub === 'finish' && method === 'POST') {
+      if (!s.endEarly()) throw new HttpError(409, s.copy.errors.notPaused);
+      return sendJson(res, 200, { ok: true });
     }
     if (sub === 'report' && method === 'POST') {
       const body = await readJson(req);

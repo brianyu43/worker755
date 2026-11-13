@@ -72,7 +72,14 @@ export type GameEventBody =
   | { type: 'fs'; tree?: TreeNode; cwd: string }
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  /** The manager cannot go on until the player adds a key, or asks for the review now. */
+  | { type: 'paused'; reason: PauseReason }
+  /** The player added a key; the manager goes on as `model`. */
+  | { type: 'resumed'; model: string };
+
+/** Why a shift waits: the free shift is used up, or the player's key was rejected or is out of credit. */
+export type PauseReason = 'allowance' | 'key' | 'credit';
 
 export type GameEvent = { seq: number; ts: number } & GameEventBody;
 
@@ -86,6 +93,8 @@ export interface SessionState {
   scenario: Workplace;
   director?: string;
   status: 'running' | 'finished' | 'error';
+  /** Set while the shift waits for the player's key. Older servers leave it out. */
+  paused?: PauseReason | null;
   cwd: string;
   tree: TreeNode;
   missionIndex: number;

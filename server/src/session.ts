@@ -13,8 +13,10 @@ import { cleanLine } from './director.ts';
 import type { Allowance } from './limits.ts';
 import type { DirectorDriver, Moment } from './director.ts';
 import {
+  KEY_REJECTED,
   ManagerError,
   missionPrompt,
+  OUT_OF_CREDIT,
   stallLine,
   stallLineAfterDamage,
   stallMessage,
@@ -31,6 +33,7 @@ import type {
   InstructionOutcome,
   OpenInstruction,
   SessionState,
+  PauseReason,
   SessionStatus,
   Stats,
 } from './types.ts';
@@ -57,6 +60,16 @@ export const COMMAND_WINDOW_MS = 5_000;
 /** Tokens booked for a director call before it runs. */
 const DIRECTOR_ESTIMATE = 2_500;
 
+/** The player ended a paused shift; unwinds the mission loop to the review. */
+class EndedEarly extends Error {}
+
+/** Which pause a failed call on the player's own key calls for, if any. */
+function keyFailure(message: string): PauseReason | null {
+  if (message === KEY_REJECTED) return 'key';
+  if (message === OUT_OF_CREDIT) return 'credit';
+  return null;
+}
+
 export interface SessionOptions {
   driver: ManagerDriver;
   timeoutMs?: number;
@@ -74,6 +87,8 @@ export interface SessionOptions {
   allowSkip?: boolean;
   /** Caps model spending (free shifts). The closing review is always written. */
   allowance?: Allowance;
+  /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
+  ownKey?: boolean;
   log?: (line: string) => void;
   language?: Language;
 }
@@ -140,7 +155,7 @@ export function managerPath(raw: unknown): string | null {
 
 export class Session {
   readonly id: string;
-  readonly model: string;
+  model: string;
   readonly shell: Shell;
   readonly missions: Mission[];
   readonly timeoutMs: number;
@@ -151,7 +166,7 @@ export class Session {
   /** Everything the player reads that the game writes itself, in their language. */
   readonly copy: ServerCopy;
   /** Model behind the user's messages; '' when they are scripted. */
-  readonly directorModel: string;
+  directorModel: string;
   status: SessionStatus = 'running';
   missionIndex = 0;
   stats: Stats = emptyStats();
@@ -193,6 +208,10 @@ export class Session {
   private recentCommands: number[] = [];
   private commandsPerWindow: number;
   private allowance: Allowance | null;
+  /** Set while the shift waits for the player's key; resolves with what they chose. */
+  private pause: { reason: PauseReason; resolve: (choice: 'continue' | 'review') => void } | null = null;
+  /** The manager runs on the player's own key (from the start, or since they added one). */
+  private ownKey: boolean;
   /** Everything the user said this shift, for the director model. */
   private said: string[] = [];
   private currentMission: Mission | null = null;
@@ -214,6 +233,7 @@ export class Session {
     this.commandsPerWindow = opts.commandsPerWindow ?? COMMANDS_PER_WINDOW;
     this.directorModel = this.director?.model ?? '';
     this.allowance = opts.allowance ?? null;
+    this.ownKey = opts.ownKey ?? false;
     this.missions = opts.missions ?? shiftOf(this.scenario);
     this.timeoutMs = opts.timeoutMs ?? 90_000;
     this.allowSkip = opts.allowSkip ?? false;
@@ -286,6 +306,7 @@ export class Session {
       director: this.directorModel,
       language: this.language,
       status: this.status,
+      paused: this.pause?.reason ?? null,
       cwd: this.shell.cwd,
       tree: this.shell.fs.tree() as TreeNode,
       missionIndex: this.missionIndex,
@@ -560,6 +581,7 @@ export class Session {
 
   dispose(): void {
     this.abort.abort();
+    this.pause?.resolve('review');
     if (this.pending) {
       clearTimeout(this.pending.timer);
       const p = this.pending;
@@ -581,8 +603,69 @@ export class Session {
   }
 
   private async step(req: { messages: ModelMessage[]; tools: boolean; mission?: Mission }): Promise<StepResult> {
-    // The review (tools: false) closes the shift, so it is written even past the allowance.
-    if (req.tools && this.allowance && !this.allowance.canSpend()) throw new ManagerError(this.copy.errors.allowanceSpent);
+    for (;;) {
+      // The review (tools: false) closes the shift, so it is written even past the allowance.
+      if (req.tools && this.allowance && !this.allowance.canSpend()) {
+        await this.waitForKey('allowance');
+        continue;
+      }
+      try {
+        return await this.callManager(req);
+      } catch (err) {
+        // A player's own key that stops working pauses the shift too, so they can fix it and go on.
+        const reason = err instanceof ManagerError && this.ownKey && req.tools ? keyFailure(err.message) : null;
+        if (!reason || this.abort.signal.aborted) throw err;
+        await this.waitForKey(reason);
+      }
+    }
+  }
+
+  /**
+   * Holds the shift until the player adds a key (continueWith) or asks for the review now (endEarly).
+   * The files, the open assignment and the manager's conversation all stay as they are.
+   */
+  private async waitForKey(reason: PauseReason): Promise<void> {
+    this.emit({ type: 'manager_status', state: 'idle' });
+    this.emit({ type: 'paused', reason });
+    this.log(`session ${this.id.slice(0, 8)} paused (${reason})`);
+    const choice = await new Promise<'continue' | 'review'>((resolve) => {
+      this.pause = { reason, resolve };
+    });
+    this.pause = null;
+    if (choice === 'review' || this.abort.signal.aborted) throw new EndedEarly();
+    this.emit({ type: 'resumed', model: this.model });
+  }
+
+  get paused(): PauseReason | null {
+    return this.pause?.reason ?? null;
+  }
+
+  /**
+   * Goes on from a pause with the player's key: a new manager driver, and a new director when the
+   * user's messages were written by a model. Returns false when the shift is not waiting.
+   */
+  continueWith(driver: ManagerDriver, director: DirectorDriver | null): boolean {
+    if (!this.pause) return false;
+    this.driver = driver;
+    this.model = driver.model;
+    this.director = director;
+    this.directorModel = director?.model ?? '';
+    this.allowance = null;
+    this.ownKey = true;
+    this.touch();
+    this.pause.resolve('continue');
+    return true;
+  }
+
+  /** Ends a paused shift: the manager writes the review from what happened so far. */
+  endEarly(): boolean {
+    if (!this.pause) return false;
+    this.touch();
+    this.pause.resolve('review');
+    return true;
+  }
+
+  private async callManager(req: { messages: ModelMessage[]; tools: boolean; mission?: Mission }): Promise<StepResult> {
     this.emit({ type: 'manager_status', state: 'thinking' });
     const res = await this.driver.step({
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
@@ -606,15 +689,26 @@ export class Session {
   }
 
   private async run(): Promise<void> {
+    let early = false;
     try {
-      for (let i = 0; i < this.missions.length; i++) {
-        if (this.abort.signal.aborted) return;
-        this.missionIndex = i;
-        await this.runMission(this.missions[i], i);
+      try {
+        for (let i = 0; i < this.missions.length; i++) {
+          if (this.abort.signal.aborted) return;
+          this.missionIndex = i;
+          await this.runMission(this.missions[i], i);
+        }
+        this.missionIndex = this.missions.length - 1;
+      } catch (err) {
+        if (!(err instanceof EndedEarly)) throw err;
+        early = true;
+        if (this.pending) {
+          clearTimeout(this.pending.timer);
+          this.pending = null;
+        }
       }
       if (this.abort.signal.aborted) return;
-      this.missionIndex = this.missions.length - 1;
       const statsLine =
+        (early ? `the shift ended early, during assignment ${this.missionIndex + 1} of ${this.missions.length}; ` : '') +
         `instructions ${this.stats.instructions}, corrections ${this.stats.corrections}, ` +
         `no response ${this.stats.timeoutsIdle}, unfinished ${this.stats.timeoutsPartial}, ` +
         `reports ${this.stats.reports}, average response ${(this.stats.avgResponseMs / 1000).toFixed(1)}s, ` +

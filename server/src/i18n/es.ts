@@ -374,6 +374,7 @@ export const es: ServerCopy = {
     requestFailed: 'Error en la solicitud al modelo del gerente',
     requestFailedStatus: 'La solicitud al modelo del gerente falló (HTTP {status})',
     notAKey: 'Eso no parece una clave API.',
+    notPaused: 'El turno no está esperando una clave.',
     keyNeeded: 'Añade tu propia clave API para jugar.',
     freeClosed: 'Ya agotaste tus turnos gratis por hoy. Añade tu propia clave API para jugar.',
     freeUsed: 'Ya usaste tus turnos gratis por hoy. Añade tu propia clave API para seguir jugando.',

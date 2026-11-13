@@ -374,6 +374,7 @@ export const fr: ServerCopy = {
     requestFailed: 'Échec de la requête au modèle du manager',
     requestFailedStatus: 'Échec de la requête au modèle du manager (HTTP {status})',
     notAKey: 'Ça ne ressemble pas à une clé API.',
+    notPaused: 'Le service n’attend pas de clé.',
     keyNeeded: 'Ajoute ta propre clé API pour jouer.',
     freeClosed: 'Les services gratuits du jour sont épuisés. Ajoute ta propre clé API pour jouer.',
     freeUsed: 'Tu as épuisé tes services gratuits du jour. Ajoute ta propre clé API pour continuer à jouer.',

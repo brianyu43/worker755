@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
 import type { NewSession } from '../api/client';
-import type { GameEvent, MissionKind, OpenInstruction, SessionState, Stats, TreeNode } from '../api/types';
+import type { GameEvent, MissionKind, OpenInstruction, PauseReason, SessionState, Stats, TreeNode } from '../api/types';
 
 export type ManagerState = 'thinking' | 'waiting' | 'idle';
 export type ClosedOutcome = 'reported' | 'timeout_idle' | 'timeout_partial';
@@ -25,6 +25,8 @@ export interface GameView {
   stats: Stats;
   review: string | null;
   error: string | null;
+  /** The shift waits for the player's key, and why; null while it runs. */
+  paused: PauseReason | null;
   lastSeq: number;
 }
 
@@ -40,6 +42,7 @@ const FEED_TYPES = new Set<GameEvent['type']>([
   'instruction_result',
   'mission_end',
   'error',
+  'resumed',
 ]);
 
 function apply(v: GameView, ev: GameEvent): GameView {
@@ -79,6 +82,14 @@ function apply(v: GameView, ev: GameEvent): GameView {
       n.status = 'finished';
       n.instruction = null;
       break;
+    case 'paused':
+      n.paused = ev.reason;
+      n.manager = 'idle';
+      break;
+    case 'resumed':
+      n.paused = null;
+      n.model = ev.model;
+      break;
     case 'error':
       n.error = ev.message;
       n.status = 'error';
@@ -107,6 +118,7 @@ function fromSnapshot(s: SessionState): GameView {
     stats: s.stats,
     review: null,
     error: null,
+    paused: null,
     lastSeq: 0,
   };
   for (const ev of s.events) v = apply(v, ev);
@@ -114,6 +126,7 @@ function fromSnapshot(s: SessionState): GameView {
   return {
     ...v,
     status: s.status,
+    paused: s.paused === undefined ? v.paused : s.paused,
     cwd: s.cwd,
     tree: s.tree,
     instruction: s.instruction,

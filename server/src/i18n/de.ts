@@ -374,6 +374,7 @@ export const de: ServerCopy = {
     requestFailed: 'Anfrage an das Manager-Modell fehlgeschlagen',
     requestFailedStatus: 'Anfrage an das Manager-Modell fehlgeschlagen (HTTP {status})',
     notAKey: 'Das sieht nicht nach einem API-Schlüssel aus.',
+    notPaused: 'Die Schicht wartet nicht auf einen Schlüssel.',
     keyNeeded: 'Füge deinen eigenen API-Schlüssel hinzu, um zu spielen.',
     freeClosed: 'Deine kostenlosen Schichten für heute sind aufgebraucht. Füge deinen eigenen API-Schlüssel hinzu, um zu spielen.',
     freeUsed: 'Du hast deine kostenlosen Schichten für heute aufgebraucht. Füge deinen eigenen API-Schlüssel hinzu, um weiterzuspielen.',

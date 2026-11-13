@@ -1077,6 +1077,62 @@ kbd {
   max-width: 34ch;
 }
 
+/* ---------- A paused shift: add a key, or end it and get the review ---------- */
+.pause {
+  position: relative;
+  flex: none;
+  max-height: 70%;
+  min-height: 0;
+  overflow: auto;
+  padding: 13px 18px 16px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-left: 5px solid var(--hl);
+  box-shadow: 2px 3px 0 rgb(28 42 74 / 0.06);
+  animation: order-drop 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+.pause-title {
+  margin: 5px 0 6px;
+  font-size: clamp(24px, 3.6vh, 32px);
+  line-height: 1.05;
+  font-weight: 880;
+  font-stretch: 66%;
+}
+.pause-text {
+  max-width: 72ch;
+  margin: 0 0 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.pause-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.6fr);
+  align-items: end;
+  gap: 10px 14px;
+}
+.pause-form .select {
+  width: 100%;
+  min-width: 0;
+}
+.pause-remember {
+  grid-column: 1 / -1;
+}
+.pause-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pause-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.fi-resumed-model {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ---------- Terminal ---------- */
 .term {
   position: relative;
@@ -2526,6 +2582,19 @@ kbd {
     grid-template-columns: minmax(0, 1fr);
   }
   .split {
+    display: none;
+  }
+  .pause {
+    max-height: none;
+    flex: 1 1 auto;
+    padding: 10px 12px 12px;
+  }
+  .pause-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* While paused the phone shows the choice, not the terminal behind it. */
+  .play-paused .term,
+  .play-paused .report {
     display: none;
   }
   .term-pane-file .term-scroll,

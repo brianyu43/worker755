@@ -328,6 +328,13 @@ export function createMockClient(): GameClient {
     async getReview() {
       throw new ApiError(404, 'Review not found');
     },
+    // The scripted manager never runs out of tokens, so its shifts never pause.
+    async continueShift() {
+      throw new ApiError(409, 'The shift is not waiting for a key.');
+    },
+    async finishShift() {
+      throw new ApiError(409, 'The shift is not waiting for a key.');
+    },
     async createSession({ model, allowSkip: skip, subagent, scenario }) {
       await delay(250);
       allowSkip = skip ?? false;

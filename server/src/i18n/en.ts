@@ -404,6 +404,7 @@ export const en = {
     requestFailed: 'Manager model request failed',
     requestFailedStatus: 'Manager model request failed (HTTP {status})',
     notAKey: 'That does not look like an API key.',
+    notPaused: 'The shift is not waiting for a key.',
     keyNeeded: 'Add your own API key to play.',
     freeClosed: 'Free shifts are used up for today. Add your own API key to play.',
     freeUsed: 'You have used your free shifts for today. Add your own API key to keep playing.',
