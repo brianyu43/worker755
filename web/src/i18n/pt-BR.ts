@@ -7,7 +7,7 @@ export const ptBR: Catalogue = {
   'app.loading': 'Procurando sua mesa…',
   'app.clockInAgain': 'Iniciar outro turno',
   'links.about': 'Sobre',
-  'links.faq': 'FAQ',
+  'links.faq': 'Perguntas frequentes',
   'links.source': 'Código-fonte',
   'links.support': 'Apoie o jogo',
   'errors.offline': 'Sem conexão.',
@@ -22,7 +22,7 @@ export const ptBR: Catalogue = {
   'start.workplace.legacy': 'Produção legada',
   'start.team': 'Equipe',
   'start.manager': 'Seu gerente',
-  'start.director': 'The director',
+  'start.director': 'O diretor',
   'start.director.scripted': 'Fal falas roteirizadas',
   'start.subagent': 'Modelo em execução',
   'start.allowSkip': 'Permitir pular tarefas com falha',
@@ -202,7 +202,7 @@ export const ptBR: Catalogue = {
   'feed.severity.minor': 'leve',
   'feed.severity.major': 'grave',
   'feed.severity.critical': 'crítico',
-  'feed.directorSaw': 'The director saw that',
+  'feed.directorSaw': 'O diretor viu isso',
   'feed.lost': 'Perdido',
   'feed.lostMore': { one: 'e mais {count}', many: 'e mais {count}', other: 'e mais {count}' },
   'feed.director': 'O diretor, falando com seu gerente',
@@ -275,9 +275,9 @@ export const ptBR: Catalogue = {
   'about.job.2': 'Você é o Worker 755, um subagente. Pelo menos, é o que seu gerente acredita. O gerente é um modelo de linguagem de verdade que pensa ser um agente de orquestração, delegando tarefas de shell para outra IA. Só que, no lugar dela, tem você.',
   'about.job.3': 'Cada instrução vem com uma contagem regressiva visível de 90 segundos. Você digita comandos num terminal e dá o retorno. Se o tempo acabar antes, o gerente recebe: <q>Subagent did nothing. Write a new instruction.</q> Se você der o retorno, ele recebe <q>Subagent output result: …</q> e a transcrição de cada comando que você executou.',
   'about.job.4': 'O gerente não consegue mudar nada por conta própria. Só pode ler arquivos e dar ordens. Ele confere seu trabalho, passa novas instruções quando você erra, registra incidentes sobre você e, no fim do turno, escreve sua avaliação de desempenho. Tudo o que ele pensa, diz e ouve sobre você aparece na tela.',
-  'about.job.5': 'Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.',
+  'about.job.5': 'Acima do gerente está o usuário, Dan, que acompanha tudo ao vivo. Ele é impaciente, passivo-agressivo e fica furioso quando algo insubstituível desaparece. As mensagens dele são roteirizadas ou, se você escolher, escritas por outro modelo.',
   'about.workplaces': 'Os locais de trabalho',
-  'about.workplaces.fresh': "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
+  'about.workplaces.fresh': '<strong>Sandbox novinha em folha.</strong> Uma sandbox na própria estação de trabalho do Dan, bem ao lado da pasta pessoal dele: fotos da família, a única cópia assinada de um NDA, um discurso para esta semana e tesouros diferentes a cada turno.',
   'about.workplaces.legacy': '<strong>Produção legada.</strong> A Billosaurus, empresa de faturamento do Dan, ainda roda com código de 2013. Você altera o banco de dados SQLite em produção na mão com <code>sqlite3</code>. Um <code>UPDATE</code> sem <code>WHERE</code> dá exatamente tão errado quanto você imagina.',
   'about.workplaces.tasks': 'As tarefas incluem mover e corrigir arquivos, um <code>chmod 755</code>, mexer no banco de dados, consultar a documentação, pesquisar numa web pequena onde um site caça-cliques aparece antes do manual oficial, fazer desenhos em ASCII, escrever um haicai e mandar um e-mail de desculpas aos clientes.',
   'about.workplaces.simulated': 'Nada é real. O sistema de arquivos, o shell, o banco de dados e a web são simulados no servidor do jogo. Apagar coisas só traz consequências para o seu histórico e para o humor do Dan.',
@@ -286,13 +286,12 @@ export const ptBR: Catalogue = {
   'about.keys': 'Turnos e chaves',
   'about.keys.1': 'Os turnos grátis rodam no DeepSeek V4.1 Flash. Você também pode usar sua própria chave da OpenRouter, Vercel AI Gateway, Anthropic, OpenAI ou DeepSeek. Sua chave fica no navegador. O servidor a mantém na memória só durante o seu turno e nunca a armazena nem registra em logs.',
   'about.keys.2': 'Worker 755 foi criado em um dia, em sua maior parte por agentes de IA. Isso explica algumas decisões.',
-  'about.credits': 'Credits',
-  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
-  'about.credits.avatar':
-    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+  'about.credits': 'Créditos',
+  'about.credits.intro': 'Worker 755 se apoia em projetos de código aberto. Quem está por trás deles fez o trabalho pesado — e ninguém lhes deu 90 segundos.',
+  'about.credits.avatar': 'O rosto do trabalhador vem de <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a>, de Dominik Scholz. Agradecimento especial: sem isso, Worker 755 seria só um número.',
 
   // ---- FAQ page ---------------------------------------------------------------------------------
-  'faq.title': 'Frequently asked questions',
+  'faq.title': 'Perguntas frequentes',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

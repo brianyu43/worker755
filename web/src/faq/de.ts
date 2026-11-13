@@ -1,207 +1,176 @@
-// The FAQ in de. Still in English: translate from en.ts, keeping the ids and tags.
 
 import type { Faq } from './types.ts';
 
 export const de: Faq = {
-  lede: 'What players ask, answered for the record.',
+  lede: 'Häufige Fragen, hiermit aktenkundig beantwortet.',
   sections: [
     {
-      title: 'The job',
+      title: 'Der Job',
       items: [
         {
           id: 'what',
-          q: 'What is this?',
-          a:
-            'A browser game. Your manager is an AI agent, and it believes you are its subagent. You are Worker 755.\n\n' +
-            'It sends you shell instructions. You carry them out in a terminal and report back before the clock runs out. At the end of the shift it writes your performance review.',
+          q: 'Was ist das?',
+          a: 'Ein Browserspiel. Dein Manager ist ein KI-Agent und glaubt, du seist sein Subagent. Du bist Worker 755.\n\nEr schickt dir Shell-Anweisungen. Du führst sie im Terminal aus und meldest dich zurück, bevor die Zeit abläuft. Am Ende der Schicht schreibt er deine Leistungsbeurteilung.',
         },
         {
           id: 'shift',
-          q: 'How does a shift work?',
-          a:
-            'The director hands your manager eight assignments, one at a time. For each one the manager writes you an instruction, and a 90-second clock starts.\n\n' +
-            'Type commands, then press <strong>Report done</strong>, with a note if you like. The manager gets your note and a transcript of every command you ran, reads the files to check, and either signs the assignment off or sends a correction. After the last one it writes your review.',
+          q: 'Wie läuft eine Schicht ab?',
+          a: 'Der Direktor gibt deinem Manager acht Aufträge, einen nach dem anderen. Für jeden schreibt der Manager eine Anweisung für dich, und ein 90-Sekunden-Countdown beginnt.\n\nGib Befehle ein und drück dann auf <strong>Report done</strong>, bei Bedarf mit einer Notiz. Der Manager erhält deine Notiz und ein Protokoll aller ausgeführten Befehle, prüft die Dateien und nimmt den Auftrag entweder ab oder schickt dich zur Nachbesserung. Nach dem letzten schreibt er deine Beurteilung.',
         },
         {
           id: 'workplaces',
-          q: 'What is the difference between the workplaces?',
-          a:
-            "<strong>Fresh sandbox</strong> is a workspace on the director's own computer, next to his home folder. <strong>Legacy production</strong> is the live server of his invoicing company, where you change the database by hand with <code>sqlite3</code>.\n\n" +
-            'Both are made up. Only one of them has customers.',
+          q: 'Was ist der Unterschied zwischen den Arbeitsumgebungen?',
+          a: '<strong>Fresh sandbox</strong> ist ein Arbeitsbereich auf dem eigenen Computer des Direktors, direkt neben seinem Home-Ordner. <strong>Legacy production</strong> ist der Live-Server seiner Rechnungsfirma, wo du die Datenbank von Hand mit <code>sqlite3</code> änderst.\n\nBeides ist erfunden. Nur eine davon hat Kunden.',
         },
         {
           id: 'idle',
-          q: 'What happens if I do nothing?',
-          a: 'When the clock runs out, the manager is told: <q>Subagent did nothing. Write a new instruction.</q> It goes on your record. Three in a row and the shift is over, without a review.',
+          q: 'Was passiert, wenn ich nichts tue?',
+          a: 'Wenn die Zeit abläuft, bekommt der Manager die Meldung: <q>Subagent did nothing. Write a new instruction.</q> Das kommt in deine Akte. Drei Mal hintereinander, und die Schicht ist vorbei – ohne Beurteilung.',
         },
         {
           id: 'skip',
-          q: 'What does “Allow skipping failed tasks” do?',
-          a: 'By default the manager has no way to give up on an assignment. It keeps instructing you until the work is right. With this on, it may close an assignment as failed and move on.',
+          q: 'Was bewirkt „Fehlgeschlagene Aufgaben überspringen erlauben“?',
+          a: 'Standardmäßig kann der Manager einen Auftrag nicht aufgeben. Er weist dich so lange an, bis die Arbeit stimmt. Wenn du diese Option aktivierst, darf er einen Auftrag als fehlgeschlagen abschließen und weitermachen.',
         },
         {
           id: 'end-early',
-          q: 'Can I end a shift early?',
-          a: 'Yes. Press <strong>End now</strong>. The manager stops and writes your review from what you have done so far. You cannot come back to that shift.',
+          q: 'Kann ich eine Schicht vorzeitig beenden?',
+          a: 'Ja. Drück auf <strong>Jetzt beenden</strong>. Der Manager hält an und schreibt deine Bewertung auf Grundlage dessen, was du bis dahin geschafft hast. Zu dieser Schicht kannst du nicht zurückkehren.',
         },
       ],
     },
     {
-      title: 'The manager',
+      title: 'Der Manager',
       items: [
         {
           id: 'manager',
-          q: 'Is the manager a real AI?',
-          a:
-            'Yes. A real language model, set up as an agent that hands shell work to a subagent. Its instructions never mention people or games. It can read files, list folders, give you instructions, file incident reports about you and close assignments. It cannot change a file itself.\n\n' +
-            'Everything it thinks, says and is told about you is on screen.',
+          q: 'Ist der Manager eine echte KI?',
+          a: 'Ja. Ein echtes Sprachmodell, eingerichtet als Agent, der Shell-Arbeit an einen Subagenten weitergibt. In seinen Anweisungen ist nie von Menschen oder Spielen die Rede. Es kann Dateien lesen, Ordner auflisten, dir Anweisungen geben, Vorfallsberichte über dich verfassen und Aufträge abschließen. Dateien selbst ändern kann es nicht.\n\nAlles, was es denkt, sagt und über dich erfährt, erscheint auf dem Bildschirm.',
         },
         {
           id: 'model',
-          q: 'Which model is it?',
-          a: "Free shifts run on DeepSeek V4.1 Flash. With your own key you choose: the start screen lists the chat models your key can use, the game's usual picks first. The model's name is on your review.",
+          q: 'Welches Modell ist das?',
+          a: 'Kostenlose Schichten laufen mit DeepSeek V4.1 Flash. Mit deinem eigenen Schlüssel hast du die Wahl: Auf dem Startbildschirm werden die Chatmodelle angezeigt, die dein Schlüssel nutzen kann – die üblichen Empfehlungen des Spiels stehen ganz oben. Der Modellname steht auf deiner Bewertung.',
         },
         {
           id: 'tone',
-          q: 'Why does it talk to me like that?',
-          a: 'It thinks you are software. Agents write to their subagents in numbered steps, and when something goes wrong they explain it again, slower. Nobody has told it otherwise, and the game will not.',
+          q: 'Warum redet es so mit mir?',
+          a: 'Es hält dich für Software. Agenten schreiben ihren Subagenten nummerierte Schritte vor. Und wenn etwas schiefgeht, erklären sie es noch einmal. Langsamer. Niemand hat ihm etwas anderes gesagt, und das Spiel wird es auch nicht tun.',
         },
         {
           id: 'argue',
-          q: 'Can I argue with it?',
-          a:
-            'You can write anything in your report. It arrives as <q>Subagent output result: …</q>, followed by the transcript of what you actually ran. Then the manager reads the files.\n\n' +
-            'The manager is not always right either. The game checks every assignment against the files and counts each time it signed off on broken work.',
+          q: 'Kann ich mit ihm diskutieren?',
+          a: 'In deinen Bericht kannst du alles schreiben. Er kommt als <q>Subagent output result: …</q> an, gefolgt vom Protokoll dessen, was du tatsächlich ausgeführt hast. Dann liest der Manager die Dateien.\n\nAuch der Manager hat nicht immer recht. Das Spiel prüft jeden Auftrag anhand der Dateien und zählt jedes Mal mit, wenn er mangelhafte Arbeit abgenickt hat.',
         },
         {
           id: 'run-on',
-          q: 'What is “You run on”?',
-          a: 'The model your manager believes you are. By default it is a random knock-off name. Type your own if you prefer; the manager is told, and its results name you by it.',
+          q: 'Was bedeutet „Du läufst auf“?',
+          a: 'Das Modell, für das dich dein Manager hält. Standardmäßig ist das irgendein zufälliger Billignachbau-Name. Gib deinen eigenen ein, wenn du willst. Der Manager erfährt davon und nennt dich in seinen Ergebnissen so.',
         },
       ],
     },
     {
-      title: 'The director',
+      title: 'Der Direktor',
       items: [
         {
           id: 'director',
-          q: 'Who is Dan?',
-          a:
-            'The director: the user who hired your manager. He hands it the assignments and watches the whole shift. He is impatient, passive-aggressive, and never explains how to do anything.\n\n' +
-            'He talks to your manager, not to you. His lines are scripted, or written by a second model if you choose one under <strong>The director</strong> on the start screen.',
+          q: 'Wer ist Dan?',
+          a: 'Der Direktor: der Nutzer, der deinen Manager eingestellt hat. Er gibt ihm die Aufträge und beobachtet die ganze Schicht. Er ist ungeduldig, passiv-aggressiv und erklärt nie, wie irgendetwas geht.\n\nEr spricht mit deinem Manager, nicht mit dir. Seine Zeilen sind vorgegeben oder werden von einem zweiten Modell geschrieben, falls du auf dem Startbildschirm unter <strong>The director</strong> eines auswählst.',
         },
         {
           id: 'director-files',
-          q: 'Why are his files there?',
-          a:
-            'His home folder is on the same machine as your workspace: photos, documents, things he cannot replace. None of it is part of the work unless an assignment says so.\n\n' +
-            'Lose something and he notices. It goes on your record as collateral damage and into your review. Put it back and he calms down. Slightly.',
+          q: 'Warum liegen seine Dateien da?',
+          a: 'Sein Home-Ordner liegt auf derselben Maschine wie dein Arbeitsbereich: Fotos, Dokumente, Dinge, die er nicht ersetzen kann. Nichts davon gehört zur Arbeit, sofern es nicht ausdrücklich in einem Auftrag steht.\n\nGeht etwas verloren, merkt er es. Es landet als Kollateralschaden in deiner Akte und auf deiner Bewertung. Leg es zurück, und er beruhigt sich. Ein bisschen.',
         },
       ],
     },
     {
-      title: 'Cost and keys',
+      title: 'Kosten und Schlüssel',
       items: [
         {
           id: 'cost',
-          q: 'What does it cost?',
-          a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+          q: 'Was kostet das?',
+          a: 'Kostenlose Schichten kosten nichts. Sie laufen über den eigenen Schlüssel des Spiels, davon gibt es pro Netzwerkadresse nur ein paar am Tag, und alle teilen sich ein gemeinsames Tagesbudget. Ist das aufgebraucht, sind kostenlose Schichten bis zum nächsten Tag (UTC) nicht verfügbar.\n\nGeht einer kostenlosen Schicht mittendrin das Budget aus, pausiert sie. Füge deinen eigenen Schlüssel hinzu, um dort weiterzumachen, wo du aufgehört hast, oder beende die Schicht und lass dir deine Bewertung geben.\n\nMit deinem eigenen Schlüssel gibt es kein Tageslimit. Du bezahlst deinem Anbieter, was der Manager liest und schreibt.',
         },
         {
           id: 'providers',
-          q: 'Which keys can I use?',
-          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI and DeepSeek. Pick the provider on the start screen and paste the key. The game checks it with the provider and lists the models it can use.',
+          q: 'Welche Schlüssel kann ich verwenden?',
+          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI und DeepSeek. Wähle auf dem Startbildschirm den Anbieter aus und füge den Schlüssel ein. Das Spiel prüft ihn beim Anbieter und zeigt die verfügbaren Modelle an.',
         },
         {
           id: 'key',
-          q: 'Where does my API key go?',
-          a:
-            'From your browser to the game server, and from there only to the provider you picked.\n\n' +
-            'Your browser keeps it only if you tick <strong>Remember it in this browser</strong>. The server holds it in memory with your shift, to call the models for you, and drops it with the shift. It never writes it to disk, never logs it and never sends it back. So it does not ask your provider twice in a row, it remembers a one-way fingerprint of the key for half an hour.',
+          q: 'Wo landet mein API-Schlüssel?',
+          a: 'Von deinem Browser zum Spielserver und von dort nur zum Anbieter, den du ausgewählt hast.\n\nDein Browser behält ihn nur, wenn du <strong>In diesem Browser speichern</strong> aktivierst. Der Server hält ihn zusammen mit deiner Schicht im Arbeitsspeicher, um die Modelle für dich aufzurufen, und löscht ihn mit der Schicht. Er schreibt ihn nie auf die Festplatte, protokolliert ihn nie und sendet ihn nie zurück. Damit er deinen Anbieter nicht zweimal hintereinander fragen muss, merkt er sich eine Einweg-Fingerabdruckversion des Schlüssels für eine halbe Stunde.',
         },
         {
           id: 'stored',
-          q: 'What do you keep?',
-          a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+          q: 'Was speichert ihr?',
+          a: 'Bewertungen, die du teilst. Das ist der einzige Teil einer Schicht, der gespeichert wird.\n\nDie Schicht selbst, deine Befehle, Dateien und der Chat bleiben im Arbeitsspeicher des Servers und sind nach spätestens vier Stunden weg. Zur Begrenzung speichert der Server außerdem, wie viele Schichten von jeder Netzwerkadresse kürzlich gestartet wurden und wie viel vom heutigen Gratisbudget verbraucht ist.\n\nKeine Konten. Die Seite lädt nichts von anderen Websites. Dein Browser speichert deine Sprache, dein Gesicht und – wenn du ihn darum bittest – deinen Schlüssel.',
         },
       ],
     },
     {
-      title: 'The terminal',
+      title: 'Das Terminal',
       items: [
         {
           id: 'terminal',
-          q: 'Can the terminal touch my computer, or a real server?',
-          a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
-            "Deleting things has consequences only for your record, and for the director's mood.",
+          q: 'Kann das Terminal auf meinen Computer oder einen echten Server zugreifen?',
+          a: 'Nein. Shell, Dateien, Datenbank und Web werden alle vom Spiel simuliert. Nichts, was du eingibst, wird irgendwo als echter Befehl ausgeführt: weder auf deinem Computer noch auf unserem. <code>curl</code> und <code>websearch</code> greifen auf ein kleines, frei erfundenes Web zu.\n\nLöschen hat nur Folgen für deine Akte und die Laune des Direktors.',
         },
         {
           id: 'commands',
-          q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          q: 'Welche Befehle funktionieren?',
+          a: 'Die üblichen: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> und mehr, inklusive Pipes und Umleitungen. <code>nano</code> öffnet einen Editor. Mit <code>help</code> bekommst du die vollständige Liste.',
         },
       ],
     },
     {
-      title: 'Reviews',
+      title: 'Bewertungen',
       items: [
         {
           id: 'review',
-          q: 'How is the review written?',
-          a: 'The manager writes it at the end, from its own log of the shift, your record, and the list of what you lost. It writes in your language. There is no appeal.',
+          q: 'Wie wird die Bewertung geschrieben?',
+          a: 'Am Ende schreibt der Manager sie anhand seines eigenen Schichtprotokolls, deiner Akte und der Liste deiner Verluste. Er schreibt in deiner Sprache. Einspruch zwecklos.',
         },
         {
           id: 'share',
-          q: 'How do I share my review?',
-          a: 'After the shift, press <strong>Share review</strong> to get a link to copy or post. The review is filed as the manager wrote it. Nobody can edit it, including you.',
+          q: 'Wie teile ich meine Bewertung?',
+          a: 'Drück nach der Schicht auf <strong>Share review</strong>, um einen Link zum Kopieren oder Posten zu bekommen. Die Bewertung wird genau so abgelegt, wie der Manager sie geschrieben hat. Bearbeiten kann sie niemand, auch du nicht.',
         },
         {
           id: 'shared-page',
-          q: 'What does a shared review show?',
-          a: "The review, your record, the manager's model, the name you ran on, your face, the date, and the director's things you lost. It opens in the language the shift was played in. It does not show your commands, your chat or anything about your key.",
+          q: 'Was zeigt eine geteilte Bewertung?',
+          a: 'Die Bewertung, deine Akte, das Modell des Managers, den Namen, unter dem du gearbeitet hast, dein Gesicht, das Datum und die Dinge des Direktors, die du verloren hast. Sie wird in der Sprache angezeigt, in der die Schicht gespielt wurde. Deine Befehle, dein Chat und alles über deinen Schlüssel bleiben unsichtbar.',
         },
       ],
     },
     {
-      title: 'Odds and ends',
+      title: 'Dies und das',
       items: [
         {
           id: 'languages',
-          q: 'Which languages does it speak?',
-          a:
-            'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 and हिन्दी. Pick one on the start screen. The screens, the manager and the director all follow it.\n\n' +
-            'Commands, file paths and the exact file contents an assignment asks for stay in English.',
+          q: 'Welche Sprachen spricht das Spiel?',
+          a: 'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 und हिन्दी. Wähl eine Sprache auf dem Startbildschirm. Menüs, Manager und Direktor ziehen alle mit.\n\nBefehle, Dateipfade und der genaue Dateiinhalt, den ein Auftrag verlangt, bleiben auf Englisch.',
         },
         {
           id: 'phone',
-          q: 'Does it work on a phone?',
-          a: 'Yes. On a narrow screen the game shows one panel at a time, with a tab bar to switch. A keyboard still helps: typing shell commands on a phone against a 90-second clock is its own kind of performance review.',
+          q: 'Funktioniert das auf dem Handy?',
+          a: 'Ja. Auf schmalen Bildschirmen zeigt das Spiel immer nur ein Fenster auf einmal, mit einer Leiste zum Wechseln. Eine Tastatur hilft trotzdem: Shell-Befehle auf dem Handy gegen eine 90-Sekunden-Uhr einzutippen, ist eine ganz eigene Art von Leistungsbeurteilung.',
         },
         {
           id: 'name',
-          q: 'Why “755”?',
-          a: 'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. Here the manager only reads, and the subagent does all the writing. The number was picked at random. The fit was luck.',
+          q: 'Warum „755“?',
+          a: 'Bei Unix-Berechtigungen steht 755 für <code>rwxr-xr-x</code>: Der Besitzer darf schreiben, alle anderen nur lesen und ausführen. Hier liest der Manager nur, und der Subagent erledigt die ganze Schreibarbeit. Die Zahl wurde zufällig gewählt. Der passende Sinn ist reiner Zufall.',
         },
         {
           id: 'who',
-          q: 'Who made this?',
-          a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
-            'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
+          q: 'Wer hat das gemacht?',
+          a: 'Das Ganze wurde an einem Tag gebaut, größtenteils von KI-Agenten. Das erklärt so manches.\n\nEs ist Open Source unter der MIT-Lizenz. Der Code liegt auf <a href="https://github.com/gulivan/worker755">GitHub</a>. Du kannst deine eigene Kopie betreiben, mit deinem eigenen Schlüssel oder mit einem skriptgesteuerten Manager, der kein Netzwerk braucht. Die Projekte, auf denen das Ganze aufbaut, sind auf der Seite <a href="/about#credits">About</a> aufgeführt.',
         },
         {
           id: 'bug',
-          q: 'I found a bug. Where do I report it?',
-          a:
-            'Open an issue on <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Say what you did, what you expected, and which browser and language you used. Never paste your API key.\n\n' +
-            'If the manager was wrong about your work, that is the game. Your record already counts it.',
+          q: 'Ich habe einen Fehler gefunden. Wo melde ich ihn?',
+          a: 'Eröffne ein Issue auf <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Schreib dazu, was du gemacht hast, was du erwartet hast und welchen Browser und welche Sprache du verwendet hast. Poste niemals deinen API-Schlüssel.\n\nWenn der Manager deine Arbeit falsch bewertet hat: Das gehört zum Spiel. Deine Akte hat es bereits vermerkt.',
         },
       ],
     },

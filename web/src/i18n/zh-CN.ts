@@ -7,7 +7,7 @@ export const zhCN: Catalogue = {
   'app.loading': '正在找你的工位……',
   'app.clockInAgain': '再上一个班次',
   'links.about': '关于',
-  'links.faq': 'FAQ',
+  'links.faq': '常见问题',
   'links.source': '源代码',
   'links.support': '支持游戏',
   'errors.offline': '网络断开。',
@@ -275,9 +275,9 @@ export const zhCN: Catalogue = {
   'about.job.2': '你是 755 号员工，一名子代理。至少，你的经理是这么认为的。经理是一个真正的语言模型，它以为自己是个编排代理，正把 shell 工作委派给另一个 AI。结果接手的是你。',
   'about.job.3': '每条指令都带有醒目的 90 秒倒计时。你在终端里输入命令，然后汇报结果。要是倒计时先结束，经理就会收到：<q>Subagent did nothing. Write a new instruction.</q> 要是你汇报了，它就会收到 <q>Subagent output result: …</q>，以及你执行过的每条命令的记录。',
   'about.job.4': '经理自己什么也改不了。它只能读文件、发号施令。它会检查你的工作，发现错误就重新下指令，还会给你提交事故报告，并在班次结束时写下你的绩效评估。它的所思所想、所言所语，以及别人告诉它的关于你的事，全都显示在屏幕上。',
-  'about.job.5': 'Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.',
+  'about.job.5': '经理之上还有用户 Dan，他会实时盯着你。他没耐心，爱阴阳怪气，一旦有无法替代的东西消失就会暴怒。他发来的消息要么是预设好的，要么是你选定的第二个模型写的。',
   'about.workplaces': '工作场所',
-  'about.workplaces.fresh': "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
+  'about.workplaces.fresh': '<strong>全新沙盒。</strong>沙盒就在 Dan 自己的工作电脑上，紧挨着他的个人文件夹：家庭照片、唯一一份签过字的 NDA、一篇这周就要交的演讲稿，以及每个班次都会换着花样出现的珍贵宝贝。',
   'about.workplaces.legacy': '<strong>遗留生产系统。</strong>Billosaurus 是 Dan 的发票公司，还在跑 2013 年的代码。你得手动修改线上 SQLite 数据库，用 <code>sqlite3</code> 操作。没有 <code>WHERE</code> 的 <code>UPDATE</code>，后果嘛，你懂的。',
   'about.workplaces.tasks': '任务包括移动和修复文件、执行 <code>chmod 755</code>、处理数据库、查阅文档、在一个内容农场排名高过官方手册的小网站上搜索、画 ASCII 图、写俳句，以及给客户发一封道歉邮件。',
   'about.workplaces.simulated': '一切都是模拟的。文件系统、shell、数据库和网页都运行在游戏服务器上。删除东西只会影响你的档案，以及 Dan 的心情。',
@@ -286,13 +286,12 @@ export const zhCN: Catalogue = {
   'about.keys': '班次与密钥',
   'about.keys.1': '免费班次使用 DeepSeek V4.1 Flash。你也可以自带 OpenRouter、Vercel AI Gateway、Anthropic、OpenAI 或 DeepSeek 的密钥。密钥留在你的浏览器里。服务器只会在你的班次期间将它保存在内存中，绝不存储或记录。',
   'about.keys.2': 'Worker 755 在一天内搭建完成，大部分工作由 AI 代理完成。这就能解释其中一些决定了。',
-  'about.credits': 'Credits',
-  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
-  'about.credits.avatar':
-    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+  'about.credits': '鸣谢',
+  'about.credits.intro': 'Worker 755 建立在开源成果之上。幕后的人干了最难的活，却没人给他们 90 秒。',
+  'about.credits.avatar': '工人的头像来自 Dominik Scholz 制作的 <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a>。特别感谢：没有它，Worker 755 就只剩一个编号。',
 
   // ---- FAQ page ---------------------------------------------------------------------------------
-  'faq.title': 'Frequently asked questions',
+  'faq.title': '常见问题',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

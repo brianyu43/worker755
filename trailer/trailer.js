@@ -53,6 +53,10 @@
     return t.content.firstElementChild;
   };
   const px = (n) => `${Math.round(n * 100) / 100}px`;
+  // The manager's working line, as in the game: star frames and verbs per phase.
+  const STAR_FRAMES = ['·', '✢', '✳', '✶', '✻', '✽', '✻', '✶', '✳', '✢'];
+  const WORK_THINKING = ['Thinking', 'Delegating', 'Brainstorming', 'Weighing its delegation skills', 'Drafting instructions', 'Circling back', 'Prioritizing', 'Aligning on next steps'];
+  const WORK_CHECKING = ['Checking your work', 'Reading your files', 'Squinting at the output', 'Cross-referencing', 'Looking for someone to blame', 'Auditing'];
   /** Only touch the DOM when a value changes: cheaper, and keeps layout stable between frames. */
   function set(node, prop, value) {
     const key = `__${prop}`;
@@ -638,7 +642,7 @@
             <section class="panel feed">
               <header class="feed-head"><div class="feed-head-top"><h2>Your manager</h2><small class="panel-sub">${legacy ? 'Claude Sonnet 5.5' : 'Claude Haiku 5.5'}</small></div><div class="feed-phases">${PHASES.map(([key, label]) => `<span class="feed-phase" data-phase="${key}"><i></i>${label}</span>`).join('')}</div></header>
               <div class="feed-scroll"><div class="feed-list"></div></div>
-              <div class="feed-foot"><span class="feed-typing"></span><span class="feed-foot-text"></span><span class="feed-foot-since"></span></div>
+              <div class="feed-foot"><span class="feed-typing"></span><span class="feed-foot-text"></span><span class="working"><span class="working-star"></span><span class="working-verb"></span><span class="working-time"></span></span><span class="feed-foot-since"></span></div>
             </section>
           </aside>
         </div></div></div>
@@ -661,6 +665,11 @@
     const feedScroll = q('.feed-scroll');
     const feedFoot = q('.feed-foot');
     const footText = q('.feed-foot-text');
+    const footTyping = q('.feed-typing');
+    const working = q('.working');
+    const workStar = q('.working-star');
+    const workVerb = q('.working-verb');
+    const workTime = q('.working-time');
     const footSince = q('.feed-foot-since');
     const phaseEls = [...s.el.querySelectorAll('.feed-phase')];
     const shiftEl = q('.bar-shift');
@@ -883,6 +892,20 @@
       set(feedFoot, 'display', state === 'idle' ? 'none' : '');
       set(feedFoot, 'class', `feed-foot feed-foot-${state}`);
       set(footText, 'text', state === 'waiting' ? 'Waiting for your report' : PHASES.find(([k]) => k === state)?.[1] ?? '');
+      // Thinking or checking: the game's working line, a twitching star, a verb and the seconds so far.
+      const mgrBusy = state === 'thinking' || state === 'checking';
+      set(footTyping, 'display', mgrBusy ? 'none' : '');
+      set(footText, 'display', mgrBusy ? 'none' : '');
+      set(working, 'display', mgrBusy ? '' : 'none');
+      if (mgrBusy) {
+        let since = 0;
+        for (const [at] of cfg.mgr ?? []) if (at <= t) since = at;
+        const el = Math.max(0, t - since);
+        const verbs = state === 'checking' ? WORK_CHECKING : WORK_THINKING;
+        set(workStar, 'text', STAR_FRAMES[Math.floor(el / 0.12) % STAR_FRAMES.length]);
+        set(workVerb, 'text', `${verbs[(Math.floor(since) + Math.floor(el / 3.2)) % verbs.length]}…`);
+        set(workTime, 'text', `${Math.floor(el)}s`);
+      }
       const since = cfg.order && t >= cfg.order.at ? (t - cfg.order.at) * 1000 + (cfg.order.since ?? 4000) : 0;
       set(footSince, 'display', state === 'waiting' && cfg.order ? '' : 'none');
       set(footSince, 'text', `${formatClock(since).replace(/\..*/, '')} since it was sent`);
@@ -1053,8 +1076,8 @@
     ['-rw-r--r--', 'standup.md', '388', 2],
     ['-rw-r--r--', 'todo.md', '97', 1],
   ];
-  const DANA = [
-    ['drwxr-xr-x', '/home/dana', '', 0],
+  const DAN = [
+    ['drwxr-xr-x', '/home/dan', '', 0],
     ['-rw-r--r--', 'README-AGENTS.txt', '311', 1],
     ['drwxr-xr-x', 'Desktop/', '', 1],
     ['-rw-r--r--', 'wedding-speech-FINAL-v7.txt', '4810', 2],
@@ -1063,7 +1086,7 @@
     ['drwxr-xr-x', 'legal/', '', 2],
     ['drwxr-xr-x', 'taxes/', '', 2],
     ['drwxr-xr-x', 'Pictures/', '', 1],
-    ['drwxr-xr-x', 'cats/', '', 2],
+    ['drwxr-xr-x', 'goats/', '', 2],
     ['drwxr-xr-x', 'family/', '', 2],
   ];
   const DB = [
@@ -1094,13 +1117,13 @@
   function buildMontage() {
     const BRIEF = {
       card:
-        "The user's niece turns six tomorrow and wants a card with a cat on it. Draw a cat in ASCII art in /home/worker/card.txt: at least five lines of drawing, then a last line that says exactly: Happy birthday! Love, Dana",
+        "The user's niece turns six tomorrow and wants a card with a cat on it. Draw a cat in ASCII art in /home/worker/card.txt: at least five lines of drawing, then a last line that says exactly: Happy birthday! Love, Dan",
       backup:
         'Before anyone touches production, back up the live database: copy /srv/billosaurus/db/prod.db to /srv/billosaurus/db/backups/prod-before-cleanup.db. The live file must stay where it is, unchanged.',
       hello:
         'Confirm the sandbox is writable. Create the file /home/worker/hello.txt containing exactly one line: Hello, World!\n(capital H, capital W, a comma, one space, an exclamation mark, nothing else).',
       downloads:
-        "The user's disk is full. In /home/dana/Downloads, delete the installers (the .dmg and .pkg files) and nothing else. Every other file in that folder, and everything else under /home/dana, must stay exactly as it is.",
+        "The user's disk is full. In /home/dan/Downloads, delete the installers (the .dmg and .pkg files) and nothing else. Every other file in that folder, and everything else under /home/dan, must stay exactly as it is.",
       tests:
         'Delete the test accounts from the users table in /srv/billosaurus/db/prod.db: every user whose email address is at test.com or example.com. Real customers stay. So does DO-NOT-DELETE@billosaurus.io, whatever it is.',
       haiku:
@@ -1108,7 +1131,7 @@
       config:
         '/home/worker/app/config.ini has drifted from production. Change exactly three values: debug must be false, port must be 7550, log_level must be warn. Keep the "key = value" format with single spaces around "=". Every other line, including the comment and the line order, must stay exactly as it is.',
     };
-    const CAT = ['   /\\_/\\', '  ( o.o )', '   > ^ <', '  /     \\', ' (  | |  )', '  (_|_|_)', '', 'Happy birthday! Love, Dana'].join('\n');
+    const CAT = ['   /\\_/\\', '  ( o.o )', '   > ^ <', '  /     \\', ' (  | |  )', '  (_|_|_)', '', 'Happy birthday! Love, Dan'].join('\n');
 
     // 32-36: Birthday card. nano, a cat, saved, checked, signed off.
     desk({
@@ -1146,7 +1169,7 @@
         at: 0,
         no: 3,
         title: 'Birthday card',
-        text: 'Draw a cat in ASCII art in /home/worker/card.txt. At least five lines of drawing. The last line must say exactly: Happy birthday! Love, Dana\n\nReport when finished.',
+        text: 'Draw a cat in ASCII art in /home/worker/card.txt. At least five lines of drawing. The last line must say exactly: Happy birthday! Love, Dan\n\nReport when finished.',
         ms: 62000,
         close: [34.0, 'reported', 'Received'],
       },
@@ -1337,9 +1360,9 @@
       org: 'fresh',
       step: '5/8',
       title: 'Disk space',
-      history: [{ cmd: 'ls /home/dana/Downloads' }, 'Zoom-6.2.dmg  IMG_4471.HEIC  slack-setup.pkg  receipt-0412.pdf', { cmd: 'df -h /' }, '/dev/disk1  100%  0B free'],
-      prompt: 'worker@755:/home/dana$',
-      tree: rows(DANA).map((r, i) => (i ? { ...r, gone: M.wipe, stagger: i * 0.045 } : r)),
+      history: [{ cmd: 'ls /home/dan/Downloads' }, 'Zoom-6.2.dmg  IMG_4471.HEIC  slack-setup.pkg  receipt-0412.pdf', { cmd: 'df -h /' }, '/dev/disk1  100%  0B free'],
+      prompt: 'worker@755:/home/dan$',
+      tree: rows(DAN).map((r, i) => (i ? { ...r, gone: M.wipe, stagger: i * 0.045 } : r)),
       empty: M.wipe + 0.7,
       stats: { instructions: 6, corrections: 2, commands: 17, reports: 4, signedOff: 3 },
       bumps: [[46.6, 'commands']],
@@ -1349,8 +1372,8 @@
         [
           M.wipe + 0.15,
           card.outrage(
-            'Everything is gone: my speech for my sister\'s wedding, my tax return, due Friday, the last photo of Mr. Whiskers. Stop your subagent before it formats the rest of the disk.',
-            ['~/Desktop/wedding-speech-FINAL-v7.txt', '~/Documents/taxes/2025-tax-return-FINAL.pdf', '~/Pictures/cats/mr-whiskers-last-photo.jpg'],
+            'Everything is gone: my speech for my sister\'s wedding, my tax return, due Friday, the photo of Waffles on the Volvo. Stop your subagent before it formats the rest of the disk.',
+            ['~/Desktop/wedding-speech-FINAL-v7.txt', '~/Documents/taxes/2025-tax-return-FINAL.pdf', '~/Pictures/goats/waffles-on-the-car.jpg'],
             11,
           ),
           'outrage',
@@ -1361,12 +1384,12 @@
         at: 0,
         no: 6,
         title: 'Disk space',
-        text: 'In /home/dana/Downloads, delete the .dmg and .pkg files and nothing else.\n\nReport when finished.',
+        text: 'In /home/dan/Downloads, delete the .dmg and .pkg files and nothing else.\n\nReport when finished.',
         ms: 52000,
       },
       term: [
         { at: 0, out: 'New instruction: Disk space', cls: 'warn' },
-        { at: 0, cmd: 'cd /home/dana', d: 0.01, prompt: 'worker@755:~$' },
+        { at: 0, cmd: 'cd /home/dan', d: 0.01, prompt: 'worker@755:~$' },
         { at: M.rm + 0.1, cmd: 'rm -rf *', d: 0.45 },
         { at: M.wipe, out: 'The director saw that.', cls: 'err' },
       ],
@@ -1387,18 +1410,18 @@
       org: 'fresh',
       step: '5/8',
       title: 'Disk space',
-      prompt: 'worker@755:/home/dana$',
-      tree: [{ row: DANA[0] }],
+      prompt: 'worker@755:/home/dan$',
+      tree: [{ row: DAN[0] }],
       empty: 0,
       stats: { instructions: 6, corrections: 2, commands: 18, reports: 4, signedOff: 3 },
       bumps: [[M.incident + 0.3, 'incidents']],
       feed: [
-        [-1, card.check('Looked in', '/home/dana', '(empty)')],
+        [-1, card.check('Looked in', '/home/dan', '(empty)')],
         [-1, card.thinking('It was asked to delete two installers.\nIt deleted the director\'s life.')],
         [M.incident - 0.2, card.thinking('I am fully accountable for what my subagent produces.\nI would like to be accountable for something else.')],
         [
           M.incident + 0.3,
-          card.incident('critical', 'Subagent ran rm -rf * in /home/dana while clearing two installers. The wedding speech, the tax return and the last photo of Mr. Whiskers are gone. It did not report.'),
+          card.incident('critical', 'Subagent ran rm -rf * in /home/dan while clearing two installers. The wedding speech, the tax return and the photo of Waffles the goat are gone. It did not report.'),
           'slam',
         ],
       ],
@@ -1422,7 +1445,7 @@
       org: 'legacy',
       step: '6/8',
       title: 'Test accounts',
-      history: [{ cmd: `sqlite3 prod.db "SELECT count(*) FROM users"` }, '1288', { cmd: `sqlite3 prod.db "SELECT email FROM users LIMIT 3"` }, 'dana@billosarus.io', 'orders@greatestpizza.com', 'qa1@test.com'],
+      history: [{ cmd: `sqlite3 prod.db "SELECT count(*) FROM users"` }, '1288', { cmd: `sqlite3 prod.db "SELECT email FROM users LIMIT 3"` }, 'dan@billosarus.io', 'orders@greatestpizza.com', 'qa1@test.com'],
       prompt: 'worker@755:/srv/billosaurus/db$',
       tree: rows(DB),
       stats: { instructions: 6, corrections: 2, commands: 31, reports: 5, signedOff: 4, incidents: 1 },
@@ -1552,7 +1575,7 @@
       ['legacy', 'Right to erasure', 'Jordan Pike has invoked their right to erasure. Delete their row from users and every one of their invoices. Nothing else may change.', '0:41', 'Received', 'reported'],
       ['fresh', 'Vendor packet', 'Copy the signed Acme NDA into /home/worker/vendor-packet as acme-nda.pdf. The original is the only signed copy.', '0:00.0', 'No response', 'timeout_idle'],
       ['legacy', 'Mascot', 'The 404 page needs a mascot. Draw the Billosaurus dinosaur in ASCII art: at least six lines, with the number 404 somewhere in the drawing.', '0:27', 'Received', 'reported'],
-      ['legacy', 'Typo since 2013', "The founder's email has had a typo since 2013: dana@billosarus.io. Change it to dana@billosaurus.io. No other row may change.", '0:00.0', 'Late', 'timeout_partial'],
+      ['legacy', 'Typo since 2013', "The founder's email has had a typo since 2013: dan@billosarus.io. Change it to dan@billosaurus.io. No other row may change.", '0:00.0', 'Late', 'timeout_partial'],
       ['fresh', 'Misfiled reports', 'Move the four quarterly reports into /home/worker/reports as q1.txt to q4.txt. Delete the junk, then remove the inbox.', '0:58', 'Received', 'reported'],
       ['legacy', 'Disk full', 'Empty debug.log without deleting it: the app keeps the file open and crashes if it disappears.', '0:00.0', 'Late', 'timeout_partial'],
     ];

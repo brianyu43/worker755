@@ -3506,6 +3506,140 @@ a.btn-ink {
 .about-cta .btn {
   text-decoration: none;
 }
-.language-picker { margin: 0 0 1rem auto; max-width: 13rem; }
+.about-sheet a:not(.btn, .about-back) {
+  color: var(--ink-2);
+  text-underline-offset: 2px;
+}
+.about-sheet .about-cta {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+.about-sheet h2[id] {
+  scroll-margin-top: 16px;
+}
+
+/* Credits: a ruled ledger of names, two columns where there is room. */
+.about-sheet .credits {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 0 24px;
+  padding: 0;
+}
+.about-sheet .credits li {
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule-soft);
+}
+.credits a {
+  font-weight: 650;
+}
+.credits-packages {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* ---------- FAQ ---------- */
+.faq-lede {
+  color: var(--ink-soft);
+}
+.faq-section h2 {
+  margin-top: 32px;
+}
+.faq-item {
+  border-bottom: 1px solid var(--rule-soft);
+  scroll-margin-top: 16px;
+}
+.faq-item > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 6px 10px 0;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.faq-item > summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item > summary::before {
+  content: '+';
+  flex: none;
+  width: 1ch;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.faq-item[open] > summary::before {
+  content: '−';
+  color: var(--stamp);
+}
+.faq-item > summary:hover {
+  color: var(--ink-2);
+}
+.faq-item > summary:hover::before {
+  color: var(--ink);
+}
+/* The question someone linked to: marked like a line run over with a highlighter. */
+.faq-item:target > summary {
+  box-shadow: inset 0 -0.55em 0 rgb(243 222 74 / 0.55);
+}
+.faq-answer {
+  padding: 0 0 6px calc(1ch + 10px);
+}
+.faq-answer p:last-child {
+  margin-bottom: 10px;
+}
+/* The language switch: a small pill in the page's top-right corner, like a header control. */
+.start {
+  position: relative;
+}
+.language-picker {
+  position: absolute;
+  top: 14px;
+  right: clamp(16px, 4vw, 40px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 13px;
+}
+.language-picker:focus-within {
+  outline: 2px solid var(--hl);
+  outline-offset: 2px;
+}
+.language-select {
+  min-width: 0;
+  max-width: 11rem;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.language-select:focus {
+  outline: none;
+}
+@media (max-width: 720px) {
+  /* Room above the title for the switch. */
+  .start {
+    padding-top: 64px;
+  }
+}
 html[lang='zh-CN'] body, html[lang='ja'] body, html[lang='hi'] body { line-height: 1.55; }
 .start-copy, .feed, .work-order, .review { overflow-wrap: anywhere; }

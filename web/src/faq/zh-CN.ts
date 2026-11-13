@@ -1,207 +1,176 @@
-// The FAQ in zh-CN. Still in English: translate from en.ts, keeping the ids and tags.
 
 import type { Faq } from './types.ts';
 
 export const zhCN: Faq = {
-  lede: 'What players ask, answered for the record.',
+  lede: '玩家常见问题，现予存档答复。',
   sections: [
     {
-      title: 'The job',
+      title: '这份工作',
       items: [
         {
           id: 'what',
-          q: 'What is this?',
-          a:
-            'A browser game. Your manager is an AI agent, and it believes you are its subagent. You are Worker 755.\n\n' +
-            'It sends you shell instructions. You carry them out in a terminal and report back before the clock runs out. At the end of the shift it writes your performance review.',
+          q: '这是什么？',
+          a: '一款浏览器游戏。你的经理是个 AI 智能体，而且它认定你是它的子智能体。你是 755 号员工。\n\n它会给你下达 shell 指令。你要在终端里执行，然后在倒计时结束前汇报。轮班结束时，它会给你写工作表现评估。',
         },
         {
           id: 'shift',
-          q: 'How does a shift work?',
-          a:
-            'The director hands your manager eight assignments, one at a time. For each one the manager writes you an instruction, and a 90-second clock starts.\n\n' +
-            'Type commands, then press <strong>Report done</strong>, with a note if you like. The manager gets your note and a transcript of every command you ran, reads the files to check, and either signs the assignment off or sends a correction. After the last one it writes your review.',
+          q: '轮班是怎么进行的？',
+          a: '主管会把八项任务逐一交给你的经理。每项任务，经理都会给你写一条指令，然后开始 90 秒倒计时。\n\n输入命令，然后按 <strong>报告完成</strong>，想的话也可以附上备注。经理会收到你的备注，以及你运行过的所有命令记录；它会检查文件，然后签字确认任务完成，或者让你返工。最后一项任务完成后，它会给你写工作表现评估。',
         },
         {
           id: 'workplaces',
-          q: 'What is the difference between the workplaces?',
-          a:
-            "<strong>Fresh sandbox</strong> is a workspace on the director's own computer, next to his home folder. <strong>Legacy production</strong> is the live server of his invoicing company, where you change the database by hand with <code>sqlite3</code>.\n\n" +
-            'Both are made up. Only one of them has customers.',
+          q: '两种工作环境有什么区别？',
+          a: '<strong>全新沙盒</strong>是主管自己电脑上的工作区，就在他的主文件夹旁边。<strong>遗留生产环境</strong>则是他那家开票公司的线上服务器，你得用 <code>sqlite3</code> 手动修改数据库。\n\n两个都是虚构的。只有一个有客户。',
         },
         {
           id: 'idle',
-          q: 'What happens if I do nothing?',
-          a: 'When the clock runs out, the manager is told: <q>Subagent did nothing. Write a new instruction.</q> It goes on your record. Three in a row and the shift is over, without a review.',
+          q: '如果我什么都不做会怎样？',
+          a: '计时结束时，经理会收到这句话：<q>Subagent did nothing. Write a new instruction.</q> 这会记入你的档案。连续三次，这个班就结束了，而且没有评价。',
         },
         {
           id: 'skip',
-          q: 'What does “Allow skipping failed tasks” do?',
-          a: 'By default the manager has no way to give up on an assignment. It keeps instructing you until the work is right. With this on, it may close an assignment as failed and move on.',
+          q: '“允许跳过失败任务”有什么用？',
+          a: '默认情况下，经理没法放弃一项任务。它会一直给你下指令，直到工作做对为止。开启后，它可以将任务判定为失败并继续处理下一项。',
         },
         {
           id: 'end-early',
-          q: 'Can I end a shift early?',
-          a: 'Yes. Press <strong>End now</strong>. The manager stops and writes your review from what you have done so far. You cannot come back to that shift.',
+          q: '可以提前结束班次吗？',
+          a: '可以。按<strong>立即结束</strong>。经理会停下来，根据你目前完成的工作写下工作评价。这个班次一旦结束，就不能再回来了。',
         },
       ],
     },
     {
-      title: 'The manager',
+      title: '经理',
       items: [
         {
           id: 'manager',
-          q: 'Is the manager a real AI?',
-          a:
-            'Yes. A real language model, set up as an agent that hands shell work to a subagent. Its instructions never mention people or games. It can read files, list folders, give you instructions, file incident reports about you and close assignments. It cannot change a file itself.\n\n' +
-            'Everything it thinks, says and is told about you is on screen.',
+          q: '经理是真正的 AI 吗？',
+          a: '是。它是一个真正的语言模型，被设置成一个会把 shell 工作分派给子代理的智能体。它的指令里从没提过人类或游戏。它可以读取文件、列出文件夹、给你下指令、给你提交事故报告，还能结束任务。但它自己不能修改文件。\n\n它在想什么、说了什么，以及别人告诉它关于你的事，都会显示在屏幕上。',
         },
         {
           id: 'model',
-          q: 'Which model is it?',
-          a: "Free shifts run on DeepSeek V4.1 Flash. With your own key you choose: the start screen lists the chat models your key can use, the game's usual picks first. The model's name is on your review.",
+          q: '它用的是什么模型？',
+          a: '免费班次使用 DeepSeek V4.1 Flash。用你自己的密钥时，模型由你选：开始界面会列出你的密钥可用的聊天模型，游戏常用的模型排在前面。你的工作评价上会写着模型名称。',
         },
         {
           id: 'tone',
-          q: 'Why does it talk to me like that?',
-          a: 'It thinks you are software. Agents write to their subagents in numbered steps, and when something goes wrong they explain it again, slower. Nobody has told it otherwise, and the game will not.',
+          q: '它为什么这么跟我说话？',
+          a: '它以为你是软件。智能体会用编号步骤给子代理派活；出了岔子，它们就会再解释一遍，只不过说得更慢。没人告诉它事实并非如此，游戏也不会。',
         },
         {
           id: 'argue',
-          q: 'Can I argue with it?',
-          a:
-            'You can write anything in your report. It arrives as <q>Subagent output result: …</q>, followed by the transcript of what you actually ran. Then the manager reads the files.\n\n' +
-            'The manager is not always right either. The game checks every assignment against the files and counts each time it signed off on broken work.',
+          q: '我能跟它争辩吗？',
+          a: '你可以在报告里写任何内容。报告会以 <q>Subagent output result: …</q> 的形式送达，后面跟着你实际运行过的命令记录。然后经理会读取文件。\n\n经理也不是永远正确。游戏会逐项对照文件检查任务，还会统计它放行了多少次有问题的成果。',
         },
         {
           id: 'run-on',
-          q: 'What is “You run on”?',
-          a: 'The model your manager believes you are. By default it is a random knock-off name. Type your own if you prefer; the manager is told, and its results name you by it.',
+          q: '“你运行在”是什么意思？',
+          a: '就是你的经理以为你运行的模型。默认会随机给你一个山寨模型名。你也可以自己输入；经理会收到这个信息，结果里也会用这个名字称呼你。',
         },
       ],
     },
     {
-      title: 'The director',
+      title: '主管',
       items: [
         {
           id: 'director',
-          q: 'Who is Dan?',
-          a:
-            'The director: the user who hired your manager. He hands it the assignments and watches the whole shift. He is impatient, passive-aggressive, and never explains how to do anything.\n\n' +
-            'He talks to your manager, not to you. His lines are scripted, or written by a second model if you choose one under <strong>The director</strong> on the start screen.',
+          q: 'Dan 是谁？',
+          a: '主管，也就是雇了你经理的用户。他把任务交给经理，并盯着整个班次。他没耐心、爱阴阳怪气，而且从来不解释该怎么做。\n\n他跟你的经理说话，不跟你说。他的台词是预先写好的；如果你在开始界面的<strong>主管</strong>下选择另一个模型，他说的话也可能由第二个模型生成。',
         },
         {
           id: 'director-files',
-          q: 'Why are his files there?',
-          a:
-            'His home folder is on the same machine as your workspace: photos, documents, things he cannot replace. None of it is part of the work unless an assignment says so.\n\n' +
-            'Lose something and he notices. It goes on your record as collateral damage and into your review. Put it back and he calms down. Slightly.',
+          q: '为什么他的文件会在那里？',
+          a: '他的主文件夹就在和你的工作区同一台机器上：照片、文档，还有那些丢了就没法补的东西。除非任务明确要求，否则这些都不属于工作内容。\n\n弄丢了什么，他就会发现。那会作为附带损失记在你的档案和工作评价里。放回去，他就会消消气。稍微消一点。',
         },
       ],
     },
     {
-      title: 'Cost and keys',
+      title: '费用与密钥',
       items: [
         {
           id: 'cost',
-          q: 'What does it cost?',
-          a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+          q: '要花多少钱？',
+          a: '免费班次不花钱。它们使用游戏自己的密钥，每个网络地址每天能开几次，所有人共用同一个每日额度。额度用完后，免费班次会暂停开放，直到次日（UTC）。\n\n如果免费班次进行到一半额度用完，它就会暂停。添加你自己的密钥，就能从停下的地方继续；或者结束班次，领取工作评价。\n\n使用自己的密钥没有每日限制。经理读取和写入的内容，由你的服务商向你收费。',
         },
         {
           id: 'providers',
-          q: 'Which keys can I use?',
-          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI and DeepSeek. Pick the provider on the start screen and paste the key. The game checks it with the provider and lists the models it can use.',
+          q: '我能用哪些密钥？',
+          a: 'OpenRouter、Vercel AI Gateway、Anthropic、OpenAI 和 DeepSeek。在开始界面选择服务商并粘贴密钥即可。游戏会向服务商验证密钥，并列出可用的模型。',
         },
         {
           id: 'key',
-          q: 'Where does my API key go?',
-          a:
-            'From your browser to the game server, and from there only to the provider you picked.\n\n' +
-            'Your browser keeps it only if you tick <strong>Remember it in this browser</strong>. The server holds it in memory with your shift, to call the models for you, and drops it with the shift. It never writes it to disk, never logs it and never sends it back. So it does not ask your provider twice in a row, it remembers a one-way fingerprint of the key for half an hour.',
+          q: '我的 API 密钥会被发到哪里？',
+          a: '从你的浏览器发到游戏服务器，再由服务器发送给你选择的服务商，仅此而已。\n\n只有勾选<strong>在此浏览器中记住</strong>后，浏览器才会保存它。服务器会在你的班次期间把密钥保存在内存中，以便替你调用模型；班次结束后就会删除。它绝不会把密钥写入磁盘、记入日志或发回给你。为了避免它连续两次询问你的服务商，它会把密钥的单向指纹记半小时。',
         },
         {
           id: 'stored',
-          q: 'What do you keep?',
-          a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+          q: '你们会保存什么？',
+          a: '你分享的评价。一个班次里，只有这一部分会被保存。\n\n班次本身、你的命令、文件和聊天记录都只存在服务器内存里，四小时内就会消失。为了执行限制，服务器还会保存每个网络地址近期启动过多少个班次，以及今天的免费额度已经用了多少。\n\n没有账户。网页不会从其他网站加载任何内容。你的浏览器会保存你的语言、头像，以及你主动要求保存的密钥。',
         },
       ],
     },
     {
-      title: 'The terminal',
+      title: '终端',
       items: [
         {
           id: 'terminal',
-          q: 'Can the terminal touch my computer, or a real server?',
-          a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
-            "Deleting things has consequences only for your record, and for the director's mood.",
+          q: '终端能访问我的电脑或真实服务器吗？',
+          a: '不能。Shell、文件、数据库和 Web 全都是游戏模拟的。你输入的任何内容都不会在任何地方作为真实命令运行：既不会在你的电脑上，也不会在我们的电脑上。<code>curl</code> 和 <code>websearch</code> 只能访问一个虚构的小型网络。\n\n删除东西只会影响你的工作记录，以及主管的心情。',
         },
         {
           id: 'commands',
-          q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          q: '哪些命令能用？',
+          a: '常见的都有：<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>mkdir</code>、<code>chmod</code>、<code>grep</code>、<code>find</code>、<code>sqlite3</code> 等，还支持管道和重定向。<code>nano</code> 会打开编辑器。输入 <code>help</code> 查看完整列表。',
         },
       ],
     },
     {
-      title: 'Reviews',
+      title: '评价',
       items: [
         {
           id: 'review',
-          q: 'How is the review written?',
-          a: 'The manager writes it at the end, from its own log of the shift, your record, and the list of what you lost. It writes in your language. There is no appeal.',
+          q: '评价是怎么写出来的？',
+          a: '班次结束时，主管会根据自己的班次日志、你的工作记录，以及你弄丢的东西清单来写评价。它会用你游玩时的语言写。申诉无门。',
         },
         {
           id: 'share',
-          q: 'How do I share my review?',
-          a: 'After the shift, press <strong>Share review</strong> to get a link to copy or post. The review is filed as the manager wrote it. Nobody can edit it, including you.',
+          q: '怎么分享我的评价？',
+          a: '班次结束后，点击 <strong>分享评价</strong>，获取链接后复制或发布。评价会原样存档，主管怎么写就是什么样。谁也不能修改，包括你。',
         },
         {
           id: 'shared-page',
-          q: 'What does a shared review show?',
-          a: "The review, your record, the manager's model, the name you ran on, your face, the date, and the director's things you lost. It opens in the language the shift was played in. It does not show your commands, your chat or anything about your key.",
+          q: '分享的评价会显示什么？',
+          a: '评价、你的工作记录、主管使用的模型、你游玩时填写的名字、头像、日期，以及你弄丢的主管物品。页面会以游玩该班次时使用的语言打开。它不会显示你的命令、聊天记录，也不会泄露任何密钥信息。',
         },
       ],
     },
     {
-      title: 'Odds and ends',
+      title: '其他问题',
       items: [
         {
           id: 'languages',
-          q: 'Which languages does it speak?',
-          a:
-            'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 and हिन्दी. Pick one on the start screen. The screens, the manager and the director all follow it.\n\n' +
-            'Commands, file paths and the exact file contents an assignment asks for stay in English.',
+          q: '游戏支持哪些语言？',
+          a: 'English、Español、Português (Brasil)、Français、Deutsch、Русский、简体中文、日本語和 हिन्दी。你可以在开始界面选择。游戏界面、主管和主管的主管都会使用所选语言。\n\n命令、文件路径，以及任务要求的文件准确内容仍使用英语。',
         },
         {
           id: 'phone',
-          q: 'Does it work on a phone?',
-          a: 'Yes. On a narrow screen the game shows one panel at a time, with a tab bar to switch. A keyboard still helps: typing shell commands on a phone against a 90-second clock is its own kind of performance review.',
+          q: '手机上能玩吗？',
+          a: '能。窄屏下游戏一次只显示一个面板，可以通过标签栏切换。键盘还是更方便：对着90秒倒计时在手机上敲 Shell 命令，本身就是一种绩效考核。',
         },
         {
           id: 'name',
-          q: 'Why “755”?',
-          a: 'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. Here the manager only reads, and the subagent does all the writing. The number was picked at random. The fit was luck.',
+          q: '为什么叫“755”？',
+          a: '在 Unix 权限中，755 就是 <code>rwxr-xr-x</code>：所有者可以写入，其他人只能读取和执行。在这里，主管只负责读，所有写活都归子代理。这个数字是随机选的。能对上纯属巧合。',
         },
         {
           id: 'who',
-          q: 'Who made this?',
-          a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
-            'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
+          q: '这是谁做的？',
+          a: '这个游戏一天内就做出来了，主要靠 AI 代理完成。这能解释不少设计决定。\n\n项目基于 MIT 许可证开源。代码托管在 <a href="https://github.com/gulivan/worker755">GitHub</a>，你可以运行自己的副本，使用自己的密钥，或者使用不需要联网的脚本主管。它依赖的项目列在 <a href="/about#credits">关于</a> 页面上。',
         },
         {
           id: 'bug',
-          q: 'I found a bug. Where do I report it?',
-          a:
-            'Open an issue on <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Say what you did, what you expected, and which browser and language you used. Never paste your API key.\n\n' +
-            'If the manager was wrong about your work, that is the game. Your record already counts it.',
+          q: '我发现了 Bug，该去哪里报告？',
+          a: '在 <a href="https://github.com/gulivan/worker755/issues">GitHub</a> 上提交 issue。说明你做了什么、原本期待什么结果，以及你使用的浏览器和语言。千万别贴出你的 API 密钥。\n\n如果主管对你的工作评价错了，那就是游戏的一部分。你的工作记录已经把这笔账算上了。',
         },
       ],
     },

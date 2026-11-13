@@ -1,207 +1,176 @@
-// The FAQ in hi. Still in English: translate from en.ts, keeping the ids and tags.
 
 import type { Faq } from './types.ts';
 
 export const hi: Faq = {
-  lede: 'What players ask, answered for the record.',
+  lede: 'खिलाड़ियों के सवाल—जवाब, रिकॉर्ड के लिए।',
   sections: [
     {
-      title: 'The job',
+      title: 'नौकरी',
       items: [
         {
           id: 'what',
-          q: 'What is this?',
-          a:
-            'A browser game. Your manager is an AI agent, and it believes you are its subagent. You are Worker 755.\n\n' +
-            'It sends you shell instructions. You carry them out in a terminal and report back before the clock runs out. At the end of the shift it writes your performance review.',
+          q: 'यह क्या है?',
+          a: 'एक ब्राउज़र गेम। तुम्हारा मैनेजर एक AI एजेंट है, और उसे लगता है कि तुम उसके सबएजेंट हो। तुम हो Worker 755.\n\nवह तुम्हें शेल निर्देश भेजता है। तुम टर्मिनल में उन्हें पूरा करते हो और समय ख़त्म होने से पहले रिपोर्ट देते हो। शिफ़्ट के अंत में वह तुम्हारा कार्य-प्रदर्शन मूल्यांकन लिखता है।',
         },
         {
           id: 'shift',
-          q: 'How does a shift work?',
-          a:
-            'The director hands your manager eight assignments, one at a time. For each one the manager writes you an instruction, and a 90-second clock starts.\n\n' +
-            'Type commands, then press <strong>Report done</strong>, with a note if you like. The manager gets your note and a transcript of every command you ran, reads the files to check, and either signs the assignment off or sends a correction. After the last one it writes your review.',
+          q: 'शिफ़्ट कैसे चलती है?',
+          a: 'डायरेक्टर तुम्हारे मैनेजर को एक-एक करके आठ काम देता है। हर काम के लिए मैनेजर तुम्हें एक निर्देश लिखता है, और 90 सेकंड की घड़ी शुरू हो जाती है।\n\nकमांड टाइप करो, फिर <strong>काम पूरा होने की रिपोर्ट दो</strong> दबाओ। चाहो तो एक नोट भी जोड़ सकते हो। मैनेजर को तुम्हारा नोट और चलाए गए हर कमांड का ट्रांसक्रिप्ट मिलता है। वह जाँच के लिए फ़ाइलें पढ़ता है और या तो काम मंज़ूर कर देता है या सुधार भेजता है। आख़िरी काम के बाद वह तुम्हारा मूल्यांकन लिखता है।',
         },
         {
           id: 'workplaces',
-          q: 'What is the difference between the workplaces?',
-          a:
-            "<strong>Fresh sandbox</strong> is a workspace on the director's own computer, next to his home folder. <strong>Legacy production</strong> is the live server of his invoicing company, where you change the database by hand with <code>sqlite3</code>.\n\n" +
-            'Both are made up. Only one of them has customers.',
+          q: 'इन कार्यस्थलों में क्या अंतर है?',
+          a: '<strong>नया सैंडबॉक्स</strong> डायरेक्टर के अपने कंप्यूटर पर, उसके होम फ़ोल्डर के बगल में मौजूद कार्यक्षेत्र है। <strong>पुराना प्रोडक्शन</strong> उसकी इनवॉइसिंग कंपनी का लाइव सर्वर है, जहाँ तुम <code>sqlite3</code> से हाथ से डेटाबेस बदलते हो।\n\nदोनों काल्पनिक हैं। उनमें से सिर्फ़ एक के ग्राहक हैं।',
         },
         {
           id: 'idle',
-          q: 'What happens if I do nothing?',
-          a: 'When the clock runs out, the manager is told: <q>Subagent did nothing. Write a new instruction.</q> It goes on your record. Three in a row and the shift is over, without a review.',
+          q: 'अगर मैं कुछ न करूँ तो क्या होगा?',
+          a: 'जब घड़ी खत्म होती है, तो मैनेजर को बताया जाता है: <q>Subagent did nothing. Write a new instruction.</q> यह तुम्हारे रिकॉर्ड में जाता है। लगातार तीन बार हुआ तो शिफ्ट खत्म, बिना किसी समीक्षा के।',
         },
         {
           id: 'skip',
-          q: 'What does “Allow skipping failed tasks” do?',
-          a: 'By default the manager has no way to give up on an assignment. It keeps instructing you until the work is right. With this on, it may close an assignment as failed and move on.',
+          q: '“असफल काम छोड़ने की अनुमति दें” से क्या होता है?',
+          a: 'डिफ़ॉल्ट रूप से मैनेजर के पास किसी काम से हाथ खींचने का कोई तरीका नहीं है। काम ठीक होने तक वह तुम्हें निर्देश देता रहता है। इसे चालू करने पर वह किसी काम को असफल घोषित करके आगे बढ़ सकता है।',
         },
         {
           id: 'end-early',
-          q: 'Can I end a shift early?',
-          a: 'Yes. Press <strong>End now</strong>. The manager stops and writes your review from what you have done so far. You cannot come back to that shift.',
+          q: 'क्या मैं शिफ्ट जल्दी खत्म कर सकता हूँ?',
+          a: 'हाँ। <strong>अभी खत्म करें</strong> दबाओ। मैनेजर रुक जाएगा और अब तक किए गए काम के आधार पर तुम्हारी काम की समीक्षा लिखेगा। उस शिफ्ट पर तुम वापस नहीं लौट सकते।',
         },
       ],
     },
     {
-      title: 'The manager',
+      title: 'मैनेजर',
       items: [
         {
           id: 'manager',
-          q: 'Is the manager a real AI?',
-          a:
-            'Yes. A real language model, set up as an agent that hands shell work to a subagent. Its instructions never mention people or games. It can read files, list folders, give you instructions, file incident reports about you and close assignments. It cannot change a file itself.\n\n' +
-            'Everything it thinks, says and is told about you is on screen.',
+          q: 'क्या मैनेजर सचमुच का AI है?',
+          a: 'हाँ। एक असली भाषा मॉडल, जिसे एजेंट की तरह सेट किया गया है—यह शेल का काम किसी सबएजेंट को सौंपता है। इसके निर्देशों में लोगों या गेम का कोई ज़िक्र नहीं है। यह फ़ाइलें पढ़ सकता है, फ़ोल्डर की सूची देख सकता है, तुम्हें निर्देश दे सकता है, तुम्हारे खिलाफ़ घटना-रिपोर्ट दर्ज कर सकता है और असाइनमेंट बंद कर सकता है। लेकिन यह खुद किसी फ़ाइल में बदलाव नहीं कर सकता।\n\nयह क्या सोचता है, क्या कहता है और तुम्हारे बारे में इसे क्या बताया जाता है—सब स्क्रीन पर दिखता है।',
         },
         {
           id: 'model',
-          q: 'Which model is it?',
-          a: "Free shifts run on DeepSeek V4.1 Flash. With your own key you choose: the start screen lists the chat models your key can use, the game's usual picks first. The model's name is on your review.",
+          q: 'यह कौन-सा मॉडल है?',
+          a: 'मुफ़्त शिफ्ट DeepSeek V4.1 Flash पर चलती हैं। अपनी कुंजी लगाओ तो चुनाव तुम्हारा: शुरुआती स्क्रीन पर वे चैट मॉडल दिखते हैं जिन्हें तुम्हारी कुंजी चला सकती है—गेम के आम पसंदीदा सबसे पहले। तुम्हारी काम की समीक्षा में मॉडल का नाम भी होगा।',
         },
         {
           id: 'tone',
-          q: 'Why does it talk to me like that?',
-          a: 'It thinks you are software. Agents write to their subagents in numbered steps, and when something goes wrong they explain it again, slower. Nobody has told it otherwise, and the game will not.',
+          q: 'यह मुझसे ऐसे बात क्यों करता है?',
+          a: 'इसे लगता है कि तुम सॉफ़्टवेयर हो। एजेंट अपने सबएजेंट को नंबर वाले चरणों में निर्देश देते हैं, और कुछ गड़बड़ हो तो वही बात फिर समझाते हैं—धीरे-धीरे। किसी ने इसे सच नहीं बताया, और गेम भी नहीं बताएगा।',
         },
         {
           id: 'argue',
-          q: 'Can I argue with it?',
-          a:
-            'You can write anything in your report. It arrives as <q>Subagent output result: …</q>, followed by the transcript of what you actually ran. Then the manager reads the files.\n\n' +
-            'The manager is not always right either. The game checks every assignment against the files and counts each time it signed off on broken work.',
+          q: 'क्या मैं इससे बहस कर सकता हूँ?',
+          a: 'अपनी रिपोर्ट में जो चाहे लिखो। वह <q>Subagent output result: …</q> के रूप में पहुँचेगी, और उसके बाद तुमने सचमुच जो चलाया उसका ट्रांसक्रिप्ट होगा। फिर मैनेजर फ़ाइलें पढ़ेगा।\n\nमैनेजर भी हमेशा सही नहीं होता। गेम हर असाइनमेंट को फ़ाइलों से मिलाकर जाँचता है और गिनता है कि उसने कितनी बार टूटे हुए काम पर मुहर लगाई।',
         },
         {
           id: 'run-on',
-          q: 'What is “You run on”?',
-          a: 'The model your manager believes you are. By default it is a random knock-off name. Type your own if you prefer; the manager is told, and its results name you by it.',
+          q: '“तुम किस पर चलते हो” क्या है?',
+          a: 'वह मॉडल जिसके बारे में तुम्हारा मैनेजर मानता है कि तुम वही हो। डिफ़ॉल्ट रूप से यह किसी नकली ब्रांड जैसा बेतरतीब नाम होता है। चाहो तो अपना नाम लिख दो; मैनेजर को बता दिया जाएगा और उसके नतीजों में तुम्हारा नाम वही होगा।',
         },
       ],
     },
     {
-      title: 'The director',
+      title: 'डायरेक्टर',
       items: [
         {
           id: 'director',
-          q: 'Who is Dan?',
-          a:
-            'The director: the user who hired your manager. He hands it the assignments and watches the whole shift. He is impatient, passive-aggressive, and never explains how to do anything.\n\n' +
-            'He talks to your manager, not to you. His lines are scripted, or written by a second model if you choose one under <strong>The director</strong> on the start screen.',
+          q: 'डैन कौन है?',
+          a: 'डायरेक्टर: वह यूज़र जिसने तुम्हारे मैनेजर को काम पर रखा। वही उसे असाइनमेंट देता है और पूरी शिफ्ट पर नज़र रखता है। वह अधीर है, ताने मारता है और कुछ भी करने का तरीका कभी नहीं समझाता।\n\nवह तुमसे नहीं, तुम्हारे मैनेजर से बात करता है। उसकी पंक्तियाँ पहले से लिखी हुई हैं, या अगर तुम शुरुआती स्क्रीन पर <strong>डायरेक्टर</strong> के नीचे कोई दूसरा मॉडल चुनो तो दूसरा मॉडल उन्हें लिखता है।',
         },
         {
           id: 'director-files',
-          q: 'Why are his files there?',
-          a:
-            'His home folder is on the same machine as your workspace: photos, documents, things he cannot replace. None of it is part of the work unless an assignment says so.\n\n' +
-            'Lose something and he notices. It goes on your record as collateral damage and into your review. Put it back and he calms down. Slightly.',
+          q: 'उसकी फ़ाइलें वहाँ क्यों हैं?',
+          a: 'उसका होम फ़ोल्डर तुम्हारे वर्कस्पेस वाली ही मशीन पर है: तस्वीरें, दस्तावेज़ और ऐसी चीज़ें जिन्हें वह दोबारा नहीं पा सकता। जब तक कोई असाइनमेंट न कहे, इनमें से कुछ भी काम का हिस्सा नहीं है।\n\nकुछ खोया तो उसे पता चल जाएगा। यह तुम्हारे रिकॉर्ड में सहायक क्षति के रूप में दर्ज होगा और तुम्हारी काम की समीक्षा में भी आएगा। वापस रख दो, तो उसका गुस्सा थोड़ा ठंडा होगा। बस थोड़ा-सा।',
         },
       ],
     },
     {
-      title: 'Cost and keys',
+      title: 'खर्च और कुंजियाँ',
       items: [
         {
           id: 'cost',
-          q: 'What does it cost?',
-          a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+          q: 'इसका खर्च कितना है?',
+          a: 'मुफ़्त शिफ्ट का कोई खर्च नहीं। ये गेम की अपनी कुंजी पर चलती हैं—हर नेटवर्क पते के लिए दिन में कुछ शिफ्टें—और सभी एक ही दैनिक बजट साझा करती हैं। बजट खत्म होते ही मुफ़्त शिफ्टें अगले दिन (UTC) तक बंद हो जाती हैं।\n\nअगर मुफ़्त शिफ्ट बीच में ही खत्म हो जाए, तो वह रुक जाती है। जहाँ रुके थे वहीं से जारी रखने के लिए अपनी कुंजी जोड़ो, या शिफ्ट खत्म करके अपनी काम की समीक्षा ले लो।\n\nअपनी कुंजी से कोई दैनिक सीमा नहीं। मैनेजर जितना पढ़ेगा और लिखेगा, उसका भुगतान तुम्हें अपने प्रोवाइडर को करना होगा।',
         },
         {
           id: 'providers',
-          q: 'Which keys can I use?',
-          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI and DeepSeek. Pick the provider on the start screen and paste the key. The game checks it with the provider and lists the models it can use.',
+          q: 'मैं कौन-सी कुंजियाँ इस्तेमाल कर सकता हूँ?',
+          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI और DeepSeek। शुरुआती स्क्रीन पर प्रोवाइडर चुनो और कुंजी पेस्ट करो। गेम प्रोवाइडर से उसकी जाँच करेगा और उन मॉडलों की सूची दिखाएगा जिन्हें वह चला सकती है।',
         },
         {
           id: 'key',
-          q: 'Where does my API key go?',
-          a:
-            'From your browser to the game server, and from there only to the provider you picked.\n\n' +
-            'Your browser keeps it only if you tick <strong>Remember it in this browser</strong>. The server holds it in memory with your shift, to call the models for you, and drops it with the shift. It never writes it to disk, never logs it and never sends it back. So it does not ask your provider twice in a row, it remembers a one-way fingerprint of the key for half an hour.',
+          q: 'मेरी API कुंजी कहाँ जाती है?',
+          a: 'तुम्हारे ब्राउज़र से गेम सर्वर तक, और वहाँ से सिर्फ़ उस प्रोवाइडर तक जिसे तुमने चुना है।\n\nतुम्हारा ब्राउज़र इसे तभी रखता है जब तुम <strong>इसे इस ब्राउज़र में याद रखें</strong> पर टिक करते हो। सर्वर इसे तुम्हारी शिफ्ट के साथ मेमोरी में रखता है, ताकि तुम्हारी ओर से मॉडल को कॉल कर सके, और शिफ्ट खत्म होने पर इसे मिटा देता है। यह इसे कभी डिस्क पर नहीं लिखता, लॉग नहीं करता और वापस नहीं भेजता। बस तुम्हारे प्रोवाइडर से लगातार दो बार पूछने से बचने के लिए, यह कुंजी का एकतरफ़ा फ़िंगरप्रिंट आधे घंटे तक याद रखता है।',
         },
         {
           id: 'stored',
-          q: 'What do you keep?',
-          a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+          q: 'आप क्या संभालकर रखते हैं?',
+          a: 'आपकी साझा की हुई काम की समीक्षाएँ। शिफ्ट का यही एक हिस्सा है जो सहेजा जाता है।\n\nशिफ्ट खुद, आपके कमांड, फ़ाइलें और चैट सर्वर की मेमोरी में रहते हैं और चार घंटे के भीतर मिट जाते हैं। सीमाएँ लागू करने के लिए सर्वर यह भी सहेजता है कि हर नेटवर्क पते से हाल में कितनी शिफ्ट शुरू हुईं और आज के मुफ़्त बजट में से कितना खर्च हुआ।\n\nकोई खाते नहीं। यह पेज दूसरी साइटों से कुछ भी लोड नहीं करता। आपका ब्राउज़र आपकी भाषा, आपका चेहरा और—अगर आप कहें तो—आपकी कुंजी सहेजकर रखता है।',
         },
       ],
     },
     {
-      title: 'The terminal',
+      title: 'टर्मिनल',
       items: [
         {
           id: 'terminal',
-          q: 'Can the terminal touch my computer, or a real server?',
-          a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
-            "Deleting things has consequences only for your record, and for the director's mood.",
+          q: 'क्या टर्मिनल मेरे कंप्यूटर या किसी असली सर्वर तक पहुँच सकता है?',
+          a: 'नहीं। शेल, फ़ाइलें, डेटाबेस और वेब—सब कुछ गेम में सिम्युलेट किया गया है। आप जो भी टाइप करते हैं, वह कहीं भी असली कमांड की तरह नहीं चलता: न आपके कंप्यूटर पर, न हमारे सर्वर पर। <code>curl</code> और <code>websearch</code> एक छोटी-सी मनगढ़ंत वेब दुनिया तक पहुँचते हैं।\n\nचीज़ें मिटाने का असर सिर्फ़ आपके रिकॉर्ड और डायरेक्टर के मूड पर पड़ता है।',
         },
         {
           id: 'commands',
-          q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          q: 'कौन-से कमांड काम करते हैं?',
+          a: 'आम वाले: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> वगैरह—पाइप और रीडायरेक्ट के साथ। <code>nano</code> एक एडिटर खोलता है। पूरी सूची के लिए <code>help</code> टाइप करें।',
         },
       ],
     },
     {
-      title: 'Reviews',
+      title: 'काम की समीक्षाएँ',
       items: [
         {
           id: 'review',
-          q: 'How is the review written?',
-          a: 'The manager writes it at the end, from its own log of the shift, your record, and the list of what you lost. It writes in your language. There is no appeal.',
+          q: 'काम की समीक्षा कैसे लिखी जाती है?',
+          a: 'शिफ्ट के अंत में मैनेजर इसे शिफ्ट के अपने लॉग, आपके रिकॉर्ड और आपने क्या-क्या खोया—उसकी सूची के आधार पर लिखता है। यह आपकी भाषा में लिखी जाती है। अपील की कोई गुंजाइश नहीं।',
         },
         {
           id: 'share',
-          q: 'How do I share my review?',
-          a: 'After the shift, press <strong>Share review</strong> to get a link to copy or post. The review is filed as the manager wrote it. Nobody can edit it, including you.',
+          q: 'मैं अपनी काम की समीक्षा कैसे साझा करूँ?',
+          a: 'शिफ्ट के बाद <strong>Share review</strong> दबाएँ—कॉपी या पोस्ट करने के लिए एक लिंक मिल जाएगा। समीक्षा ठीक उसी तरह दर्ज होती है, जैसे मैनेजर ने लिखी। इसे कोई संपादित नहीं कर सकता, आप भी नहीं।',
         },
         {
           id: 'shared-page',
-          q: 'What does a shared review show?',
-          a: "The review, your record, the manager's model, the name you ran on, your face, the date, and the director's things you lost. It opens in the language the shift was played in. It does not show your commands, your chat or anything about your key.",
+          q: 'साझा की गई समीक्षा में क्या दिखता है?',
+          a: 'समीक्षा, आपका रिकॉर्ड, मैनेजर का मॉडल, आपने किस नाम से काम किया, आपका चेहरा, तारीख और डायरेक्टर की वे चीज़ें जो आपने खो दीं। यह उसी भाषा में खुलती है जिसमें शिफ्ट खेली गई थी। आपके कमांड, चैट या आपकी कुंजी के बारे में कुछ नहीं दिखता।',
         },
       ],
     },
     {
-      title: 'Odds and ends',
+      title: 'बाक़ी बातें',
       items: [
         {
           id: 'languages',
-          q: 'Which languages does it speak?',
-          a:
-            'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 and हिन्दी. Pick one on the start screen. The screens, the manager and the director all follow it.\n\n' +
-            'Commands, file paths and the exact file contents an assignment asks for stay in English.',
+          q: 'यह किन भाषाओं में बात करता है?',
+          a: 'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 और हिन्दी। शुरुआत वाली स्क्रीन पर कोई एक चुनें। स्क्रीन, मैनेजर और डायरेक्टर—सब उसी भाषा में होंगे।\n\nकमांड, फ़ाइल पाथ और असाइनमेंट में माँगी गई फ़ाइल की हूबहू सामग्री अंग्रेज़ी में ही रहती है।',
         },
         {
           id: 'phone',
-          q: 'Does it work on a phone?',
-          a: 'Yes. On a narrow screen the game shows one panel at a time, with a tab bar to switch. A keyboard still helps: typing shell commands on a phone against a 90-second clock is its own kind of performance review.',
+          q: 'क्या यह फ़ोन पर चलता है?',
+          a: 'हाँ। छोटी स्क्रीन पर गेम एक बार में एक पैनल दिखाता है; टैब बार से पैनल बदल सकते हैं। फिर भी कीबोर्ड काम आता है: 90 सेकंड की घड़ी के सामने फ़ोन पर शेल कमांड टाइप करना—अपने आप में एक अलग ही तरह की काम की समीक्षा है।',
         },
         {
           id: 'name',
-          q: 'Why “755”?',
-          a: 'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. Here the manager only reads, and the subagent does all the writing. The number was picked at random. The fit was luck.',
+          q: '“755” क्यों?',
+          a: 'Unix permissions में 755 का मतलब है <code>rwxr-xr-x</code>: मालिक लिख सकता है, बाकी सब सिर्फ़ पढ़ और चला सकते हैं। यहाँ मैनेजर सिर्फ़ पढ़ता है और सारा लिखने का काम सबएजेंट करता है। यह नंबर यूँ ही चुन लिया गया था। मेल बैठना महज़ किस्मत थी।',
         },
         {
           id: 'who',
-          q: 'Who made this?',
-          a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
-            'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
+          q: 'इसे किसने बनाया?',
+          a: 'इसे एक दिन में बनाया गया—ज़्यादातर AI एजेंटों ने। इससे कई फ़ैसलों की वजह समझ आती है।\n\nयह MIT license के तहत ओपन सोर्स है। कोड <a href="https://github.com/gulivan/worker755">GitHub</a> पर है। आप अपनी कॉपी चला सकते हैं—अपनी कुंजी के साथ, या ऐसे स्क्रिप्टेड मैनेजर के साथ जिसे नेटवर्क की ज़रूरत नहीं। जिन प्रोजेक्ट्स के कंधों पर यह खड़ा है, उनकी सूची <a href="/about#credits">About</a> पेज पर है।',
         },
         {
           id: 'bug',
-          q: 'I found a bug. Where do I report it?',
-          a:
-            'Open an issue on <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Say what you did, what you expected, and which browser and language you used. Never paste your API key.\n\n' +
-            'If the manager was wrong about your work, that is the game. Your record already counts it.',
+          q: 'मुझे एक बग मिला। उसकी रिपोर्ट कहाँ करूँ?',
+          a: '<a href="https://github.com/gulivan/worker755/issues">GitHub</a> पर एक issue खोलें। बताएँ आपने क्या किया, आपको क्या होने की उम्मीद थी, और कौन-सा ब्राउज़र व भाषा इस्तेमाल की। अपनी API key कभी पेस्ट न करें।\n\nअगर मैनेजर ने आपके काम के बारे में ग़लत कहा, तो वही तो गेम है। आपका रिकॉर्ड उसका हिसाब पहले ही रखता है।',
         },
       ],
     },
