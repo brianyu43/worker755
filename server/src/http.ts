@@ -22,7 +22,11 @@ import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
 import type { SharedReview } from './reviews.ts';
 import { isLanguage } from './language.ts';
+import type { Language } from './language.ts';
 import { copyFor } from './i18n/index.ts';
+import { CardBusy, Cards, CARD_VERSION } from './cards.ts';
+import { CARD_COPY, statsOf, verdictOf } from './card-copy.ts';
+import { excerptOf } from './card.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -68,6 +72,10 @@ export interface AppOptions {
   donateUrl?: string;
   /** Link to the game's source code. */
   sourceUrl?: string;
+  /** Where the game is reached, e.g. https://worker755.com; link previews need absolute links. */
+  publicUrl?: string;
+  /** Draws shared reviews' link-preview images. Default: one keeping them next to the reviews; false turns them off. */
+  cards?: Cards | false;
   idleMs?: number;
   log?: (line: string) => void;
 }
@@ -212,24 +220,70 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-/** Replaces the page's title and description tags with ones for this review. */
-export function withPreview(html: string, review: SharedReview): string {
-  const first = review.review.replace(/\s+/g, ' ').trim();
-  const desc = first.length > 200 ? first.slice(0, 197).trimEnd() + '...' : first;
+const LOCALES: Record<Language, string> = {
+  en: 'en_US',
+  es: 'es_ES',
+  'pt-BR': 'pt_BR',
+  fr: 'fr_FR',
+  de: 'de_DE',
+  ru: 'ru_RU',
+  'zh-CN': 'zh_CN',
+  ja: 'ja_JP',
+  hi: 'hi_IN',
+};
+
+/** The site's address without a trailing slash, when it is a usable http(s) URL. */
+export function siteBase(publicUrl: string | undefined): string | null {
+  if (!publicUrl) return null;
+  try {
+    const u = new URL(publicUrl);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    return u.origin + u.pathname.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Replaces the page's title and link-preview tags with ones for this review: the outcome in the
+ * title, the start of the review, and with the site's address known, the review's own image.
+ */
+export function withPreview(html: string, review: SharedReview, publicUrl?: string): string {
   const language = isLanguage(review.language) ? review.language : 'en';
+  const first = excerptOf(typeof review.review === 'string' ? review.review : '');
+  const desc = first.length > 200 ? first.slice(0, 197).trimEnd() + '...' : first;
   const title = copyFor(language).share.previewTitle;
+  const verdict = CARD_COPY[language].verdict[verdictOf(statsOf(review.stats), Array.isArray(review.lost) ? review.lost.length : 0)];
+  // "Worker 755: performance review" becomes "Worker 755: Under investigation", in each language's punctuation.
+  const headline = (/^Worker 755\s*[:：]\s*/.exec(title)?.[0] ?? 'Worker 755: ') + verdict;
+  const base = siteBase(publicUrl);
+  const meta = (attr: 'name' | 'property', key: string, value: string) => `<meta ${attr}="${key}" content="${escapeHtml(value)}" />`;
   const tags = [
     `<title>${escapeHtml(title)}</title>`,
-    `<meta name="description" content="${escapeHtml(desc)}" />`,
-    `<meta property="og:title" content="${escapeHtml(title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(desc)}" />`,
-    `<meta property="og:type" content="article" />`,
-    `<meta name="twitter:card" content="summary" />`,
+    meta('name', 'description', desc),
+    meta('property', 'og:title', headline),
+    meta('property', 'og:description', desc),
+    meta('property', 'og:type', 'article'),
+    meta('property', 'og:site_name', 'Worker 755'),
+    meta('property', 'og:locale', LOCALES[language]),
+    ...(base
+      ? [
+          meta('property', 'og:url', `${base}/r/${review.id}`),
+          meta('property', 'og:image', `${base}/r/${review.id}/card.png?v=${CARD_VERSION}`),
+          meta('property', 'og:image:type', 'image/png'),
+          meta('property', 'og:image:width', '1200'),
+          meta('property', 'og:image:height', '630'),
+          meta('property', 'og:image:alt', `${CARD_COPY[language].title}: ${verdict}`),
+          meta('name', 'twitter:card', 'summary_large_image'),
+        ]
+      : [meta('name', 'twitter:card', 'summary')]),
+    meta('name', 'twitter:title', headline),
+    meta('name', 'twitter:description', desc),
   ].join('\n    ');
   // Replacer functions: a review may contain $& or $` and those must stay plain text.
   return html
     .replace(/<html lang="[^"]*"/, () => `<html lang="${language}"`)
-    .replace(/<meta (name="description"|property="og:[a-z]+"|name="twitter:[a-z]+") content="[^"]*" \/>\s*/g, '')
+    .replace(/<meta (name="description"|property="og:[a-z_:]+"|name="twitter:[a-z_:]+") content="[^"]*" \/>\s*/g, '')
     .replace(/<title>[^<]*<\/title>/, () => tags);
 }
 
@@ -257,6 +311,13 @@ export function createApp(opts: AppOptions): App {
   const keyChecks = new RateLimiter(10, 10 * 60_000);
   /** New shared reviews per address. */
   const shares = new RateLimiter(20, 60 * 60_000);
+  const publicBase = siteBase(opts.publicUrl);
+  const cards =
+    opts.cards === false || !opts.reviews
+      ? null
+      : (opts.cards ?? new Cards({ dir: opts.reviews.dir, site: publicBase ? new URL(publicBase).host : 'worker755.com', log }));
+  /** Review images drawn per address; ones already drawn are free. Link previews come in bursts from a few crawlers. */
+  const cardDraws = new RateLimiter(30, 60_000);
   /** Shell time per address: commands run on the thread every game shares. */
   const shellTime = new TimeBudget(1500, 5000);
   const maxSessions = opts.maxSessions ?? 150;
@@ -450,10 +511,32 @@ export function createApp(opts: AppOptions): App {
     if (!existsSync(index)) return false;
     let html = await readFile(index, 'utf8');
     const review = opts.reviews && isReviewId(id) ? await opts.reviews.get(id) : null;
-    if (review) html = withPreview(html, review);
+    if (review) html = withPreview(html, review, opts.publicUrl);
     res.writeHead(review ? 200 : 404, { 'content-type': MIME['.html'], 'cache-control': 'no-cache' });
     res.end(html);
     return true;
+  }
+
+  /** A shared review's link-preview image, drawn the first time it is asked for. */
+  async function serveCard(id: string, req: IncomingMessage, res: ServerResponse, method: string): Promise<void> {
+    const review = cards && opts.reviews && isReviewId(id) ? await opts.reviews.get(id) : null;
+    if (!review || !cards) throw new HttpError(404, 'Not found');
+    let png: Buffer | null;
+    try {
+      png = await cards.get(review, () => cardDraws.take(clientAddress(req, 48)));
+    } catch (err) {
+      if (!(err instanceof CardBusy)) throw err;
+      res.setHeader('retry-after', '30');
+      throw new HttpError(503, 'Busy, try again shortly');
+    }
+    if (!png) throw new HttpError(404, 'Not found');
+    res.writeHead(200, {
+      'content-type': 'image/png',
+      'content-length': String(png.length),
+      // A review never changes; a new card design changes the link (?v=).
+      'cache-control': 'public, max-age=31536000, immutable',
+    });
+    res.end(method === 'HEAD' ? undefined : png);
   }
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -462,6 +545,8 @@ export function createApp(opts: AppOptions): App {
     const method = req.method ?? 'GET';
 
     if (!path.startsWith('/api/')) {
+      const card = /^\/r\/([^/]+)\/card\.png$/.exec(path);
+      if (card && (method === 'GET' || method === 'HEAD')) return serveCard(card[1], req, res, method);
       const rp = /^\/r\/([^/]+)\/?$/.exec(path);
       if (rp && (method === 'GET' || method === 'HEAD') && opts.staticDir && (await serveReviewPage(rp[1], res))) return;
       if ((method === 'GET' || method === 'HEAD') && opts.staticDir && (await serveStatic(opts.staticDir, path, res))) return;
@@ -696,6 +781,7 @@ export function createApp(opts: AppOptions): App {
       saveLimits?.();
       for (const s of sessions.values()) s.dispose();
       sessions.clear();
+      cards?.close();
       server.closeAllConnections();
       await new Promise<void>((r) => server.close(() => r()));
     },

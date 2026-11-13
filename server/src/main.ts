@@ -48,6 +48,7 @@ const app = createApp({
   reviews: process.env.SHARING === '0' ? undefined : new ReviewStore(dataDir),
   donateUrl: process.env.DONATE_URL || undefined,
   sourceUrl: process.env.SOURCE_URL || undefined,
+  publicUrl: process.env.PUBLIC_URL || undefined,
 });
 
 const mode = mock ? 'scripted manager' : hosted ? 'free shifts and own keys' : 'own keys only';
