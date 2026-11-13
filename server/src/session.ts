@@ -739,7 +739,7 @@ export class Session {
         `incident reports ${this.stats.incidents}, things of the user's damaged ${this.stats.damaged}`;
       const losses = [...this.lost.values()].sort(byRank).map((d) => d.ref);
       const res = await this.step({
-        messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses) }],
+        messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses, languageName[this.language]) }],
         tools: false,
       });
       const review = res.text || this.copy.errors.noReview;

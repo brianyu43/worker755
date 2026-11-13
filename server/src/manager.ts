@@ -154,14 +154,16 @@ export function directorLine(setbacks: number, copy: ServerCopy = en): string {
   return lines[Math.max(0, i)];
 }
 
-export function reviewPrompt(ledger: string[], statsLine: string, subagent = '', losses: string[] = []): string {
+export function reviewPrompt(ledger: string[], statsLine: string, subagent = '', losses: string[] = [], language = 'English'): string {
   return (
     `The queue is empty. Write a short performance review of the subagent${subagent ? ` (${subagent})` : ''} ` +
     'you dispatched today, for the ' +
     'operations log: accuracy, speed, how well it followed instructions, and a recommendation. Plain prose, ' +
     'at most 120 words, no headings, no tool calls.\n\n' +
-    `Task log:\n${ledger.join('\n')}\n\nCounters: ${statsLine}` +
-    (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '')
+    `Task log:\n${ledger.length ? ledger.join('\n') : '(empty: the shift ended before any task was finished)'}\n\nCounters: ${statsLine}` +
+    (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '') +
+    // Said last and in so many words: with an empty log, some models otherwise answer in their own default language.
+    `\n\nWrite the review in ${language}.`
   );
 }
 

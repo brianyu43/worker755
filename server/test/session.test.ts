@@ -513,6 +513,20 @@ test('the manager can file an incident report about the subagent', async () => {
   assert.equal(s.stats.incidents, 2);
 });
 
+test('a shift quit at once is reviewed in the player\'s language, with nothing in the log', async () => {
+  const driver = scripted((req) =>
+    req.tools ? assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]) : assistant('Отзыв.', []),
+  );
+  const s = new Session({ driver, timeoutMs: 60_000, missions: [HELLO], language: 'ru' });
+  s.start();
+  await waitFor(s, until('instruction'));
+  assert.equal(s.endEarly(), true);
+  await waitFor(s, until('game_over'));
+  const review = driver.requests.at(-1)!.messages[0].content as string;
+  assert.match(review, /Write the review in Russian\.$/);
+  assert.match(review, /Task log:\n\(empty: the shift ended before any task was finished\)/);
+});
+
 test('the manager is told which model its subagent runs on', async () => {
   const driver = scripted((req) =>
     req.tools ? assistant('', [call('MissionComplete', { summary: 'ok' })]) : assistant('Review.', []),
