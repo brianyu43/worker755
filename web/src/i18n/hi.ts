@@ -62,6 +62,7 @@ export const hi: Catalogue = {
   'play.note': 'प्रबंधक के लिए टिप्पणी (वैकल्पिक)',
   'play.note.label': 'प्रबंधक के लिए टिप्पणी',
   'play.note.hint': 'तुम्हारी रिपोर्ट के साथ भेजा गया',
+  'desk.resize': 'आकार बदलने के लिए खींचें। रीसेट करने के लिए डबल-क्लिक करें।',
   'play.now': 'अभी',
   'play.progress': 'असाइनमेंट {number} / {total}',
   'play.live': 'लाइव',

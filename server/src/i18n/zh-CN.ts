@@ -358,6 +358,9 @@ export const zhCN: ServerCopy = {
     toolsStopped: '经理停止使用工具了。',
     delegationLimit: '已达到委派上限（{count} 条指令）。',
   },
+  share: {
+    previewTitle: 'Worker 755：绩效评语',
+  },
   errors: {
     froze: '你的经理卡死了，不再下达指令。下班。',
     refusedAfterDamage: '你砸坏东西之后，经理拒绝再给你安排活了。下班。',

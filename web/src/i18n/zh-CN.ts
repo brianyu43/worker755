@@ -62,6 +62,7 @@ export const zhCN: Catalogue = {
   'play.note': '给经理的备注（可选）',
   'play.note.label': '给经理的备注',
   'play.note.hint': '随报告发送',
+  'desk.resize': '拖动以调整大小。双击可重置。',
   'play.now': '现在',
   'play.progress': '任务 {number}/{total}',
   'play.live': '实时',

@@ -5,7 +5,20 @@
 import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import type { Language } from './language.ts';
 import type { Stats } from './types.ts';
+
+/** The worker's avatar as the player picked it: a shape id from the web app's set and a colour. */
+export interface Face {
+  id: string;
+  color: string;
+}
+
+export function isFace(v: unknown): v is Face {
+  if (!v || typeof v !== 'object') return false;
+  const f = v as Record<string, unknown>;
+  return typeof f.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(f.id) && typeof f.color === 'string' && /^#[0-9a-f]{6}$/i.test(f.color);
+}
 
 export interface SharedReview {
   id: string;
@@ -18,6 +31,10 @@ export interface SharedReview {
   scenario: string;
   /** Paths of the user's things the shift destroyed. */
   lost: string[];
+  /** The language the shift was played in; the shared page opens in it. Missing on older reviews. */
+  language?: Language;
+  /** The sharer's avatar, when their browser sent one. */
+  face?: Face;
 }
 
 const ID_RE = /^[A-Za-z0-9]{10}$/;

@@ -9,6 +9,8 @@ import { dateLocale, t } from '../i18n';
 
 interface Props {
   model: string;
+  /** The model the worker runs on, as the player named it. */
+  subagent?: string;
   /** The worker's avatar, when this browser knows it. */
   face?: Face;
   review: string | null;
@@ -29,7 +31,7 @@ export function verdictOf(s: Stats, lost: number): string {
   return t('review.verdict.review');
 }
 
-export function ReviewCard({ model, face, review, stats, lost, date, recordTitle = t('record.title'), children }: Props) {
+export function ReviewCard({ model, subagent, face, review, stats, lost, date, recordTitle = t('record.title'), children }: Props) {
   return (
     <article className="review">
       <header className="review-head">
@@ -39,7 +41,10 @@ export function ReviewCard({ model, face, review, stats, lost, date, recordTitle
             <dt>{t('review.employee')}</dt>
             <dd className="review-employee">
               {face && <BotAvatar face={face} size={30} />}
-              Worker 755
+              <span className="review-who">
+                Worker 755
+                {subagent?.trim() && <small className="review-subagent">{subagent.trim()}</small>}
+              </span>
             </dd>
           </div>
           <div>

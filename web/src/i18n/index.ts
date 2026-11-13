@@ -71,6 +71,12 @@ export function setLanguage(language: Language) {
   document.documentElement.lang = language;
 }
 
+/** Shows a page in `language` without changing the visitor's own choice. */
+export function showLanguage(language: Language) {
+  current = language;
+  document.documentElement.lang = language;
+}
+
 /** Locale for dates; English keeps the British day-month order it always had. */
 export function dateLocale(language: Language = current): string {
   return language === 'en' ? 'en-GB' : language;

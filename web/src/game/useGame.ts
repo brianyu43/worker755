@@ -9,6 +9,8 @@ export type ClosedOutcome = 'reported' | 'timeout_idle' | 'timeout_partial';
 export interface GameView {
   id: string;
   model: string;
+  /** The model the player said they run on. */
+  subagent: string;
   status: SessionState['status'];
   cwd: string;
   tree: TreeNode;
@@ -91,6 +93,7 @@ function fromSnapshot(s: SessionState): GameView {
   let v: GameView = {
     id: s.id,
     model: s.model,
+    subagent: s.subagent,
     status: s.status,
     cwd: s.cwd,
     tree: s.tree,

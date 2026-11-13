@@ -385,6 +385,11 @@ export const en = {
     delegationLimit: 'Delegation limit reached ({count} instructions).',
   },
 
+  /** The link preview of a shared review. */
+  share: {
+    previewTitle: 'Worker 755: performance review',
+  },
+
   /** Messages that end a shift or refuse a request, shown to the player. */
   errors: {
     froze: 'Your manager froze and stopped giving instructions. Shift over.',

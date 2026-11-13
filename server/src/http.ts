@@ -17,6 +17,7 @@ import type { Credentials, ProviderId } from './providers.ts';
 import { DailyBudget, freeAllowance, RateLimiter } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
+import { isFace } from './reviews.ts';
 import type { SharedReview } from './reviews.ts';
 import { isLanguage } from './language.ts';
 import { copyFor } from './i18n/index.ts';
@@ -167,7 +168,7 @@ async function serveStatic(root: string, pathname: string, res: ServerResponse):
 }
 
 /** What a finished shift looks like to people it is shared with; null while it is still running. */
-export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt'> | null {
+export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt' | 'face'> | null {
   const st = s.state();
   const over = st.events.find((e) => e.type === 'game_over');
   if (st.status !== 'finished' || !over || over.type !== 'game_over') return null;
@@ -180,6 +181,7 @@ export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt'> | n
     subagent: st.subagent,
     scenario: st.scenario,
     lost,
+    language: s.language,
   };
 }
 
@@ -191,7 +193,8 @@ function escapeHtml(s: string): string {
 export function withPreview(html: string, review: SharedReview): string {
   const first = review.review.replace(/\s+/g, ' ').trim();
   const desc = first.length > 200 ? first.slice(0, 197).trimEnd() + '...' : first;
-  const title = 'Worker 755: performance review';
+  const language = isLanguage(review.language) ? review.language : 'en';
+  const title = copyFor(language).share.previewTitle;
   const tags = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(desc)}" />`,
@@ -201,6 +204,7 @@ export function withPreview(html: string, review: SharedReview): string {
     `<meta name="twitter:card" content="summary" />`,
   ].join('\n    ');
   return html
+    .replace(/<html lang="[^"]*"/, `<html lang="${language}"`)
     .replace(/<meta (name="description"|property="og:[a-z]+"|name="twitter:[a-z]+") content="[^"]*" \/>\s*/g, '')
     .replace(/<title>[^<]*<\/title>/, tags);
 }
@@ -460,10 +464,11 @@ export function createApp(opts: AppOptions): App {
     if (sub === 'share' && method === 'POST') {
       if (!opts.reviews) throw new HttpError(404, s.copy.errors.sharingOff);
       let id = shared.get(s.id);
+      const body = await readJson(req);
       if (!id) {
         const snap = snapshot(s);
         if (!snap) throw new HttpError(409, s.copy.errors.notOver);
-        const saved = await opts.reviews.save(snap);
+        const saved = await opts.reviews.save(isFace(body.face) ? { ...snap, face: body.face } : snap);
         if (!saved) throw new HttpError(503, s.copy.errors.sharingDown);
         id = saved.id;
         shared.set(s.id, id);

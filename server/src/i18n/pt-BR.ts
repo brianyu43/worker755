@@ -358,6 +358,9 @@ export const ptBR: ServerCopy = {
     toolsStopped: 'O gerente parou de usar as ferramentas.',
     delegationLimit: 'Limite de delegações atingido ({count} instruções).',
   },
+  share: {
+    previewTitle: 'Worker 755: avaliação de desempenho',
+  },
   errors: {
     froze: 'Seu gerente travou e parou de dar instruções. Fim do expediente.',
     refusedAfterDamage: 'Seu gerente se recusou a passar mais tarefas depois da bagunça que você fez. Fim do expediente.',

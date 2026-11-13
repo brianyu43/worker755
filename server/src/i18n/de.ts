@@ -358,6 +358,9 @@ export const de: ServerCopy = {
     toolsStopped: 'Der Manager hat aufgehört, seine Tools zu benutzen.',
     delegationLimit: 'Delegationslimit erreicht ({count} Anweisungen).',
   },
+  share: {
+    previewTitle: 'Worker 755: Leistungsbeurteilung',
+  },
   errors: {
     froze: 'Dein Manager ist eingefroren und gibt keine Anweisungen mehr. Feierabend.',
     refusedAfterDamage: 'Nach dem, was du kaputt gemacht hast, wollte dein Manager dir nichts mehr geben. Feierabend.',

@@ -358,6 +358,9 @@ export const es: ServerCopy = {
     toolsStopped: 'El gerente ha dejado de usar sus herramientas.',
     delegationLimit: 'Límite de delegación alcanzado ({count} instrucciones).',
   },
+  share: {
+    previewTitle: 'Worker 755: evaluación de desempeño',
+  },
   errors: {
     froze: 'Tu gerente se ha quedado congelado y ha dejado de dar instrucciones. Fin del turno.',
     refusedAfterDamage: 'Tu gerente se ha negado a darte más trabajo después de todo lo que has roto. Fin del turno.',

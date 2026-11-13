@@ -3,7 +3,16 @@ import { client } from '../api/client';
 import type { ModelList, SharedReview } from '../api/types';
 import { ReviewCard } from '../components/ReviewCard';
 import { SiteLinks } from './Start';
-import { t } from '../i18n';
+import { AVATARS } from '../game/avatar';
+import type { Face } from '../game/avatar';
+import { LANGUAGES, showLanguage, t } from '../i18n';
+import type { Language } from '../i18n';
+
+/** The sharer's avatar, if it is one this build knows. */
+function faceOf(face: SharedReview['face']): Face | undefined {
+  if (!face || !AVATARS.some((a) => a.id === face.id) || !/^#[0-9a-f]{6}$/i.test(face.color)) return undefined;
+  return { id: face.id, color: face.color };
+}
 
 /** A review someone shared, at /r/<id>. */
 export function Shared({ id }: { id: string }) {
@@ -11,7 +20,14 @@ export function Shared({ id }: { id: string }) {
   const [missing, setMissing] = useState(false);
   const [site, setSite] = useState<ModelList | null>(null);
   useEffect(() => {
-    client.getReview(id).then(setReview, () => setMissing(true));
+    client.getReview(id).then(
+      (r) => {
+        // The review reads in the language it was written in, whatever the visitor's own choice.
+        if (LANGUAGES.includes(r.language as Language)) showLanguage(r.language as Language);
+        setReview(r);
+      },
+      () => setMissing(true),
+    );
     client.getModels().then(setSite, () => {});
   }, [id]);
 
@@ -36,6 +52,8 @@ export function Shared({ id }: { id: string }) {
       <div className="end-col">
         <ReviewCard
           model={review.model}
+          subagent={review.subagent}
+          face={faceOf(review.face)}
           review={review.review}
           stats={review.stats}
           lost={review.lost}

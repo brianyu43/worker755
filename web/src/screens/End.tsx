@@ -23,7 +23,7 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
     if (share.state === 'busy') return;
     setShare({ state: 'busy' });
     try {
-      const r = await client.share(view.id);
+      const r = await client.share(view.id, loadFace());
       const url = new URL(r.path, window.location.origin).href;
       let copied = false;
       try {
@@ -41,7 +41,7 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
   return (
     <main className="end">
       <div className="end-col">
-        <ReviewCard model={view.model} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()}>
+        <ReviewCard model={view.model} subagent={view.subagent} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()}>
           <button ref={btn} type="button" className="btn btn-ink btn-big" onClick={onAgain}>
             {t('app.clockInAgain')}
           </button>

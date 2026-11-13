@@ -7,6 +7,7 @@ import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../co
 import { MOD } from '../game/keys';
 import { modelLabel } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
+import { Splitter, deskSizes } from '../components/Splitter';
 import { loadFace } from '../game/avatar';
 import type { GameEvent } from '../api/types';
 import type { Game, GameView } from '../game/useGame';
@@ -76,6 +77,7 @@ export function Play({ game, view, onFinish }: Props) {
   const [reporting, setReporting] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [face] = useState(loadFace);
+  const [deskStyle] = useState(deskSizes);
   const [pleased, setPleased] = useState(false);
   const [editingPath, setEditingPath] = useState<string | null>(null);
   // Phone layout: which screen is showing. Wide screens show everything and ignore it.
@@ -266,10 +268,11 @@ export function Play({ game, view, onFinish }: Props) {
       </header>
       {view.missionTotal > 0 && <Pips view={view} className="bar-pips" />}
 
-      <div className="desk">
+      <div className="desk" style={deskStyle}>
         <aside className="desk-left">
           <FileTree tree={view.tree} cwd={view.cwd} editing={editingPath} lost={view.stats.damaged ?? 0} />
           <StatsPanel stats={view.stats} />
+          <Splitter kind="left" />
         </aside>
         <div className="desk-main">
           {finished ? (
@@ -296,6 +299,7 @@ export function Play({ game, view, onFinish }: Props) {
               mission={view.mission ? { index: view.missionIndex, total: view.missionTotal, kind: view.mission.kind } : null}
             />
           )}
+          <Splitter kind="order" />
           <button type="button" className={`peek peek-${phase}`} onClick={() => setTab('manager')}>
             <span className="peek-text">
               <span className="peek-who">
@@ -360,6 +364,7 @@ export function Play({ game, view, onFinish }: Props) {
           </form>
         </div>
         <aside className="desk-side">
+          <Splitter kind="side" />
           <Feed
             feed={view.feed}
             manager={view.manager}

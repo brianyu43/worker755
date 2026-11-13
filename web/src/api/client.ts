@@ -1,4 +1,5 @@
 import type { ExecResponse, GameEvent, ModelList, Provider, SessionState, SharedReview, Workplace } from './types';
+import type { Face } from '../game/avatar';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
 import { t } from '../i18n';
@@ -42,7 +43,7 @@ export interface GameClient {
   writeFile(id: string, path: string, content: string): Promise<{ ok: true }>;
   report(id: string, message?: string): Promise<{ ok: true }>;
   /** Saves a finished shift's review under a public link. */
-  share(id: string): Promise<{ id: string; path: string }>;
+  share(id: string, face: Face): Promise<{ id: string; path: string }>;
   getReview(id: string): Promise<SharedReview>;
 }
 
@@ -96,7 +97,7 @@ function createRealClient(): GameClient {
     writeFile: (id, path, content) => request<{ ok: true }>('PUT', `${s(id)}/file`, { path, content }),
     report: (id, message) =>
       request<{ ok: true }>('POST', `${s(id)}/report`, message ? { message } : {}),
-    share: (id) => request<{ id: string; path: string }>('POST', `${s(id)}/share`),
+    share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }),
     getReview: (id) => request<SharedReview>('GET', `/api/reviews/${encodeURIComponent(id)}`),
     subscribe(id, after, handlers) {
       let lastSeq = after;

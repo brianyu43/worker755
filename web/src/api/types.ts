@@ -122,6 +122,9 @@ export interface SharedReview {
   subagent: string;
   scenario: Workplace;
   lost: string[];
+  /** The language the shift was played in; missing on reviews shared before it was kept. */
+  language?: string;
+  face?: { id: string; color: string };
 }
 
 export type ExecResponse = ExecResult & { cwd: string };

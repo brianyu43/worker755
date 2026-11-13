@@ -62,6 +62,7 @@ export const ja: Catalogue = {
   'play.note': 'マネージャーへのメモ（任意）',
   'play.note.label': 'マネージャーへのメモ',
   'play.note.hint': '報告書と一緒に送信されます',
+  'desk.resize': 'ドラッグしてサイズを変更。ダブルクリックで元に戻す。',
   'play.now': '現在',
   'play.progress': '課題 {number} / {total}',
   'play.live': '配信中',

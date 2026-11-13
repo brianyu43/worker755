@@ -358,6 +358,9 @@ export const ja: ServerCopy = {
     toolsStopped: 'マネージャーがツールの使用をやめました。',
     delegationLimit: '委任上限に到達（指示{count}件）。',
   },
+  share: {
+    previewTitle: 'Worker 755：勤務評価',
+  },
   errors: {
     froze: 'マネージャーがフリーズして、指示を出さなくなりました。勤務終了です。',
     refusedAfterDamage: '壊したものを見て、マネージャーはこれ以上何も渡す気がないようです。勤務終了です。',

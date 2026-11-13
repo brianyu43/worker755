@@ -14,6 +14,7 @@ import type { Credentials } from '../src/providers.ts';
 import { providerModelId } from '../src/providers.ts';
 import { DailyBudget, freeAllowance, RateLimiter, ALLOWANCE_SPENT } from '../src/limits.ts';
 import { ReviewStore } from '../src/reviews.ts';
+import { copyFor } from '../src/i18n/index.ts';
 import type { Mission } from '../src/missions.ts';
 import type { GameEvent } from '../src/types.ts';
 
@@ -236,6 +237,52 @@ test('a finished shift can be shared once; the page carries the review', async (
       assert.ok(page.text.includes('content="Worker 755 &lt;b&gt;follows&lt;/b&gt; instructions &quot;mostly&quot;."'));
       assert.ok(!page.text.includes('Default.'));
       assert.equal((await api('GET', '/r/ZZZZZZZZZZ')).status, 404);
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a shared review keeps the language it was played in and the sharer\'s avatar', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'w755-'));
+  const web = join(dir, 'web');
+  await mkdir(web);
+  await writeFile(join(web, 'index.html'), '<html lang="en"><head><title>Worker 755</title></head><body></body></html>');
+  try {
+    await withApp({ mock: true, reviews: new ReviewStore(dir), staticDir: web }, async (api, app) => {
+      const share = async (language: 'ru' | 'en', face: unknown) => {
+        const driver: ManagerDriver = {
+          model: 'test/m',
+          async step(req) {
+            if (!req.tools) return assistant('Отзыв.', []);
+            if (!req.messages.some((m) => m.role === 'tool')) {
+              return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+            }
+            return assistant('', [call('MissionComplete', { summary: 'ok' })]);
+          },
+        };
+        const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], language });
+        app.sessions.set(s.id, s);
+        s.start();
+        await waitFor(s, (e) => e.type === 'instruction');
+        s.exec('echo a > a.txt');
+        s.report('Done.');
+        await waitFor(s, (e) => e.type === 'game_over');
+        const r = await api('POST', `/api/sessions/${s.id}/share`, { face });
+        assert.equal(r.status, 200);
+        return (await api('GET', `/api/reviews/${r.json.id}`)).json;
+      };
+
+      const ru = await share('ru', { id: 'robot-1', color: '#1f7cf2' });
+      assert.equal(ru.language, 'ru');
+      assert.deepEqual(ru.face, { id: 'robot-1', color: '#1f7cf2' });
+      const page = await api('GET', `/r/${ru.id}`);
+      assert.ok(page.text.includes('<html lang="ru"'));
+      assert.ok(page.text.includes(`<title>${copyFor('ru').share.previewTitle}</title>`));
+
+      const odd = await share('en', { id: '<script>', color: 'red' });
+      assert.equal(odd.language, 'en');
+      assert.equal(odd.face, undefined, 'a malformed avatar is dropped');
     });
   } finally {
     await rm(dir, { recursive: true, force: true });

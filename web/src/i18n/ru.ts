@@ -62,6 +62,7 @@ export const ru: Catalogue = {
   'play.note': 'Заметка менеджеру (необязательно)',
   'play.note.label': 'Заметка менеджеру',
   'play.note.hint': 'Отправляется вместе с отчётом',
+  'desk.resize': 'Потяни, чтобы изменить размер. Двойной щелчок — сбросить.',
   'play.now': 'Сейчас',
   'play.progress': 'Задание {number} из {total}',
   'play.live': 'В эфире',

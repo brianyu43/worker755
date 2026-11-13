@@ -4,6 +4,7 @@ import type { TreeNode } from '../api/types';
 import { MOD } from '../game/keys';
 import { Editor } from './Editor';
 import { useStickToBottom } from './stick';
+import { Splitter } from './Splitter';
 import { t } from '../i18n';
 import { rich } from '../i18n/rich';
 
@@ -408,6 +409,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
             {busy && <span className="term-busy" aria-hidden />}
           </label>
         </div>
+        {editing && <Splitter kind="editor" />}
         {editing && (
           <Editor
             key={editing.path}

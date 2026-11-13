@@ -62,6 +62,7 @@ export const de: Catalogue = {
   'play.note': 'Notiz an deine Führungskraft (optional)',
   'play.note.label': 'Notiz an deine Führungskraft',
   'play.note.hint': 'Mit deinem Bericht gesendet',
+  'desk.resize': 'Zum Ändern der Größe ziehen. Doppelklicken zum Zurücksetzen.',
   'play.now': 'Jetzt',
   'play.progress': 'Auftrag {number} von {total}',
   'play.live': 'Live',

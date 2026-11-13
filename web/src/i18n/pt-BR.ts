@@ -62,6 +62,7 @@ export const ptBR: Catalogue = {
   'play.note': 'Observação para seu gerente (opcional)',
   'play.note.label': 'Observação para seu gerente',
   'play.note.hint': 'Enviado com o teu relatório',
+  'desk.resize': 'Arraste para redimensionar. Dê um clique duplo para redefinir.',
   'play.now': 'Agora',
   'play.progress': 'Tarefa {number} de {total}',
   'play.live': 'Ao vivo',

@@ -64,6 +64,7 @@ export const en = {
   'play.note': 'Note for your manager (optional)',
   'play.note.label': 'Note for your manager',
   'play.note.hint': 'Sent with your report',
+  'desk.resize': 'Drag to resize. Double-click to reset.',
   'play.now': 'Now',
   'play.progress': 'Assignment {number} of {total}',
   'play.live': 'Live',

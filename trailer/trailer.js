@@ -1528,7 +1528,7 @@
         <h1 class="start-title end-title">Worker 755</h1>
         <p class="start-lede end-lede">Your manager is an AI. It believes you are its subagent.</p>
         <p class="end-play"><span>Play at worker755.com</span></p>
-        <p class="end-src">or self-host: source code on GitHub<code>github.com/gulivan/worker-755</code></p>
+        <p class="end-src">or self-host: source code on GitHub<code>github.com/gulivan/worker755</code></p>
       </div>
       <div class="flash" style="background:#06080e;z-index:80"></div>`;
     const badge = s.el.querySelector('.end-badge');

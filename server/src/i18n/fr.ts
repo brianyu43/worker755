@@ -358,6 +358,9 @@ export const fr: ServerCopy = {
     toolsStopped: 'Le manager a cessé d’utiliser ses outils.',
     delegationLimit: 'Limite de délégation atteinte ({count} instructions).',
   },
+  share: {
+    previewTitle: 'Worker 755 : évaluation de performance',
+  },
   errors: {
     froze: 'Ton manager a planté et ne donne plus d’instructions. Fin de service.',
     refusedAfterDamage: 'Après tout ce que tu as cassé, ton manager refuse de t’en confier davantage. Fin de service.',

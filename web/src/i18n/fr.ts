@@ -62,6 +62,7 @@ export const fr: Catalogue = {
   'play.note': 'Note pour votre responsable (facultatif)',
   'play.note.label': 'Note pour votre responsable',
   'play.note.hint': 'Envoyé avec ton rapport',
+  'desk.resize': 'Fais glisser pour redimensionner. Double-clique pour réinitialiser.',
   'play.now': 'Maintenant',
   'play.progress': 'Mission {number} sur {total}',
   'play.live': 'En direct',
