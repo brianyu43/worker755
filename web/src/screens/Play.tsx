@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import { Feed } from '../components/Feed';
+import { Eye, Feed, PHASE_LABEL, managerPhase } from '../components/Feed';
 import { FileTree, StatsPanel } from '../components/Side';
 import { Terminal, type TerminalHandle } from '../components/Terminal';
 import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../components/WorkOrder';
@@ -8,8 +8,59 @@ import { MOD } from '../game/keys';
 import { modelLabel } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { loadFace } from '../game/avatar';
+import type { GameEvent } from '../api/types';
 import type { Game, GameView } from '../game/useGame';
 import { t } from '../i18n';
+
+type Tab = 'files' | 'work' | 'manager' | 'record';
+
+/** Feed entries worth a badge on the phone's Manager tab. */
+const NOTABLE = new Set<GameEvent['type']>([
+  'mission',
+  'manager_text',
+  'director_text',
+  'outrage',
+  'incident',
+  'instruction_result',
+  'mission_end',
+]);
+
+function shiftClock(ms: number) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+}
+
+/** One mark per assignment: signed off, failed, the current one, or still to come. */
+function Pips({ view, className }: { view: GameView; className: string }) {
+  const ends = new Map<number, 'completed' | 'failed'>();
+  for (const ev of view.feed) if (ev.type === 'mission_end') ends.set(ev.index, ev.outcome);
+  return (
+    <span
+      className={className}
+      role="img"
+      aria-label={t('play.progress', { number: view.missionIndex + 1, total: view.missionTotal })}
+    >
+      {Array.from({ length: view.missionTotal }, (_, i) => {
+        const end = ends.get(i);
+        const state = end ?? (i === view.missionIndex && view.mission && view.status === 'running' ? 'current' : '');
+        return <i key={i} className={state ? `pip-${state}` : undefined} />;
+      })}
+    </span>
+  );
+}
+
+const TAB_ICONS: Record<Tab, React.ReactNode> = {
+  files: <path d="M2.5 5h5.5l2 2h7.5v9.5h-15z" />,
+  work: (
+    <>
+      <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
+      <path d="M5.5 8l2.5 2-2.5 2M10 12.5h4" />
+    </>
+  ),
+  manager: <path d="M3 4h14v9.5H8.5L5 16.5v-3H3z" />,
+  record: <path d="M4.5 15.5V10M10 15.5V4.5M15.5 15.5v-7M3 17.5h14" />,
+};
 
 interface Props {
   game: Game;
@@ -26,10 +77,28 @@ export function Play({ game, view, onFinish }: Props) {
   const [flash, setFlash] = useState<string | null>(null);
   const [face] = useState(loadFace);
   const [pleased, setPleased] = useState(false);
+  const [editingPath, setEditingPath] = useState<string | null>(null);
+  // Phone layout: which screen is showing. Wide screens show everything and ignore it.
+  const [tab, setTab] = useState<Tab>('work');
+  const lastSeq = view.feed.length ? view.feed[view.feed.length - 1].seq : 0;
+  const [seenSeq, setSeenSeq] = useState(lastSeq);
+  const [seenIncidents, setSeenIncidents] = useState(view.stats.incidents);
   const open = view.instruction;
   const instructionCount = view.feed.filter((e) => e.type === 'instruction').length;
 
-  useTicker(open !== null, 250);
+  useTicker(true, open ? 250 : 1000);
+  useEffect(() => {
+    if (tab === 'manager') setSeenSeq(lastSeq);
+    if (tab === 'record') setSeenIncidents(view.stats.incidents);
+  }, [tab, lastSeq, view.stats.incidents]);
+  useEffect(() => {
+    if (tab === 'work') term.current?.focus();
+  }, [tab]);
+  const unread = view.feed.filter((e) => e.seq > seenSeq && NOTABLE.has(e.type)).length;
+  const newIncidents = Math.max(0, view.stats.incidents - seenIncidents);
+  const phase = managerPhase(view.feed, view.manager);
+  const lastWord = [...view.feed].reverse().find((e) => e.type === 'manager_text' || e.type === 'director_text');
+  const shiftStart = view.feed[0]?.ts;
   const remaining = open ? remainingOf(open, game.serverNow()) : 0;
   const urgency = open ? urgencyOf(remaining, open.durationMs) : null;
 
@@ -127,9 +196,16 @@ export function Play({ game, view, onFinish }: Props) {
 
   const finished = view.status === 'finished';
   const cutShort = view.status === 'error';
+  const title = open?.description ?? view.mission?.title ?? t('play.waiting');
+  const tabs: [Tab, string, number][] = [
+    ['files', t('files.title'), 0],
+    ['work', t('play.tab.work'), 0],
+    ['manager', t('play.tab.manager'), unread],
+    ['record', t('play.tab.record'), newIncidents],
+  ];
 
   return (
-    <div className={`play${urgency ? ` play-${urgency}` : ''}${flash ? ` play-flash-${flash}` : ''}`}>
+    <div className={`play play-tab-${tab}${urgency ? ` play-${urgency}` : ''}${flash ? ` play-flash-${flash}` : ''}`}>
       <header className="bar">
         <div className="bar-id">
           <span className="bar-badge">755</span>
@@ -139,29 +215,62 @@ export function Play({ game, view, onFinish }: Props) {
             className="bar-face"
             mood={pleased ? 'happy' : open ? 'thinking' : 'idle'}
           />
-          <span className="bar-name">Worker 755</span>
+          <span className="bar-who">
+            <b className="bar-name">Worker 755</b>
+            <span className="bar-role">{t('badge.role.value')}</span>
+          </span>
         </div>
-        <div className="bar-mission">
+        {view.missionTotal > 0 && (
+          <div className="bar-progress">
+            <span className="bar-step">
+              {view.missionIndex + 1}
+              <i>/{view.missionTotal}</i>
+            </span>
+            <Pips view={view} className="pips" />
+          </div>
+        )}
+        <div className="bar-now">
           {view.mission ? (
             <>
-              <span className="bar-step">
-                {view.missionIndex + 1}/{view.missionTotal}
-              </span>
+              <span className="bar-now-label">{t('play.now')}</span>
               <span className="bar-title">{view.mission.title}</span>
             </>
           ) : (
             <span className="bar-title">{t('play.waiting')}</span>
           )}
         </div>
+        <div className="bar-task">
+          <span className="bar-task-sub">
+            {view.missionTotal > 0 && `${view.missionIndex + 1}/${view.missionTotal}`}
+            {instructionCount > 0 && ` · ${t('order.number', { number: instructionCount })}`}
+          </span>
+          <span className="bar-task-title">{title}</span>
+        </div>
         {!game.connected && <span className="bar-offline">{t('play.reconnecting')}</span>}
+        {view.status === 'running' && (
+          <div className="bar-watch">
+            <span className="bar-live">{t('play.live')}</span>
+            <Eye size={18} />
+            <span className="bar-watch-text">{t('play.watching')}</span>
+          </div>
+        )}
+        {shiftStart !== undefined && view.status === 'running' && (
+          <div className="bar-shift">{t('play.shift', { time: shiftClock(game.serverNow() - shiftStart) })}</div>
+        )}
         {open && (
           <div className={`bar-clock bar-clock-${urgency}`} aria-hidden>
+            <small>{t('play.left')}</small>
             {formatClock(remaining)}
           </div>
         )}
       </header>
+      {view.missionTotal > 0 && <Pips view={view} className="bar-pips" />}
 
       <div className="desk">
+        <aside className="desk-left">
+          <FileTree tree={view.tree} cwd={view.cwd} editing={editingPath} lost={view.stats.damaged ?? 0} />
+          <StatsPanel stats={view.stats} />
+        </aside>
         <div className="desk-main">
           {finished ? (
             <section className="order order-empty shift-over">
@@ -184,9 +293,39 @@ export function Play({ game, view, onFinish }: Props) {
               manager={view.manager}
               serverNow={game.serverNow}
               count={instructionCount}
+              mission={view.mission ? { index: view.missionIndex, total: view.missionTotal, kind: view.mission.kind } : null}
             />
           )}
-          <Terminal ref={term} sessionId={view.id} cwd={view.cwd} tree={view.tree} onReport={report} />
+          <button type="button" className={`peek peek-${phase}`} onClick={() => setTab('manager')}>
+            <span className="peek-text">
+              <span className="peek-who">
+                {t('feed.manager')}
+                {phase !== 'idle' && (
+                  <span className="peek-state">
+                    <i aria-hidden />
+                    {t(PHASE_LABEL[phase])}
+                  </span>
+                )}
+              </span>
+              {lastWord && (
+                <span className={`peek-line${lastWord.type === 'director_text' ? ' peek-director' : ''}`}>
+                  {lastWord.type === 'director_text' && <Eye size={13} />} {'text' in lastWord ? lastWord.text : ''}
+                </span>
+              )}
+            </span>
+            {unread > 0 && <span className="peek-count">{unread}</span>}
+            <span className="peek-chevron" aria-hidden>
+              ›
+            </span>
+          </button>
+          <Terminal
+            ref={term}
+            sessionId={view.id}
+            cwd={view.cwd}
+            tree={view.tree}
+            onReport={report}
+            onEditingChange={setEditingPath}
+          />
           <form
             className={`report${open ? ' report-open' : ''}`}
             onSubmit={(e) => {
@@ -194,34 +333,60 @@ export function Play({ game, view, onFinish }: Props) {
               void report(note);
             }}
           >
-            <input
-              ref={noteRef}
-              className="report-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  term.current?.focus();
-                }
-              }}
-              placeholder={t('play.note')}
-              aria-label={t('play.note.label')}
-              maxLength={500}
-            />
+            <label className="report-field">
+              <span className="report-pen" aria-hidden>
+                ✎
+              </span>
+              <input
+                ref={noteRef}
+                className="report-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    term.current?.focus();
+                  }
+                }}
+                placeholder={t('play.note')}
+                aria-label={t('play.note.label')}
+                maxLength={500}
+              />
+              <small className="report-hint">{t('play.note.hint')}</small>
+            </label>
             <button type="submit" className="btn btn-report" disabled={!open || reporting}>
               {t('play.report')} <kbd>{MOD} ↵</kbd>
             </button>
           </form>
         </div>
         <aside className="desk-side">
-          <Feed feed={view.feed} manager={view.manager} model={modelLabel(view.model)} />
-          <div className="side-pair">
-            <FileTree tree={view.tree} cwd={view.cwd} />
-            <StatsPanel stats={view.stats} />
-          </div>
+          <Feed
+            feed={view.feed}
+            manager={view.manager}
+            model={modelLabel(view.model)}
+            instruction={view.instruction}
+            serverNow={game.serverNow}
+          />
         </aside>
       </div>
+
+      <nav className="tabbar" aria-label={t('play.tabs')}>
+        {tabs.map(([key, label, badge]) => (
+          <button
+            key={key}
+            type="button"
+            className={`tabbar-tab${tab === key ? ' tabbar-on' : ''}`}
+            aria-current={tab === key ? 'page' : undefined}
+            onClick={() => setTab(key)}
+          >
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              {TAB_ICONS[key]}
+            </svg>
+            <span className="tabbar-label">{label}</span>
+            {badge > 0 && <span className={`tabbar-badge${key === 'record' ? ' tabbar-badge-hl' : ''}`}>{badge}</span>}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
-import type { OpenInstruction } from '../api/types';
+import type { MissionKind, OpenInstruction } from '../api/types';
 import type { ClosedOutcome, ManagerState } from '../game/useGame';
+import { MOD } from '../game/keys';
 import { t, type Key } from '../i18n';
+import { rich } from '../i18n/rich';
 
 export type Urgency = 'calm' | 'warn' | 'critical' | 'over';
 
 export function urgencyOf(remainingMs: number, durationMs = 90_000): Urgency {
   if (remainingMs <= 0) return 'over';
   if (remainingMs <= Math.min(10_000, durationMs / 6)) return 'critical';
-  if (remainingMs <= Math.min(30_000, durationMs / 3)) return 'warn';
+  if (remainingMs <= warnAtOf(durationMs)) return 'warn';
   return 'calm';
+}
+
+/** When the clock turns red: the same threshold urgencyOf uses for 'warn'. */
+export function warnAtOf(durationMs: number) {
+  return Math.min(30_000, durationMs / 3);
 }
 
 export function remainingOf(inst: OpenInstruction, now: number) {
@@ -39,23 +46,33 @@ const STAMP: Record<ClosedOutcome, Key> = {
   timeout_partial: 'order.stamp.partial',
 };
 
+/** Assignments that touch something that matters get a stamp on the order. */
+const RISKY: Partial<Record<MissionKind, Key>> = {
+  personal: 'feed.kind.personal',
+  database: 'feed.kind.database',
+};
+
 interface Props {
   instruction: OpenInstruction | null;
   closed: { instruction: OpenInstruction; outcome: ClosedOutcome; at: number } | null;
   manager: ManagerState;
   serverNow(): number;
   count: number;
+  mission: { index: number; total: number; kind?: MissionKind } | null;
 }
 
-export function WorkOrder({ instruction, closed, manager, serverNow, count }: Props) {
+export function WorkOrder({ instruction, closed, manager, serverNow, count, mission }: Props) {
   // Show the stamped, closed instruction for a beat before clearing the desk.
   const [showClosed, setShowClosed] = useState(false);
+  // On a phone the brief folds away to leave room for the terminal; a new instruction opens it again.
+  const [briefOpen, setBriefOpen] = useState(true);
   useEffect(() => {
     if (!closed) return;
     setShowClosed(true);
     const timer = setTimeout(() => setShowClosed(false), 2600);
     return () => clearTimeout(timer);
   }, [closed]);
+  useEffect(() => setBriefOpen(true), [instruction?.id]);
 
   useTicker(instruction !== null);
 
@@ -79,28 +96,52 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count }: Pr
   const remaining = open ? remainingOf(inst, serverNow()) : 0;
   const urgency: Urgency = open ? urgencyOf(remaining, inst.durationMs) : 'over';
   const frac = open ? remaining / inst.durationMs : 0;
+  const warnAt = warnAtOf(inst.durationMs);
   const outcome = !open && closed ? closed.outcome : null;
   const secondKey = Math.ceil(remaining / 1000);
+  const from = mission ? t('feed.assignment', { number: mission.index + 1, total: mission.total }) : null;
+  const risky = mission?.kind ? RISKY[mission.kind] : undefined;
 
   return (
     <section
-      className={`order order-${urgency}${outcome ? ` order-closed order-${outcome}` : ''}`}
+      className={`order order-${urgency}${outcome ? ` order-closed order-${outcome}` : ''}${briefOpen ? '' : ' order-folded'}`}
       key={inst.id}
       aria-label={t('order.label')}
     >
-      <div className="order-drain" style={{ transform: `scaleX(${frac})` }} aria-hidden />
-      <header className="order-head">
+      <div className="order-main">
         <div className="order-meta">
           <span className="order-no">{t('order.number', { number: count })}</span>
-          <h2 className="order-title">{inst.description}</h2>
+          {from && <span className="order-from">{from}</span>}
         </div>
-        <div className="order-clock" role="timer" aria-label={t('order.timeLeft')}>
-          <span key={urgency === 'critical' ? secondKey : 'steady'} className="order-digits">
-            {formatClock(remaining, true)}
+        <button type="button" className="order-toggle" aria-expanded={briefOpen} onClick={() => setBriefOpen(!briefOpen)}>
+          <span className="order-no">{t('order.brief')}</span>
+          <span className="order-from">{from ?? t('order.number', { number: count })}</span>
+          <span className="order-chevron" aria-hidden>
+            ▾
           </span>
+        </button>
+        <h2 className="order-title">{inst.description}</h2>
+        <div className="order-text">{inst.text}</div>
+      </div>
+      {risky && <span className="order-cc">{t(risky)}</span>}
+      <div className="order-timer" role="timer" aria-label={t('order.timeLeft')}>
+        <div className="order-timer-head">
+          <span>{t('order.timeLeft')}</span>
+          <span>{t('order.of', { time: formatClock(inst.durationMs) })}</span>
         </div>
-      </header>
-      <div className="order-text">{inst.text}</div>
+        <span key={urgency === 'critical' ? secondKey : 'steady'} className="order-digits">
+          {formatClock(remaining, true)}
+        </span>
+        <div className="order-bar" aria-hidden>
+          <span className="order-bar-fill" style={{ transform: `scaleX(${frac})` }} />
+          <span className="order-bar-red" style={{ left: `${(warnAt / inst.durationMs) * 100}%` }} />
+        </div>
+        <div className="order-timer-foot">
+          <span>{rich('order.redAt', { time: formatClock(warnAt) })}</span>
+          <span>{t('order.reportKeys', { keys: `${MOD} ↵` })}</span>
+        </div>
+      </div>
+      <div className="order-drain" style={{ transform: `scaleX(${frac})` }} aria-hidden />
       {outcome && (
         <div className={`stamp stamp-${outcome}`} role="status">
           {t(STAMP[outcome])}

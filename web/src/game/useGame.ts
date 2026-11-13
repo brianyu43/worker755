@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
 import type { NewSession } from '../api/client';
-import type { GameEvent, OpenInstruction, SessionState, Stats, TreeNode } from '../api/types';
+import type { GameEvent, MissionKind, OpenInstruction, SessionState, Stats, TreeNode } from '../api/types';
 
 export type ManagerState = 'thinking' | 'waiting' | 'idle';
 export type ClosedOutcome = 'reported' | 'timeout_idle' | 'timeout_partial';
@@ -14,7 +14,7 @@ export interface GameView {
   tree: TreeNode;
   missionIndex: number;
   missionTotal: number;
-  mission: { title: string; brief: string } | null;
+  mission: { title: string; brief: string; kind?: MissionKind } | null;
   instruction: OpenInstruction | null;
   /** The instruction that just closed, kept briefly so its outcome can be shown. */
   closed: { instruction: OpenInstruction; outcome: ClosedOutcome; at: number } | null;
@@ -48,7 +48,7 @@ function apply(v: GameView, ev: GameEvent): GameView {
     case 'mission':
       n.missionIndex = ev.index;
       n.missionTotal = ev.total;
-      n.mission = { title: ev.title, brief: ev.brief };
+      n.mission = { title: ev.title, brief: ev.brief, kind: ev.kind };
       break;
     case 'manager_status':
       n.manager = ev.state;
