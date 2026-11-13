@@ -165,7 +165,7 @@ export const zhCN: Faq = {
         {
           id: 'who',
           q: '这是谁做的？',
-          a: '这个游戏一天内就做出来了，主要靠 AI 代理完成。这能解释不少设计决定。\n\n项目基于 MIT 许可证开源。代码托管在 <a href="https://github.com/gulivan/worker755">GitHub</a>，你可以运行自己的副本，使用自己的密钥，或者使用不需要联网的脚本主管。它依赖的项目列在 <a href="/about#credits">关于</a> 页面上。',
+          a: '《Worker 755》主要由 AI 智能体开发，目前仍在持续开发中。这也解释了其中一些设计决定。\n\n本项目基于 MIT 许可证开源。代码托管在 <a href="https://github.com/gulivan/worker755">GitHub</a> 上。你可以运行自己的副本，使用自己的密钥，也可以使用无需联网的脚本管理器。它所依托的项目列在 <a href="/about#credits">关于</a> 页面上。',
         },
         {
           id: 'bug',

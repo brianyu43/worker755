@@ -164,8 +164,8 @@ export const ptBR: Faq = {
         },
         {
           id: 'who',
-          q: 'Quem criou isto?',
-          a: 'Foi feito em um dia, em grande parte por agentes de IA. Isso explica algumas decisões.\n\nÉ de código aberto, sob a licença MIT. O código está no <a href="https://github.com/gulivan/worker755">GitHub</a>, e você pode rodar sua própria cópia, com sua própria chave ou com um gerente automatizado que não precisa de conexão. Os projetos nos quais ele se apoia estão listados na página <a href="/about#credits">Sobre</a>.',
+          q: 'Quem fez isso?',
+          a: 'Worker 755 está sendo desenvolvido principalmente por agentes de IA, e o trabalho continua. Isso explica algumas decisões.\n\nO projeto é de código aberto sob a licença MIT. O código está no <a href="https://github.com/gulivan/worker755">GitHub</a>, e você pode rodar sua própria cópia, com sua própria chave ou com um gerente automatizado que não precisa de rede. Os projetos que serviram de base estão listados na página <a href="/about#credits">Sobre</a>.',
         },
         {
           id: 'bug',

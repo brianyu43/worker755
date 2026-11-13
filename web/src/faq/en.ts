@@ -194,7 +194,7 @@ export const en: Faq = {
           id: 'who',
           q: 'Who made this?',
           a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
+            'It is being built mostly by AI agents, and the work is still going on. This explains several decisions.\n\n' +
             'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
         },
         {

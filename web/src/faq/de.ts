@@ -165,7 +165,7 @@ export const de: Faq = {
         {
           id: 'who',
           q: 'Wer hat das gemacht?',
-          a: 'Das Ganze wurde an einem Tag gebaut, größtenteils von KI-Agenten. Das erklärt so manches.\n\nEs ist Open Source unter der MIT-Lizenz. Der Code liegt auf <a href="https://github.com/gulivan/worker755">GitHub</a>. Du kannst deine eigene Kopie betreiben, mit deinem eigenen Schlüssel oder mit einem skriptgesteuerten Manager, der kein Netzwerk braucht. Die Projekte, auf denen das Ganze aufbaut, sind auf der Seite <a href="/about#credits">About</a> aufgeführt.',
+          a: 'Worker 755 wird größtenteils von KI-Agenten entwickelt, und die Arbeit geht noch weiter. Das erklärt einige Entscheidungen.\n\nDas Projekt steht unter der MIT-Lizenz als Open Source zur Verfügung. Den Code findest du auf <a href="https://github.com/gulivan/worker755">GitHub</a>. Du kannst deine eigene Version ausführen, mit deinem eigenen Schlüssel oder mit einem skriptgesteuerten Manager, der keine Netzwerkverbindung benötigt. Die Projekte, auf denen es aufbaut, sind auf der Seite <a href="/about#credits">Über uns</a> aufgeführt.',
         },
         {
           id: 'bug',

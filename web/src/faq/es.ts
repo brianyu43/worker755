@@ -164,8 +164,8 @@ export const es: Faq = {
         },
         {
           id: 'who',
-          q: '¿Quién lo hizo?',
-          a: 'Se creó en un día, en su mayor parte por agentes de IA. Eso explica unas cuantas decisiones.\n\nEs de código abierto con licencia MIT. El código está en <a href="https://github.com/gulivan/worker755">GitHub</a>, y puedes ejecutar tu propia copia, con tu propia clave o con un mánager programado que no necesita conexión. Los proyectos en los que se apoya aparecen en la página <a href="/about#credits">Acerca de</a>.',
+          q: '¿Quién ha hecho esto?',
+          a: 'Está siendo desarrollado en su mayor parte por agentes de IA, y el trabajo sigue en marcha. Eso explica algunas decisiones.\n\nEs de código abierto y está publicado bajo la licencia MIT. El código está en <a href="https://github.com/gulivan/worker755">GitHub</a>, y puedes ejecutar tu propia copia, con tu propia clave o con un gestor con scripts que no necesita conexión a la red. Los proyectos en los que se basa aparecen en la página <a href="/about#credits">Acerca de</a>.',
         },
         {
           id: 'bug',

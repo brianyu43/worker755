@@ -285,7 +285,7 @@ export const fr: Catalogue = {
   'about.name.1': 'Dans les permissions Unix, 755 signifie <code>rwxr-xr-x</code> : le propriétaire peut écrire, les autres peuvent seulement lire et exécuter. C’est exactement le principe ici. Le manager ne peut que lire ; l’agent se tape toute l’écriture. Le nombre a été choisi au hasard. La coïncidence fait bien les choses.',
   'about.keys': 'Services et clés',
   'about.keys.1': 'Les services gratuits tournent avec DeepSeek V4.1 Flash. Tu peux aussi utiliser ta propre clé pour OpenRouter, Vercel AI Gateway, Anthropic, OpenAI ou DeepSeek. Ta clé reste dans ton navigateur. Le serveur la garde en mémoire uniquement pendant ton service et ne la stocke ni ne la journalise jamais.',
-  'about.keys.2': 'Worker 755 a été créé en une journée, principalement par des agents IA. Ça explique quelques choix.',
+  'about.keys.2': 'Worker 755 est développé en grande partie par des agents IA, et le travail est toujours en cours. Ça explique plusieurs choix.',
   'about.credits': 'Crédits',
   'about.credits.intro': 'Worker 755 repose sur des projets open source. Les gens qui les ont créés ont fait le plus dur, et personne ne leur a accordé 90 secondes.',
   'about.credits.avatar': 'Le visage de l’ouvrier vient de <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> par Dominik Scholz. Remerciements particuliers : sans ça, Worker 755 ne serait qu’un numéro.',

@@ -285,7 +285,7 @@ export const ja: Catalogue = {
   'about.name.1': 'Unixのパーミッションで755は<code>rwxr-xr-x</code>。所有者は書き込み可能、ほかの全員は読み取りと実行のみ。ここでの関係も同じだ。マネージャーは読むだけ、サブエージェントが全部書く。数字は適当に選ばれた。ぴったりなのは偶然だ。',
   'about.keys': 'シフトとキー',
   'about.keys.1': '無料シフトではDeepSeek V4.1 Flashを使用。OpenRouter、Vercel AI Gateway、Anthropic、OpenAI、DeepSeekのキーを持ち込んでもいい。キーはブラウザ内に保存される。サーバーが保持するのはシフト中のメモリ上だけで、保存もログ記録もしない。',
-  'about.keys.2': 'Worker 755は、ほぼAIエージェントだけで1日で作られた。いくつかの判断の理由はお察しください。',
+  'about.keys.2': 'Worker 755は主にAIエージェントが開発しており、今も作業が続いています。いくつかの仕様がこうなっているのは、そのためです。',
   'about.credits': 'クレジット',
   'about.credits.intro': 'Worker 755はオープンソースの成果の上に成り立っている。大変な部分を担った人たちに、誰も90秒の猶予をくれなかった。',
   'about.credits.avatar': '作業員の顔には、Dominik Scholz作の<a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a>を使用。特別な感謝を。これがなければ、Worker 755はただの数字だった。',

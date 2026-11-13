@@ -295,7 +295,7 @@ export const en = {
   'about.keys': 'Shifts and keys',
   'about.keys.1':
     'Free shifts run on DeepSeek V4.1 Flash. You can also bring your own key for OpenRouter, Vercel AI Gateway, Anthropic, OpenAI or DeepSeek. Your key stays in your browser. The server holds it in memory only for your shift, and never stores or logs it.',
-  'about.keys.2': 'Worker 755 was built in a day, mostly by AI agents. This explains several decisions.',
+  'about.keys.2': 'Worker 755 is being built mostly by AI agents, and the work is still going on. This explains several decisions.',
   'about.credits': 'Credits',
   'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
   'about.credits.avatar':

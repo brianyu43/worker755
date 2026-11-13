@@ -165,7 +165,7 @@ export const fr: Faq = {
         {
           id: 'who',
           q: 'Qui a créé ce jeu ?',
-          a: 'Il a été créé en une journée, principalement par des agents IA. Ça explique quelques choix.\n\nLe jeu est open source sous licence MIT. Le code se trouve sur <a href="https://github.com/gulivan/worker755">GitHub</a>, et vous pouvez lancer votre propre version, avec votre propre clé ou avec un manager scripté qui n’a pas besoin de réseau. Les projets sur lesquels il s’appuie sont listés sur la page <a href="/about#credits">About</a>.',
+          a: 'Le jeu est développé en grande partie par des agents IA, et le travail est toujours en cours. Ça explique plusieurs choix.\n\nIl est open source sous licence MIT. Le code est disponible sur <a href="https://github.com/gulivan/worker755">GitHub</a>, et tu peux lancer ta propre version, avec ta propre clé ou avec un manager scripté qui n’a pas besoin de réseau. Les projets sur lesquels il s’appuie sont listés sur la page <a href="/about#credits">À propos</a>.',
         },
         {
           id: 'bug',
