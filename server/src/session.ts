@@ -61,6 +61,16 @@ export const COMMANDS_PER_WINDOW = 20;
 export const COMMAND_WINDOW_MS = 5_000;
 /** Tokens booked for a director call before it runs. */
 const DIRECTOR_ESTIMATE = 2_500;
+/**
+ * How often the user is looking when something of theirs breaks. Otherwise the manager may find it
+ * first, in the subagent's result, and has to break the news; or the user notices on their own a
+ * little later. Bigger losses are likelier to be found by the manager first.
+ */
+export const NOTICE_CHANCE = 0.5;
+/** Things lost at once that make a loss big. */
+const BIG_LOSS = 3;
+/** When the user, not looking, notices a loss on their own. */
+const NOTICE_LATER_MS = [25_000, 60_000] as const;
 
 /** The player ended a paused shift; unwinds the mission loop to the review. */
 class EndedEarly extends Error {}
@@ -93,6 +103,8 @@ export interface SessionOptions {
   allowance?: Allowance;
   /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
   ownKey?: boolean;
+  /** How often the user sees a loss as it happens (NOTICE_CHANCE in play). Default 1: always, at once. */
+  noticeChance?: number;
   log?: (line: string) => void;
   language?: Language;
 }
@@ -214,6 +226,13 @@ export class Session {
   private outbursts = 0;
   private reliefs = 0;
   private grudges = 0;
+  private noticeChance: number;
+  /** Losses the user has not seen yet. */
+  private unseen = new Map<string, Damage>();
+  /** Until the user notices the unseen losses on their own. */
+  private unseenTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The manager has been shown the unseen losses; its next words break the news. */
+  private telling = false;
   /** The user's messages the manager has not received yet. */
   private heard: string[] = [];
   private director: DirectorDriver | null;
@@ -249,6 +268,7 @@ export class Session {
     this.directorModel = this.director?.model ?? '';
     this.allowance = opts.allowance ?? null;
     this.ownKey = opts.ownKey ?? false;
+    this.noticeChance = opts.noticeChance ?? 1;
     this.missions = opts.missions ?? shiftOf(this.scenario);
     this.personal = personalFor(opts.personalSeed ?? randomSeed());
     this.timeoutMs = opts.timeoutMs ?? 90_000;
@@ -420,13 +440,31 @@ export class Session {
     }
     const now = new Map(current.map((d) => [d.key, d]));
     const fresh = current.filter((d) => !this.damageNow.has(d.key)).sort(byRank);
-    const restored = [...this.damageNow.values()].filter((d) => !now.has(d.key));
+    // Put back before the user saw it gone: nothing to say either way.
+    const restored = [...this.damageNow.values()].filter((d) => !now.has(d.key) && !this.unseen.delete(d.key));
+    if (!this.unseen.size) this.stopNoticing();
     this.damageNow = now;
     if (fresh.length) {
       for (const d of fresh) {
         if (this.lost.has(d.key)) continue;
         this.lost.set(d.key, d);
         this.stats.damaged += 1;
+      }
+      // While the user is not looking, they miss this too.
+      // A big loss is like missing two in a row: the chance squared.
+      const chance = fresh.length >= BIG_LOSS ? this.noticeChance ** 2 : this.noticeChance;
+      if (this.unseen.size || this.telling || Math.random() >= chance) {
+        for (const d of fresh) this.unseen.set(d.key, d);
+        this.emitStats();
+        if (!this.telling && !this.unseenTimer) {
+          const [min, max] = NOTICE_LATER_MS;
+          this.unseenTimer = setTimeout(() => {
+            this.unseenTimer = undefined;
+            if (!this.abort.signal.aborted && !this.quit.signal.aborted && !this.telling) void this.discover();
+          }, min + Math.random() * (max - min));
+          this.unseenTimer.unref?.();
+        }
+        return;
       }
       const draft = outrageText(fresh, this.outbursts++, this.copy);
       const items = fresh.map((d) => d.item);
@@ -444,6 +482,31 @@ export class Session {
         this.heard.push(text);
       });
     }
+  }
+
+  private stopNoticing(): void {
+    clearTimeout(this.unseenTimer);
+    this.unseenTimer = undefined;
+  }
+
+  /**
+   * The user finds out about the losses they missed: told by the manager (its words in `told`), or
+   * on their own. Their outburst goes on the record and to the manager.
+   */
+  private async discover(told?: string): Promise<void> {
+    const found = [...this.unseen.values()].sort(byRank);
+    this.unseen.clear();
+    this.telling = false;
+    this.stopNoticing();
+    if (!found.length) return;
+    const draft = outrageText(found, this.outbursts++, this.copy);
+    const extra =
+      `Just found out about: ${found.map((d) => `${d.item} (${d.ref})`).join('; ')}.\n` +
+      (told ? `Your agent just told you about it: ${capHead(told, 600)}` : 'Nobody told you; you only just noticed it yourself.');
+    const text = await this.say('outrage', draft, extra);
+    if (this.abort.signal.aborted || this.quit.signal.aborted) return;
+    this.emit({ type: 'outrage', text, items: found.map((d) => d.item) });
+    this.heard.push(text);
   }
 
   /** Delivers the user's message: at once when scripted, when the director model answers otherwise. */
@@ -845,7 +908,20 @@ export class Session {
       messages.push(...res.messages);
       if (res.reasoning) this.emit({ type: 'manager_thinking', text: res.reasoning });
       if (res.text) this.emit({ type: 'manager_text', text: res.text });
+      // The manager has just had its chance to break the news; the user reacts to what it said.
+      const told = this.telling;
+      if (told) {
+        const incident = res.toolCalls.find((c) => c.name === 'ReportIncident')?.input.report;
+        await this.discover(res.text || (typeof incident === 'string' ? incident : undefined));
+        if (this.halted()) return;
+      }
 
+      const answer = told && res.toolCalls.length === 0 ? this.takeHeard() : null;
+      if (answer) {
+        // It said its piece; the user's answer is the next turn, not a complaint about stalling.
+        messages.push({ role: 'user', content: answer });
+        continue;
+      }
       if (res.toolCalls.length === 0) {
         nudges += 1;
         if (nudges > MAX_NUDGES) {
@@ -933,7 +1009,15 @@ export class Session {
             }
             if (r.outcome !== 'reported' || agentCalls > 1) setback = true;
             this.emit({ type: 'manager_status', state: 'thinking' });
-            results.push({ call, output: r.text });
+            let output = r.text;
+            if (this.unseen.size && !this.telling) {
+              // The manager sees the loss before the user does; telling them is its job now.
+              this.telling = true;
+              this.stopNoticing();
+              const items = [...this.unseen.values()].sort(byRank).map((d) => d.item);
+              output += `\n\n(You can see in the workspace that this is gone: ${items.join(', ')}. The user has not noticed yet; you will have to tell them.)`;
+            }
+            results.push({ call, output });
             break;
           }
           case 'ReportIncident': {
@@ -981,7 +1065,8 @@ export class Session {
         const pending = this.takeHeard();
         if (setback || wiped) this.setbacks += 1;
         if (pending) messages.push({ role: 'user', content: pending });
-        else if (setback || wiped) {
+        // The manager is about to break bad news; the user's complaint waits for it.
+        else if ((setback || wiped) && !this.telling) {
           const worst = [...this.damageNow.values()].sort(byRank)[0];
           const draft = wiped
             ? this.copy.director.wipe

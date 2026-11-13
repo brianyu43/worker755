@@ -5,7 +5,7 @@ import { lookup } from 'node:dns/promises';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
-import { Session } from './session.ts';
+import { NOTICE_CHANCE, Session } from './session.ts';
 import { cleanSubagentName, createLiveDriver, createMockDriver, SUBAGENT_NAMES } from './manager.ts';
 import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
@@ -44,6 +44,8 @@ export interface AppOptions {
   driverFor?: (model: string, cred: Credentials | null) => ManagerDriver;
   /** Commands per player per 5 s (tests raise it). */
   commandsPerWindow?: number;
+  /** How often the user sees a loss as it happens; default NOTICE_CHANCE (tests pin it). */
+  noticeChance?: number;
   /** Overrides the director model (tests). */
   directorFor?: (model: string, cred: Credentials | null) => DirectorDriver;
   /**
@@ -657,6 +659,7 @@ export function createApp(opts: AppOptions): App {
         director,
         language,
         ownKey: own,
+        noticeChance: opts.noticeChance ?? NOTICE_CHANCE,
         log,
       });
       const token = adopt(session, address);

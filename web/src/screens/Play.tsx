@@ -342,7 +342,8 @@ export function Play({ game, view, onFinish }: Props) {
                   </span>
                 )}
               </span>
-              {lastWord && (
+              {/* Once read on the Manager tab, the line goes until there is a new one. */}
+              {lastWord && lastWord.seq > seenSeq && (
                 <span className={`peek-line${lastWord.type === 'director_text' ? ' peek-director' : ''}`}>
                   {lastWord.type === 'director_text' && <Eye size={13} />} {'text' in lastWord ? lastWord.text : ''}
                 </span>

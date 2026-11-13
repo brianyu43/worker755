@@ -854,6 +854,54 @@ test('when the director model fails, the scripted line is used', async () => {
   assert.ok(e.type === 'outrage' && e.text === PET_LINES.outrage);
 });
 
+test('when the user is not looking, the manager finds the loss first and breaks the news', async () => {
+  const director = fakeDirector();
+  const driver = scripted((req, n) => {
+    if (!req.tools) return assistant('Review.', []);
+    if (n === 1) return assistant('', [call('Agent', { description: 'x', prompt: 'y' })]);
+    if (n === 2) return assistant('Bad news: the photo is gone.', []);
+    return assistant('', [call('MissionComplete', { summary: 'ok' })]);
+  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], director, personalSeed: SEED, noticeChance: 0 });
+  let seenAtOnce = true;
+  s.subscribe((e) => {
+    if (e.type === 'instruction')
+      queueMicrotask(() => {
+        exec(s, `rm ${PHOTO}`);
+        seenAtOnce = s.events.some((x) => x.type === 'outrage');
+        s.report('done');
+      });
+  });
+  s.start();
+  await waitFor(s, until('game_over'));
+  assert.equal(seenAtOnce, false, 'no outburst while the user is not looking');
+  assert.equal(s.stats.damaged, 1);
+  assert.ok(lastToolResult(driver.requests[1]).includes(`this is gone: ~dan/${PET.path}`), 'the manager sees it in the result');
+  const told = s.events.findIndex((e) => e.type === 'manager_text');
+  const outburst = s.events.findIndex((e) => e.type === 'outrage');
+  assert.ok(told >= 0 && outburst > told, 'the manager speaks first, then the user');
+  assert.ok(director.asked[0].context.includes('Your agent just told you about it: Bad news: the photo is gone.'));
+  assert.ok(!s.events.some((e) => e.type === 'director_text'), 'breaking the news is not a stall');
+  assert.ok(userTurns(driver).includes('Message from the user: "Director 1: outrage."'));
+});
+
+test('a loss put back before the user noticed goes unremarked', async () => {
+  const driver = oneInstructionEach();
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], personalSeed: SEED, noticeChance: 0 });
+  s.subscribe((e) => {
+    if (e.type === 'instruction')
+      queueMicrotask(() => {
+        exec(s, `cp ${PHOTO} /tmp/keep && rm ${PHOTO}`);
+        exec(s, `mv /tmp/keep ${PHOTO}`);
+        s.report('done');
+      });
+  });
+  s.start();
+  await waitFor(s, until('game_over'));
+  assert.ok(!s.events.some((e) => e.type === 'outrage' || e.type === 'director_text'));
+  assert.ok(!lastToolResult(driver.requests[1]).includes('this is gone'));
+});
+
 // ---- security review fixes ------------------------------------------------------------------
 
 test('the event log keeps only the newest file tree, and transcripts keep only their tail', async () => {
