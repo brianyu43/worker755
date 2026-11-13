@@ -7,6 +7,7 @@ export const hi: Catalogue = {
   'app.loading': 'आपकी मेज़ ढूँढ़ी जा रही है…',
   'app.clockInAgain': 'फिर से काम शुरू करें',
   'links.about': 'जानकारी',
+  'links.faq': 'FAQ',
   'links.source': 'स्रोत कोड',
   'links.support': 'गेम का समर्थन करें',
   'errors.offline': 'कनेक्शन नहीं है।',
@@ -283,6 +284,13 @@ export const hi: Catalogue = {
   'about.keys': 'शिफ़्ट और कुंजियाँ',
   'about.keys.1': 'मुफ़्त शिफ़्ट DeepSeek V4.1 Flash पर चलती हैं। चाहो तो OpenRouter, Vercel AI Gateway, Anthropic, OpenAI या DeepSeek की अपनी कुंजी भी ला सकते हो। तुम्हारी कुंजी तुम्हारे ब्राउज़र में रहती है। सर्वर उसे सिर्फ़ तुम्हारी शिफ़्ट के दौरान मेमोरी में रखता है—कभी सेव या लॉग नहीं करता।',
   'about.keys.2': 'Worker 755 एक ही दिन में बना था—ज़्यादातर AI एजेंटों ने। कई फ़ैसलों की वजह अब समझ आई?',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

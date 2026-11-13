@@ -7,6 +7,7 @@ export const ptBR: Catalogue = {
   'app.loading': 'Procurando sua mesa…',
   'app.clockInAgain': 'Iniciar outro turno',
   'links.about': 'Sobre',
+  'links.faq': 'FAQ',
   'links.source': 'Código-fonte',
   'links.support': 'Apoie o jogo',
   'errors.offline': 'Sem conexão.',
@@ -283,6 +284,13 @@ export const ptBR: Catalogue = {
   'about.keys': 'Turnos e chaves',
   'about.keys.1': 'Os turnos grátis rodam no DeepSeek V4.1 Flash. Você também pode usar sua própria chave da OpenRouter, Vercel AI Gateway, Anthropic, OpenAI ou DeepSeek. Sua chave fica no navegador. O servidor a mantém na memória só durante o seu turno e nunca a armazena nem registra em logs.',
   'about.keys.2': 'Worker 755 foi criado em um dia, em sua maior parte por agentes de IA. Isso explica algumas decisões.',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

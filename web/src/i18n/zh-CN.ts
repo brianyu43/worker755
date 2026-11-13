@@ -7,6 +7,7 @@ export const zhCN: Catalogue = {
   'app.loading': '正在找你的工位……',
   'app.clockInAgain': '再上一个班次',
   'links.about': '关于',
+  'links.faq': 'FAQ',
   'links.source': '源代码',
   'links.support': '支持游戏',
   'errors.offline': '网络断开。',
@@ -283,6 +284,13 @@ export const zhCN: Catalogue = {
   'about.keys': '班次与密钥',
   'about.keys.1': '免费班次使用 DeepSeek V4.1 Flash。你也可以自带 OpenRouter、Vercel AI Gateway、Anthropic、OpenAI 或 DeepSeek 的密钥。密钥留在你的浏览器里。服务器只会在你的班次期间将它保存在内存中，绝不存储或记录。',
   'about.keys.2': 'Worker 755 在一天内搭建完成，大部分工作由 AI 代理完成。这就能解释其中一些决定了。',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.

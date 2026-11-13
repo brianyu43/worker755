@@ -7,6 +7,7 @@ export const ja: Catalogue = {
   'app.loading': 'デスクを探しています…',
   'app.clockInAgain': 'もう一度勤務する',
   'links.about': 'このゲームについて',
+  'links.faq': 'FAQ',
   'links.source': 'ソースコード',
   'links.support': 'ゲームを応援',
   'errors.offline': '接続なし。',
@@ -283,6 +284,13 @@ export const ja: Catalogue = {
   'about.keys': 'シフトとキー',
   'about.keys.1': '無料シフトではDeepSeek V4.1 Flashを使用。OpenRouter、Vercel AI Gateway、Anthropic、OpenAI、DeepSeekのキーを持ち込んでもいい。キーはブラウザ内に保存される。サーバーが保持するのはシフト中のメモリ上だけで、保存もログ記録もしない。',
   'about.keys.2': 'Worker 755は、ほぼAIエージェントだけで1日で作られた。いくつかの判断の理由はお察しください。',
+  'about.credits': 'Credits',
+  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
+  'about.credits.avatar':
+    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+
+  // ---- FAQ page ---------------------------------------------------------------------------------
+  'faq.title': 'Frequently asked questions',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.
