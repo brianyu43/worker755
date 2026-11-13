@@ -206,6 +206,12 @@ export function Play({ game, view, onFinish }: Props) {
   const cutShort = view.status === 'error';
   const canEnd = view.status === 'running' && !view.ending;
   const askEnd = () => setConfirmEnd(true);
+  // On a phone the review notice and its button are on the Work tab: go there once the shift ends,
+  // whichever tab the player ended it from.
+  const over = view.ending || finished || cutShort;
+  useEffect(() => {
+    if (over) setTab('work');
+  }, [over]);
   const title = open?.description ?? view.mission?.title ?? t('play.waiting');
   const tabs: [Tab, string, number][] = [
     ['files', t('files.title'), 0],
