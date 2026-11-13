@@ -166,6 +166,7 @@ export const help: Command = (ctx) => {
   for (const n of names) text += `  ${n.padEnd(width)}${DESCRIPTIONS[n] ?? ''}`.trimEnd() + '\n';
   text += '\nOperators: |  &&  ||  ;  >  >>  <  2>  2>&1  &>\n';
   text += 'Quoting: \'single\', "double", backslash. Expansion: ~, *, ?, [abc], {a,b}, {1..3}, $HOME, $PWD, $?\n';
+  text += 'Scripts: ./run.sh (after chmod +x), bash FILE, sh FILE, bash -c \'…\', source FILE; inside: $1, $#, $@, exit N\n';
   ctx.out(text);
   return 0;
 };

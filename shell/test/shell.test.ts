@@ -202,3 +202,46 @@ test('the empty path names nothing', () => {
   assert.equal(sh.fs.stat('/home/worker/f')?.type, 'file');
   assert.equal(sh.fs.stat('/home/worker')?.type, 'dir');
 });
+
+test('a script typed as a path needs the execute bit, then runs line by line', () => {
+  const { sh, run } = newShell();
+  sh.fs.writeFile('/home/worker/deploy.sh', '#!/bin/bash\n# ship it\necho "deploying $1"\nmkdir -p out && echo done > out/log\necho "args: $#"\n');
+  assert.deepEqual(run('./deploy.sh'), { stdout: '', stderr: 'bash: ./deploy.sh: Permission denied\n', exitCode: 126 });
+  assert.deepEqual(run('deploy.sh'), { stdout: '', stderr: 'bash: deploy.sh: command not found\n', exitCode: 127 });
+  assert.deepEqual(run('./nope.sh'), { stdout: '', stderr: 'bash: ./nope.sh: No such file or directory\n', exitCode: 127 });
+  run('chmod +x deploy.sh');
+  assert.deepEqual(run('./deploy.sh prod now'), { stdout: 'deploying prod\nargs: 2\n', stderr: '', exitCode: 0 });
+  assert.equal(sh.fs.readFile('/home/worker/out/log'), 'done\n');
+  assert.equal(run('/home/worker/deploy.sh x | wc -l').stdout, '2\n');
+  run('./deploy.sh > report.txt');
+  assert.equal(sh.fs.readFile('/home/worker/report.txt'), 'deploying \nargs: 0\n');
+});
+
+test('bash and sh run a script without the execute bit; -c runs a line', () => {
+  const { run } = newShell();
+  run('printf "echo one\\nfalse\\necho two\\n" > s.sh');
+  assert.deepEqual(run('bash s.sh'), { stdout: 'one\ntwo\n', stderr: '', exitCode: 0 });
+  assert.equal(run('sh -e s.sh').stdout, 'one\ntwo\n');
+  assert.deepEqual(run("bash -c 'echo $0 $1' me you"), { stdout: 'me you\n', stderr: '', exitCode: 0 });
+  assert.equal(run('bash missing.sh').stderr, 'bash: missing.sh: No such file or directory\n');
+  assert.equal(run('echo "echo piped" | bash').stdout, 'piped\n');
+});
+
+test('exit stops a script with its status; a script\'s cd stays in the script, source keeps it', () => {
+  const { sh, run } = newShell();
+  run('mkdir sub');
+  run('printf "cd sub\\necho in\\nexit 3\\necho never\\n" > s.sh');
+  const r = run('bash s.sh; echo $?');
+  assert.equal(r.stdout, 'in\n3\n');
+  assert.equal(sh.cwd, '/home/worker');
+  run('source s.sh');
+  assert.equal(sh.cwd, '/home/worker/sub');
+});
+
+test('a script that runs itself stops at the nesting limit', () => {
+  const { run } = newShell();
+  run('echo "bash loop.sh" > loop.sh');
+  const r = run('bash loop.sh');
+  assert.match(r.stderr, /maximum script nesting level exceeded/);
+  assert.notEqual(r.exitCode, 0);
+});

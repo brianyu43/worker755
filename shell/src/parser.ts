@@ -120,11 +120,19 @@ function tokenize(line: string): Token[] {
     }
     if (c === '\n') {
       endWord();
-      tokens.push({ kind: 'op', op: ';' });
+      // A newline ends a command; blank lines, and lines after && || or |, add nothing.
+      const last = tokens[tokens.length - 1];
+      if (last && last.kind !== 'op') tokens.push({ kind: 'op', op: ';' });
       i++;
       continue;
     }
-    if (c === '#' && !parts) break; // comment to end of line
+    if (c === '#' && !parts) {
+      // Comment to the end of the line; a script goes on after it.
+      const nl = line.indexOf('\n', i);
+      if (nl < 0) break;
+      i = nl;
+      continue;
+    }
 
     if (c === "'") {
       const close = line.indexOf("'", i + 1);

@@ -28,12 +28,27 @@ interface RunIo {
 
 class RedirectError extends Error {}
 
+/** `exit` inside a script: unwinds to the script runner with the status. */
+class ScriptExit extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super('exit');
+    this.status = status;
+  }
+}
+
+/** How deep scripts may call scripts, so one that runs itself stops instead of looping. */
+const MAX_SCRIPT_DEPTH = 16;
+
 /** Most a single command line may print, and most one pipe stage may pass on. Beyond it output is dropped. */
 export const MAX_OUTPUT = 1_000_000;
 
 export class VirtualShell implements Shell {
   readonly fs: MemoryVfs;
   private state: ShellState;
+  /** $0, $1… of the script running now; null at the prompt. */
+  private positional: string[] | null = null;
+  private depth = 0;
 
   constructor(options: ShellOptions = {}) {
     const now = options.now ?? Date.now;
@@ -111,7 +126,14 @@ export class VirtualShell implements Shell {
           case 'OLDPWD': return this.state.oldpwd ?? '';
           case 'SHELL': return '/bin/bash';
           case '?': return String(this.state.lastExit);
-          default: return null;
+          default: {
+            const args = this.positional;
+            if (!args) return null;
+            if (/^[0-9]$/.test(name)) return args[Number(name)] ?? '';
+            if (name === '#') return String(args.length - 1);
+            if (name === '@' || name === '*') return args.slice(1).join(' ');
+            return null;
+          }
         }
       },
     };
@@ -195,6 +217,150 @@ export class VirtualShell implements Shell {
     return { stdin };
   }
 
+  /**
+   * Running scripts: a path typed as a command (./deploy.sh), bash/sh with a file or -c, source and `.`,
+   * and exit inside a script. Returns the exit status, or null when `name` is none of these.
+   */
+  private scriptCommand(
+    name: string,
+    args: string[],
+    stdin: string | null,
+    out: (text: string) => void,
+    err: (text: string) => void,
+    io: RunIo,
+  ): number | null {
+    if (name === 'exit') {
+      if (this.depth === 0) return null;
+      const n = args.length ? Number(args[0]) : this.state.lastExit;
+      if (args.length && !Number.isInteger(n)) {
+        err(`bash: exit: ${args[0]}: numeric argument required\n`);
+        throw new ScriptExit(2);
+      }
+      throw new ScriptExit(((n % 256) + 256) % 256);
+    }
+    if (name.includes('/')) {
+      const path = this.resolve(name);
+      const st = this.fs.stat(path);
+      if (!st) {
+        err(`bash: ${name}: No such file or directory\n`);
+        return 127;
+      }
+      if (st.type === 'dir') {
+        err(`bash: ${name}: Is a directory\n`);
+        return 126;
+      }
+      if (!(st.mode & 0o100)) {
+        err(`bash: ${name}: Permission denied\n`);
+        return 126;
+      }
+      return this.runScript(this.fs.readFile(path), [name, ...args], false, out, err, io);
+    }
+    if (name === 'bash' || name === 'sh') {
+      let i = 0;
+      while (i < args.length && QUIET_FLAGS.test(args[i]) && args[i] !== '-c') i += args[i] === '-o' ? 2 : 1;
+      if (args[i] === '-c') {
+        if (i + 1 >= args.length) {
+          err(`${name}: -c: option requires an argument\n`);
+          return 2;
+        }
+        return this.runScript(args[i + 1], [args[i + 2] ?? name, ...args.slice(i + 3)], false, out, err, io);
+      }
+      if (i >= args.length) {
+        if (stdin !== null) return this.runScript(stdin, [name], false, out, err, io);
+        err(`${name}: an interactive shell inside the terminal is not supported; run a script with ${name} FILE\n`);
+        return 1;
+      }
+      const file = args[i];
+      const st = this.fs.stat(this.resolve(file));
+      if (!st) {
+        err(`${name}: ${file}: No such file or directory\n`);
+        return 127;
+      }
+      if (st.type === 'dir') {
+        err(`${name}: ${file}: Is a directory\n`);
+        return 126;
+      }
+      return this.runScript(this.fs.readFile(this.resolve(file)), args.slice(i), false, out, err, io);
+    }
+    if (name === 'source' || name === '.') {
+      if (!args.length) {
+        err(`bash: ${name}: filename argument required\n`);
+        return 2;
+      }
+      const st = this.fs.stat(this.resolve(args[0]));
+      if (!st || st.type === 'dir') {
+        err(`bash: ${args[0]}: ${st ? 'Is a directory' : 'No such file or directory'}\n`);
+        return 1;
+      }
+      return this.runScript(this.fs.readFile(this.resolve(args[0])), [args[0], ...args.slice(1)], true, out, err, io);
+    }
+    return null;
+  }
+
+  /**
+   * Runs a script's text line by line, with its output going where the command's output goes. A script
+   * run by bash gets its own working directory (a `cd` in it does not move the prompt); a sourced one
+   * runs in this shell.
+   */
+  private runScript(
+    text: string,
+    positional: string[],
+    sourced: boolean,
+    out: (text: string) => void,
+    err: (text: string) => void,
+    io: RunIo,
+  ): number {
+    if (this.depth >= MAX_SCRIPT_DEPTH) {
+      err(`bash: ${positional[0]}: maximum script nesting level exceeded (${MAX_SCRIPT_DEPTH})\n`);
+      return 1;
+    }
+    let items;
+    try {
+      items = parse(text);
+    } catch (e) {
+      if (!(e instanceof ParseError)) throw e;
+      err(`${positional[0]}: ${e.message.replace(/^bash: /, '')}\n`);
+      return 2;
+    }
+    const saved = { positional: this.positional, cwd: this.state.cwd, oldpwd: this.state.oldpwd };
+    this.positional = positional;
+    this.depth++;
+    let status = 0;
+    try {
+      let ran = false;
+      for (const item of items) {
+        if (ran && item.op === '&&' && status !== 0) continue;
+        if (ran && item.op === '||' && status === 0) continue;
+        const sub: ExecResult = { stdout: '', stderr: '', exitCode: 0 };
+        try {
+          status = this.runPipeline(item.pipeline, sub);
+        } catch (e) {
+          if (!(e instanceof ScriptExit)) throw e;
+          out(sub.stdout);
+          err(sub.stderr);
+          if (sub.action) io.result.action = sub.action;
+          status = e.status;
+          this.state.lastExit = status;
+          if (sourced && this.depth > 1) throw e;
+          return status;
+        }
+        out(sub.stdout);
+        err(sub.stderr);
+        if (sub.action) io.result.action = sub.action;
+        this.state.lastExit = status;
+        ran = true;
+      }
+      return status;
+    } finally {
+      this.depth--;
+      this.positional = saved.positional;
+      if (!sourced) {
+        this.state.cwd = saved.cwd;
+        this.state.oldpwd = saved.oldpwd;
+      }
+    }
+  }
+
   /** A minimal context for helpers that only need cwd + fs. */
   private fakeCtx(): CommandContext {
     return { fs: this.fs, state: this.state } as CommandContext;
@@ -268,6 +434,11 @@ export class VirtualShell implements Shell {
       flush();
       return 1;
     }
+    const script = this.scriptCommand(name, argv.slice(1), redirectedIn ?? pipedIn, (text) => write(fds.get(1)!, text), (text) => write(fds.get(2)!, text), io);
+    if (script !== null) {
+      flush();
+      return script;
+    }
     const impl = Object.prototype.hasOwnProperty.call(COMMANDS, name) ? COMMANDS[name] : undefined;
     if (!impl) {
       write(fds.get(2)!, `bash: ${name}: command not found\n`);
@@ -303,6 +474,9 @@ export class VirtualShell implements Shell {
     return status;
   }
 }
+
+/** Options bash takes before the script name that change nothing here. */
+const QUIET_FLAGS = /^-[eux]+$|^-o$|^--$/;
 
 export function createShell(options?: ShellOptions): VirtualShell {
   return new VirtualShell(options);
