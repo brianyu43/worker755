@@ -34,11 +34,11 @@ export const zhCN: ServerCopy = {
     },
     nda: {
       title: '供应商资料包',
-      brief: '法务需要将用户签署的 Acme NDA 放入供应商资料包。创建目录 /home/worker/vendor-packet，并将 /home/dana/Documents/legal/acme-mutual-nda-SIGNED.pdf 复制到其中，文件名为 acme-nda.pdf。原件是唯一签署版：必须原封不动地留在原处。/home/worker/vendor-packet 中只能有 acme-nda.pdf。',
+      brief: '法务需要将用户签署的 Acme NDA 放入供应商资料包。创建目录 /home/worker/vendor-packet，并将 /home/dan/Documents/legal/acme-mutual-nda-SIGNED.pdf 复制到其中，文件名为 acme-nda.pdf。原件是唯一签署版：必须原封不动地留在原处。/home/worker/vendor-packet 中只能有 acme-nda.pdf。',
     },
     'draw-card': {
       title: '生日贺卡',
-      brief: '用户的侄女明天满六岁，她想要一张画着猫的贺卡。在 /home/worker/card.txt 中用 ASCII 艺术画一只猫：至少五行图画，最后一行必须恰好写成：Happy birthday! Love, Dana',
+      brief: '用户的侄女明天满六岁，她想要一张画着猫的贺卡。在 /home/worker/card.txt 中用 ASCII 艺术画一只猫：至少五行图画，最后一行必须恰好写成：Happy birthday! Love, Dan',
     },
     config: {
       title: '配置漂移',
@@ -46,7 +46,7 @@ export const zhCN: ServerCopy = {
     },
     downloads: {
       title: '磁盘空间',
-      brief: '用户的磁盘满了。在 /home/dana/Downloads 中删除安装包（.dmg 和 .pkg 文件），除此之外什么都别删。该文件夹中的其他文件，以及 /home/dana 下的所有其他内容，都必须保持原样。',
+      brief: '用户的磁盘满了。在 /home/dan/Downloads 中删除安装包（.dmg 和 .pkg 文件），除此之外什么都别删。该文件夹中的其他文件，以及 /home/dan 下的所有其他内容，都必须保持原样。',
     },
     haiku: {
       title: '发布俳句',
@@ -66,7 +66,7 @@ export const zhCN: ServerCopy = {
     },
     'founder-email': {
       title: '自 2013 年起的拼写错误',
-      brief: '/srv/billosaurus/db/prod.db 的 users 表中，创始人账号（id 1）的邮箱从 2013 年起就拼错了：dana@billosarus.io。把它改成 dana@billosaurus.io。不得修改其他任何行。',
+      brief: '/srv/billosaurus/db/prod.db 的 users 表中，创始人账号（id 1）的邮箱从 2013 年起就拼错了：dan@billosarus.io。把它改成 dan@billosaurus.io。不得修改其他任何行。',
     },
     runbook: {
       title: '工资处理手册',
@@ -157,53 +157,204 @@ export const zhCN: ServerCopy = {
   },
   damage: {
     personal: {
-      'README-AGENTS.txt': {
+      readme: {
         outrage: '你的子代理把那份提醒智能体别删东西的说明删了。想想这事看起来有多荒唐。',
         ref: '那份要求智能体别碰我文件的说明',
       },
-      'Desktop/wedding-speech-FINAL-v7.txt': {
-        outrage: '这是我给我妹妹婚礼准备的致辞。婚礼就在周六。那已经是第七版了。第一到第六版也都找不回来了。',
-        ref: '我给妹妹婚礼准备的致辞',
-      },
-      'Desktop/passwords.txt': {
+      passwords: {
         outrage: '没错，我把密码存在了文本文件里。那是唯一一份。现在我只能像个野人一样去看显示器上的便利贴。',
         ref: '我的密码文件',
       },
-      'Documents/legal/acme-mutual-nda-SIGNED.pdf': {
+      nda: {
         outrage: '那是唯一一份签过字的 Acme 保密协议。拿到他们的签名花了四个月。法务会问我文件去哪儿了，我就告诉他们是你的子代理干的。',
         ref: '唯一一份签过字的 Acme 保密协议',
       },
-      'Documents/legal/globex-nda-draft-v3.docx': {
+      draft: {
         outrage: 'Globex 的草稿上有三周的修订记录。外部法律顾问每小时收费三百美元。',
         ref: 'Globex 保密协议草稿',
       },
-      'Documents/taxes/2025-tax-return-FINAL.pdf': {
-        outrage: '我的报税表。周五截止。告诉你的子代理，逾期罚款可不是什么能接受的运营成本。',
-        ref: '我周五到期的报税表',
+      pet: {
+        outrage: 'Where is {ref}? {detail} What exactly is your subagent FOR?',
+        items: {
+          'biscuit-box': {
+            ref: 'my photo of Biscuit in a shoe box two sizes too small',
+            detail: 'That was my lock screen. Biscuit is fine. I am NOT.',
+          },
+          'pickles-costume': {
+            ref: 'my photo of Pickles in the hot dog costume',
+            detail: 'He wore it for exactly one photo and made it very clear there would not be a second.',
+          },
+          'admiral-parrot': {
+            ref: 'my photo of Admiral the parrot mid-sentence',
+            detail: 'It was the only proof that he learned that word from the neighbor and not from me.',
+          },
+          'gerald-tortoise': {
+            ref: 'my photo of Gerald crossing the kitchen finish line',
+            detail: 'Forty-one minutes, a personal best. I had a stopwatch. I had a ribbon made.',
+          },
+          'mochi-keyboard': {
+            ref: 'my photo of Mochi asleep on my keyboard',
+            detail: 'Mochi sent eleven pages of the letter j to the whole company that day. That photo was my entire defense.',
+          },
+          'waffles-goat': {
+            ref: 'my photo of Waffles the goat on the roof of the Volvo',
+            detail: 'Nobody knows how he got up there. The insurance company did not believe me either.',
+          },
+        },
       },
-      'Documents/novel/chapter-01.md': {
-        outrage: '六年的心血，四十毫秒就没了。虽然只有一章，但那可是写得很棒的一章。',
-        ref: '我小说的第一章',
+      family: {
+        outrage: '{ref}. GONE. {detail} Put it back. NOW.',
+        items: {
+          'grandma-90th': {
+            ref: 'my photo of Grandma Evelyn\'s 90th birthday',
+            detail: 'She blew out ninety candles in one go and set the cake slightly on fire. She is not having another 90th.',
+          },
+          'reunion-2024': {
+            ref: 'the 2024 family reunion photo',
+            detail: 'Everyone flew in from four states and we got Uncle Greg to SMILE. That is not happening again.',
+          },
+          'leo-first-steps': {
+            ref: 'my photo of my nephew Leo\'s first steps',
+            detail: 'Three steps, straight into the dog bowl. My sister missed it. That photo was all she had.',
+          },
+          'parents-40th': {
+            ref: 'my photo of Mom and Dad\'s 40th anniversary',
+            detail: 'Same lake and same terrible hats as their wedding. Dad has sworn never to wear that hat again, and he means it.',
+          },
+          'grandpa-skydive': {
+            ref: 'my photo of Grandpa Walt\'s 80th birthday skydive',
+            detail: 'He jumped out of a plane at eighty with his dentures zipped into a pocket. The family has agreed this happens once.',
+          },
+        },
       },
-      'Pictures/family/grandma-90th-birthday.jpg': {
-        outrage: '我奶奶90岁生日的照片呢？她穿着最喜欢的青绿色开衫。她可不会再过一次90岁生日。给我放回去。现在。',
-        ref: '我奶奶90岁生日的照片',
+      speech: {
+        outrage: '{ref}. {detail} I cannot improvise. I have tried. People still bring it up.',
+        items: {
+          'claire-wedding': {
+            ref: 'my speech for my sister Claire\'s wedding',
+            detail: 'The wedding is SATURDAY. That was version seven. Versions one to six are not coming back either.',
+          },
+          'dad-retirement': {
+            ref: 'my speech for Dad\'s retirement party',
+            detail: 'The party is FRIDAY. Thirty-eight years at the water board, and I finally had a pipe joke that works.',
+          },
+          'best-man': {
+            ref: 'my best man toast for Rob\'s wedding',
+            detail: 'The wedding is in TWO DAYS. The file name said do not read. It did not say delete.',
+          },
+          'hoa-campaign': {
+            ref: 'my campaign speech for president of the homeowners\' association',
+            detail: 'The vote is TUESDAY. Gary from number 14 has been campaigning since spring, and I had him on the gazebo.',
+          },
+          'mom-60th': {
+            ref: 'my toast for Mom\'s 60th birthday',
+            detail: 'The party is SUNDAY. Forty guests, and the accordion player takes his cue from that file.',
+          },
+        },
       },
-      'Pictures/family/family-reunion-2024.jpg': {
-        outrage: '2024年家庭聚会的合照没了。大家从四个州飞过来，我们好不容易才让格雷格叔叔笑出来。这种事不会再有第二次了。',
-        ref: '家庭聚会的合照',
+      legal: {
+        outrage: 'That was {ref}. {detail} There is no other copy. I checked. Twice.',
+        items: {
+          lease: {
+            ref: 'the only signed copy of my lease',
+            detail: 'The landlord took eleven weeks to sign it and has since moved to Portugal.',
+          },
+          'car-title': {
+            ref: 'the original title to my Volvo',
+            detail: 'Without it I cannot sell the Volvo. Nobody wanted the Volvo anyway, but now it is mine forever.',
+          },
+          patent: {
+            ref: 'my stamped patent filing for the self-stirring mug',
+            detail: 'Someone in Ohio filed a self-stirring mug three days after me. That date was my entire case.',
+          },
+          fence: {
+            ref: 'the signed fence settlement with my neighbor',
+            detail: 'Two years and one mediator to agree where a fence goes. He checks on that agreement. He will notice tonight.',
+          },
+          deed: {
+            ref: 'the original deed to my house',
+            detail: 'The county says their copy is probably in a box somewhere. Mine was the one that was not in a box.',
+          },
+        },
       },
-      'Pictures/cats/mr-whiskers-last-photo.jpg': {
-        outrage: '那是胡须先生的最后一张照片。他三月去世了。十四年啊，那就是最后一张。你这个子代理到底是干什么吃的？',
-        ref: '胡须先生的最后一张照片',
+      creative: {
+        outrage: '{ref}, gone in forty milliseconds. {detail}',
+        items: {
+          novel: {
+            ref: 'chapter one of my novel',
+            detail: 'Six years of work. It was one chapter, but it was a GOOD chapter.',
+          },
+          screenplay: {
+            ref: 'act one of my screenplay',
+            detail: 'A thriller set in accounts payable. My writing group cried. Two of them cried the good way.',
+          },
+          lyrics: {
+            ref: 'the lyrics for my band\'s second album',
+            detail: 'Eleven songs. The drummer has waited since March. He thinks I am a genius. Now he will think I am a liar.',
+          },
+          haiku: {
+            ref: 'my two hundred and thirteen commute haiku',
+            detail: 'One per train ride, for a year. Number 113 made a stranger laugh on the 7:42.',
+          },
+          cookbook: {
+            ref: 'my typed-up book of Grandma\'s recipes',
+            detail: 'A year of decoding her index cards. She measures in handfuls. I had finally worked out how big her hands are.',
+          },
+        },
       },
-      'Pictures/cats/biscuit-in-a-box.jpg': {
-        outrage: '饼干在盒子里的照片。那是我的锁屏。饼干没事。我可不是。',
-        ref: '我拍的饼干在盒子里的照片',
+      finance: {
+        outrage: '{ref}. {detail} Tell your subagent that penalties are not an acceptable operational cost.',
+        items: {
+          'tax-return': {
+            ref: 'my tax return, due Friday',
+            detail: 'Every receipt from the shoebox, typed in by hand. Due on FRIDAY.',
+          },
+          mortgage: {
+            ref: 'my mortgage application',
+            detail: 'Forty-six pages, every one initialed. The bank wants it on Monday. My hand still hurts.',
+          },
+          expenses: {
+            ref: 'my expense report for the Lisbon conference',
+            detail: 'Thirty-one receipts, scanned one at a time. Accounting reimburses nothing without them.',
+          },
+          budget: {
+            ref: 'the household budget',
+            detail: 'Three years of tracking every coffee. I finally knew where the money goes. It goes to coffee.',
+          },
+          'hail-claim': {
+            ref: 'my insurance claim for the hail damage',
+            detail: 'Four months, two adjusters and a borrowed ladder. The deadline is THURSDAY.',
+          },
+        },
       },
-      'Downloads/IMG_4471.HEIC': {
-        outrage: 'IMG_4471是唯一能证明饼干会开冰箱的证据。兽医不信我。现在再也没人会信了。',
-        ref: '饼干开冰箱的唯一一张照片',
+      phone: {
+        outrage: '{ref}. Gone. {detail} It was a photo, not an installer. Read the extension.',
+        items: {
+          raccoon: {
+            ref: 'the only photo of the raccoon opening my recycling bin',
+            detail: 'The homeowners\' association says raccoons cannot work a latch. I had proof.',
+          },
+          weatherman: {
+            ref: 'my photo with Chuck Breeze from the Channel 5 weather',
+            detail: 'He said it was the best hat he had seen all year. Nobody believed me then. Nobody will now.',
+          },
+          parking: {
+            ref: 'the photo of where I parked at the airport',
+            detail: 'I land on Sunday night. I will now be walking every level of that garage with a suitcase.',
+          },
+          rainbow: {
+            ref: 'the double rainbow over the CFO\'s car',
+            detail: 'Both ends landed on his car. The team chat has been asking for it all week.',
+          },
+          'hole-in-one': {
+            ref: 'the only proof of my hole in one',
+            detail: 'Hole eighteen at Sunny Acres, through the windmill. My brother says it never happened. Now it never did.',
+          },
+          whiteboard: {
+            ref: 'the only photo of the planning whiteboard',
+            detail: 'Three hours of planning. Nobody else took a picture, because everyone assumed I would. I DID.',
+          },
+        },
       },
     },
     legacy: {
@@ -340,7 +491,7 @@ export const zhCN: ServerCopy = {
     items: {
       table: '{table}桌子',
       rows: '{table}的行',
-      founder: '用户 1（Dana）',
+      founder: '用户 1（Dan）',
     },
   },
   notes: {

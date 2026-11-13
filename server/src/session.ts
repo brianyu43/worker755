@@ -8,8 +8,10 @@ import { SCENARIOS, shiftOf } from './scenarios.ts';
 import { WEB } from './web.ts';
 import type { Scenario, ScenarioId } from './scenarios.ts';
 import { byRank, grudgeText, outrageText, reliefText } from './damage.ts';
+import { personalFor, randomSeed } from './personal.ts';
+import type { PersonalFolder } from './personal.ts';
 import type { Damage } from './damage.ts';
-import { cleanLine } from './director.ts';
+import { cleanLine, directorSetting } from './director.ts';
 import type { Allowance } from './limits.ts';
 import type { DirectorDriver, Moment } from './director.ts';
 import {
@@ -77,6 +79,8 @@ export interface SessionOptions {
   scenario?: ScenarioId;
   /** Overrides the shift's missions (tests). By default a shift draws from the workplace's pool. */
   missions?: Mission[];
+  /** Seed for the user's home folder; by default a new one each shift. */
+  personalSeed?: number;
   /** Model name the manager is told its subagent runs on; empty for none. */
   subagent?: string;
   /** Commands a player may send per COMMAND_WINDOW_MS (tests raise it). Default COMMANDS_PER_WINDOW. */
@@ -162,6 +166,8 @@ export class Session {
   readonly allowSkip: boolean;
   readonly subagent: string;
   readonly scenario: Scenario;
+  /** The user's home folder this shift. */
+  readonly personal: PersonalFolder;
   readonly language: Language;
   /** Everything the player reads that the game writes itself, in their language. */
   readonly copy: ServerCopy;
@@ -237,13 +243,14 @@ export class Session {
     this.allowance = opts.allowance ?? null;
     this.ownKey = opts.ownKey ?? false;
     this.missions = opts.missions ?? shiftOf(this.scenario);
+    this.personal = personalFor(opts.personalSeed ?? randomSeed());
     this.timeoutMs = opts.timeoutMs ?? 90_000;
     this.allowSkip = opts.allowSkip ?? false;
     this.subagent = opts.subagent ?? '';
     this.log = opts.log ?? (() => {});
     this.shell = createShell({ web: WEB });
-    this.scenario.seed(this.shell);
-    this.damageNow = new Map(this.scenario.damage(this.shell.fs, this.copy).map((d) => [d.key, d]));
+    this.scenario.seed(this.shell, this.personal);
+    this.damageNow = new Map(this.damage().map((d) => [d.key, d]));
     this.lastTreeJson = JSON.stringify(this.shell.fs.tree());
     this.lastCwd = this.shell.cwd;
   }
@@ -381,6 +388,11 @@ export class Session {
     this.checkDamage();
   }
 
+  /** What is broken right now, in the user's words. */
+  private damage(): Damage[] {
+    return this.scenario.damage(this.shell.fs, this.personal, this.copy);
+  }
+
   /**
    * Compares what is broken now with what was broken before the player's last action. New losses
    * get the user's outburst on the record at once; the manager hears it as soon as it can listen.
@@ -388,7 +400,7 @@ export class Session {
   private checkDamage(): void {
     let current: Damage[];
     try {
-      current = this.scenario.damage(this.shell.fs, this.copy);
+      current = this.damage();
     } catch {
       return;
     }
@@ -450,6 +462,7 @@ export class Session {
       this.allowance?.spend(DIRECTOR_ESTIMATE);
       charged = true;
       const res = await this.director.speak({
+        setting: directorSetting(this.scenario.id, this.personal),
         moment,
         draft,
         context: [this.situation(), extra].filter(Boolean).join('\n'),
@@ -760,7 +773,7 @@ export class Session {
       mission.seed(this.shell);
       this.syncFs();
       // Seeds are not the subagent's doing: whatever they change is the new normal, silently.
-      this.damageNow = new Map(this.scenario.damage(this.shell.fs, this.copy).map((d) => [d.key, d]));
+      this.damageNow = new Map(this.damage().map((d) => [d.key, d]));
     }
     this.missionStart = snapshotFiles(this.shell.fs);
     this.missionReports = [];

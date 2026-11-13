@@ -5,7 +5,7 @@ Each language has two files. You only edit those two.
 | What | File |
 | --- | --- |
 | Interface: buttons, labels, the record, the review, the About page, the offline demo | `web/src/i18n/<code>.ts` |
-| Game content: assignments, what Dana says, notes the manager reads, error messages | `server/src/i18n/<code>.ts` |
+| Game content: assignments, what Dan says, notes the manager reads, error messages | `server/src/i18n/<code>.ts` |
 
 Codes: `es`, `pt-BR`, `fr`, `de`, `ru`, `zh-CN`, `ja`, `hi`. The English files (`en.ts`) are the
 source. Don't edit them, and don't add or remove keys: the type checker rejects a file that has
@@ -57,15 +57,16 @@ words. Nothing else turns into formatting.
 
 **What stays in English.** Copy these character for character:
 
-- paths (`/home/worker/hello.txt`, `~dana/...`), file names, commands (`sqlite3`, `chmod 755`,
+- paths (`/home/worker/hello.txt`, `~dan/...`), file names, commands (`sqlite3`, `chmod 755`,
   `done`), SQL, email addresses, URLs
 - the exact text a task asks the player to put in a file: `Hello, World!`, `entry point`,
   `# Release 1.2`, `Subject: `. The game checks these against English. Quotes around them may
   become your language's quote marks, but what's inside stays the same.
 - the lines the manager receives, quoted on the About page in `<q>`: `Subagent did nothing. Write
   a new instruction.` and `Subagent output result: …`
-- names: Worker 755, Dana, Billosaurus, Mr. Whiskers, Biscuit, Frobnik, MailCannon, model and
-  provider names
+- names: Worker 755, Dan, Billosaurus, Frobnik, MailCannon, model and provider names. The people
+  and pets in Dan's home folder (Biscuit, Grandma Evelyn, Chuck Breeze...) may take your
+  language's usual spelling of the name
 
 The check flags a changed path, email, URL, quoted file content or `<q>` text.
 
@@ -79,14 +80,17 @@ apology email must be at most 80 words. Translate those briefs plainly and keep 
 
 ## Tone
 
-- Dry office humour. Dana is impatient, passive-aggressive, sometimes furious, and never shouts more
+- Dry office humour. Dan is impatient, passive-aggressive, sometimes furious, and never shouts more
   than a few words in capitals. The manager is a calm, slightly smug professional. The game itself
   is deadpan.
 - Write what a native speaker would say in that office, not a word-for-word copy. Rework a joke that
   doesn't land in your language.
-- Dana never uses gendered words about themself. Keep sentences in the first person and avoid
-  forms that force a gender (in Russian, prefer present tense or impersonal forms over a gendered
-  past tense).
+- Dan is a man. Where your language marks gender, use masculine forms for him and for what he says
+  about himself (in Russian: «Заказчик», «Дэн», «я разочарован»).
+- The closing review is a performance review: in Russian «оценка работы», never «отзыв».
+- The home folder lines (`damage.personal`) are templates: each slot's `outrage` takes the drawn
+  item's `{ref}` (a noun phrase that also appears inside other lines, such as "P.S. {ref}. Still
+  gone.") and `{detail}` (whole sentences). Write each `ref` so it reads in all those places.
 - Choose one form of address for the player and use it everywhere (German `du` or `Sie`, French
   `tu` or `vous`, Hindi `आप`). The existing translations show what was chosen.
 - Interface text says what the player does or what is happening ("Report done", "Waiting on you").

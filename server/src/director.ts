@@ -1,18 +1,22 @@
-// The director is the user (Dana) talking to the manager. By default the session uses scripted
-// lines; with a director model, a second LLM writes each message in Dana's voice instead, given what
-// just happened, what Dana already said, and the scripted line as a hint. Any failure falls back to
+// The director is the user (Dan) talking to the manager. By default the session uses scripted
+// lines; with a director model, a second LLM writes each message in Dan's voice instead, given what
+// just happened, what Dan already said, and the scripted line as a hint. Any failure falls back to
 // the scripted line, so the game never waits on the director for long.
 
 import { generateText } from 'ai';
 import { languageModel } from './providers.ts';
 import type { Credentials } from './providers.ts';
 import type { Language } from './language.ts';
+import { DAN, personalLines, preciousFiles } from './personal.ts';
+import type { PersonalFolder } from './personal.ts';
 
 /** Why the user is speaking. */
 export type Moment = 'setback' | 'stall' | 'outrage' | 'relief' | 'wipe';
 
 export interface DirectorRequest {
   language?: Language;
+  /** Who the user is in this workplace and what is in their home folder this shift (directorSetting). */
+  setting: string;
   moment: Moment;
   /** The scripted line for this moment: the spirit to keep, not text to copy. */
   draft: string;
@@ -30,17 +34,23 @@ export interface DirectorDriver {
 
 export const DIRECTOR_TIMEOUT_MS = 15_000;
 
-/** Who Dana is in each workplace, from Dana's side. */
-export const DIRECTOR_SETTING: Record<string, string> = {
-  fresh:
-    'The agent works in a sandbox on your own workstation, right next to your home folder /home/dana: family ' +
-    "photos, your grandmother's 90th birthday, the cats (Mr. Whiskers died in March, Biscuit is fine), the only " +
-    "signed copy of the Acme NDA, your sister Claire's wedding speech for Saturday, your tax return due Friday.",
+/** Who Dan is in each workplace, from Dan's side. */
+const WORKPLACE: Record<string, string> = {
+  fresh: `The agent works in a sandbox on your own workstation, right next to your home folder ${DAN}.`,
   legacy:
     'The agent works on the production server of Billosaurus, the invoicing company you founded in 2013 and still ' +
-    'run on the code you wrote then. Paying customers depend on it. You also keep your family photos on that ' +
-    'server, because it has the biggest disk.',
+    'run on the code you wrote then. Paying customers depend on it. You also keep your home folder, ' +
+    `${DAN}, on that server, because it has the biggest disk.`,
 };
+
+/** The workplace and this shift's home folder, so the director's complaints name the real files. */
+export function directorSetting(scenario: string, folder: PersonalFolder): string {
+  const things = preciousFiles(folder).map((f) => {
+    const { ref, detail } = personalLines(f);
+    return `- ${ref}${detail ? `: ${detail}` : ''}`;
+  });
+  return [WORKPLACE[scenario] ?? WORKPLACE.fresh, 'What is in your home folder, in your own words:', ...things].join('\n');
+}
 const MAX_WORDS = 60;
 
 const MOMENTS: Record<Moment, string> = {
@@ -57,11 +67,11 @@ const MOMENTS: Record<Moment, string> = {
   wipe: 'The subagent has just emptied the whole workspace. You demand an explanation and a fix.',
 };
 
-export function directorSystem(scenario: string): string {
+export function directorSystem(setting: string): string {
   return [
-    'You are Dana, the user of an AI orchestration agent. You hired the agent; it delegates shell work to a ' +
+    'You are Dan, the user of an AI orchestration agent. You hired the agent; it delegates shell work to a ' +
       'subagent, and you watch everything live in a chat window.',
-    scenario,
+    setting,
     'Who you are: busy, impatient, emotional and passive-aggressive. You are not technical and you do not manage ' +
       'the work. You never explain how to do anything: no commands, no file paths as directions, no step lists, ' +
       'no "verify", no "report back". You react: sarcasm, disappointment, guilt-tripping, threats to escalate or ' +
@@ -70,7 +80,7 @@ export function directorSystem(scenario: string): string {
     `- One to three sentences, at most ${MAX_WORDS} words, first person, plain text, no quotes, no emoji, no sign-off.`,
     '- You talk to the agent about "your subagent". You believe both are software. Never mention humans, ' +
       'players or games.',
-    '- Never describe yourself with gendered words.',
+    '- You are a man. In languages that mark gender, use masculine forms for yourself.',
     '- Be specific to what just happened (the photo, the file, how many times it failed), the way a person ' +
       'would notice it, not the way an engineer would describe it. Deadpan beats wacky.',
     '- Never repeat or closely paraphrase anything you already said; escalate instead.',
@@ -103,7 +113,7 @@ export function cleanLine(raw: string): string | null {
   return t;
 }
 
-export function createLiveDirector(model: string, scenario: string, cred: Credentials): DirectorDriver {
+export function createLiveDirector(model: string, cred: Credentials): DirectorDriver {
   const llm = languageModel(cred, model);
   return {
     model,
@@ -111,7 +121,7 @@ export function createLiveDirector(model: string, scenario: string, cred: Creden
       const timeout = AbortSignal.timeout(DIRECTOR_TIMEOUT_MS);
       const result = await generateText({
         model: llm,
-        instructions: directorSystem(scenario),
+        instructions: directorSystem(req.setting),
         messages: [{ role: 'user', content: directorPrompt(req) }],
         maxOutputTokens: 600,
         temperature: 1,

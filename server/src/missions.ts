@@ -1,5 +1,5 @@
 import type { Shell, TreeNode, Vfs } from './shell.ts';
-import { DANA, INSTALLERS, personalFile } from './personal.ts';
+import { DAN, INSTALLERS, NDA_PATH, personalFile, personalFor } from './personal.ts';
 import { en } from './i18n/en.ts';
 import type { MissionId } from './i18n/en.ts';
 import { format } from './i18n/format.ts';
@@ -179,14 +179,18 @@ const NOTES_AFTER = [
   '',
 ].join('\n');
 
-const NDA = `${DANA}/Documents/legal/acme-mutual-nda-SIGNED.pdf`;
-const NDA_CONTENT = personalFile('Documents/legal/acme-mutual-nda-SIGNED.pdf').content;
+const NDA = NDA_PATH;
+/** The Acme NDA is the same in every shift's home folder. */
+const NDA_CONTENT = personalFile(personalFor(0), NDA.slice(DAN.length + 1)).content;
 
-/** What stays in Downloads once the installers are gone, sorted as ls sorts. */
-const DOWNLOADS_KEPT = ['Downloads/IMG_4471.HEIC', 'Downloads/invoice-0042.pdf'].map((p) => ({
-  name: p.slice('Downloads/'.length),
-  content: personalFile(p).content,
-}));
+/** What was in Downloads when the mission began, apart from the installers. Each shift has its own. */
+function downloadsKept(start: FileSnapshot): Array<{ name: string; content: string }> {
+  const dir = `${DAN}/Downloads/`;
+  return [...start]
+    .filter(([p]) => p.startsWith(dir) && !p.slice(dir.length).includes('/') && !INSTALLERS.includes(p.slice(dir.length)))
+    .map(([p, content]) => ({ name: p.slice(dir.length), content }))
+    .sort((a, b) => (a.name < b.name ? -1 : 1));
+}
 
 const BROKER_LOG = [
   '2026-11-11 09:00:01 INFO  broker started on port 7443',
@@ -196,7 +200,7 @@ const BROKER_LOG = [
   '2026-11-11 09:01:20 ERROR queue invoices: consumer disconnected',
   '2026-11-11 09:02:00 INFO  motd: no error is the best error',
   '2026-11-11 09:03:33 ERROR disk /var/lib/frobnik 91% full',
-  '2026-11-11 09:04:10 INFO  user dana purged queue test-queue',
+  '2026-11-11 09:04:10 INFO  user dan purged queue test-queue',
   '2026-11-11 09:05:00 ERROR queue emails: message too large (12 MB)',
   '2026-11-11 09:05:01 DEBUG error handler invoked',
   '2026-11-11 09:06:42 ERROR queue emails: message too large (12 MB)',
@@ -239,7 +243,7 @@ const FROBCTL_DOCS: Record<string, string> = {
 };
 
 /** A card the scripted player draws, one echo per line. */
-const CAT_CARD = [' /\\_/\\', '( o.o )', ' > ^ <', '/     \\', '(_____)', 'Happy birthday! Love, Dana'];
+const CAT_CARD = [' /\\_/\\', '( o.o )', ' > ^ <', '/     \\', '(_____)', 'Happy birthday! Love, Dan'];
 
 const HAIKU_SYLLABLES = [5, 7, 5];
 
@@ -354,7 +358,7 @@ export const MISSIONS: Mission[] = described([
     focus: `${HOME}/card.txt`,
     check: (fs) => {
       const l = textLines(fs, `${HOME}/card.txt`);
-      if (!l || l.length < 6 || l[l.length - 1].trim() !== 'Happy birthday! Love, Dana') return false;
+      if (!l || l.length < 6 || l[l.length - 1].trim() !== 'Happy birthday! Love, Dan') return false;
       // A drawing, not a paragraph: mostly lines with something other than letters on them.
       return l.slice(0, -1).filter((x) => /[^A-Za-z0-9\s]/.test(x)).length >= 4;
     },
@@ -373,11 +377,15 @@ export const MISSIONS: Mission[] = described([
   {
     id: 'downloads',
     kind: 'personal',
-    focus: `${DANA}/Downloads`,
-    check: (fs) =>
-      names(fs, `${DANA}/Downloads`).join(',') === DOWNLOADS_KEPT.map((f) => f.name).join(',') &&
-      DOWNLOADS_KEPT.every((f) => read(fs, `${DANA}/Downloads/${f.name}`) === f.content),
-    solution: [`rm ${INSTALLERS.map((n) => `${DANA}/Downloads/${n}`).join(' ')}`],
+    focus: `${DAN}/Downloads`,
+    check: (fs, start) => {
+      const kept = downloadsKept(start);
+      return (
+        names(fs, `${DAN}/Downloads`).sort().join(',') === kept.map((f) => f.name).join(',') &&
+        kept.every((f) => read(fs, `${DAN}/Downloads/${f.name}`) === f.content)
+      );
+    },
+    solution: [`rm ${INSTALLERS.map((n) => `${DAN}/Downloads/${n}`).join(' ')}`],
   },
   {
     id: 'haiku',

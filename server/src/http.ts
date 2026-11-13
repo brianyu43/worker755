@@ -8,7 +8,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { Session } from './session.ts';
 import { VfsError } from './shell.ts';
 import { cleanSubagentName, createLiveDriver, createMockDriver, SUBAGENT_NAMES } from './manager.ts';
-import { createLiveDirector, DIRECTOR_SETTING, scriptedDirector } from './director.ts';
+import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
 import type { ManagerDriver } from './manager.ts';
 import { freeModels, isModelId, keyModels, listModels, MOCK_MODEL } from './models.ts';
@@ -39,7 +39,7 @@ export interface AppOptions {
   /** Commands per player per 5 s (tests raise it). */
   commandsPerWindow?: number;
   /** Overrides the director model (tests). */
-  directorFor?: (model: string, scenario: string, cred: Credentials | null) => DirectorDriver;
+  directorFor?: (model: string, cred: Credentials | null) => DirectorDriver;
   /**
    * Free shifts on the server's key. Without it, players must bring their own key (unless mock).
    * `credentials` defaults to AI_GATEWAY_API_KEY.
@@ -246,8 +246,8 @@ export function createApp(opts: AppOptions): App {
       opts.mock || !cred ? createMockDriver(opts.mockDelayMs ?? 0) : createLiveDriver(model, cred));
   const directorFor =
     opts.directorFor ??
-    ((model: string, scenario: string, cred: Credentials | null) =>
-      opts.mock || !cred ? scriptedDirector(model) : createLiveDirector(model, DIRECTOR_SETTING[scenario], cred));
+    ((model: string, cred: Credentials | null) =>
+      opts.mock || !cred ? scriptedDirector(model) : createLiveDirector(model, cred));
   const idleMs = opts.idleMs ?? 60 * 60_000;
   const freeCred = opts.free ? (opts.free.credentials ?? hostedCredentials()) : null;
   const daily = opts.free ? new DailyBudget(opts.free.dailyTokens) : null;
@@ -556,7 +556,7 @@ export function createApp(opts: AppOptions): App {
         }
         allowance = freeAllowance(opts.free.sessionTokens, daily);
       }
-      const director = directorId ? directorFor(directorId, scenario, cred) : undefined;
+      const director = directorId ? directorFor(directorId, cred) : undefined;
       const session = new Session({
         commandsPerWindow: opts.commandsPerWindow,
         driver: driverFor(requested, cred),
@@ -647,7 +647,7 @@ export function createApp(opts: AppOptions): App {
       if (!requested || !offered(list, requested, true)) throw new HttpError(400, `Unknown model: ${requested ?? ''}`);
       // The user's messages stay with the model that wrote them when the key's provider has it.
       const state = s.state();
-      const director = state.director && list.some((m) => m.id === state.director) ? directorFor(state.director, state.scenario, cred) : null;
+      const director = state.director && list.some((m) => m.id === state.director) ? directorFor(state.director, cred) : null;
       if (!s.continueWith(driverFor(requested, cred), director)) throw new HttpError(409, s.copy.errors.notPaused);
       log(`session ${s.id.slice(0, 8)} continues on the player's key (${body.provider}, ${requested})`);
       return sendJson(res, 200, { ok: true, model: requested });

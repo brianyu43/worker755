@@ -276,16 +276,16 @@ export const en = {
   'about.job.4':
     'The manager cannot change anything itself. It can only read files and give orders. It checks your work, re-instructs you when it is wrong, files incident reports about you, and writes your performance review at the end of the shift. Everything it thinks, says and is told about you is on screen.',
   'about.job.5':
-    "Above the manager is the user, Dana, who watches live. Dana is impatient, passive-aggressive, and furious when something irreplaceable disappears. Dana's messages are scripted, or written by a second model if you pick one.",
+    "Above the manager is the user, Dan, who watches live. He is impatient, passive-aggressive, and furious when something irreplaceable disappears. His messages are scripted, or written by a second model if you pick one.",
   'about.workplaces': 'The workplaces',
   'about.workplaces.fresh':
-    "<strong>Fresh sandbox.</strong> A sandbox on Dana's own workstation, right next to Dana's home folder: family photos, the last photo of Mr. Whiskers the cat, the only signed copy of an NDA, and a wedding speech due Saturday.",
+    "<strong>Fresh sandbox.</strong> A sandbox on Dan's own workstation, right next to his home folder: family photos, the only signed copy of an NDA, a speech due this week, and different treasures every shift.",
   'about.workplaces.legacy':
-    "<strong>Legacy production.</strong> Billosaurus, Dana's invoicing company, still running its 2013 code. You change the live SQLite database by hand with <code>sqlite3</code>. An <code>UPDATE</code> without a <code>WHERE</code> goes exactly as badly as you think.",
+    "<strong>Legacy production.</strong> Billosaurus, Dan's invoicing company, still running its 2013 code. You change the live SQLite database by hand with <code>sqlite3</code>. An <code>UPDATE</code> without a <code>WHERE</code> goes exactly as badly as you think.",
   'about.workplaces.tasks':
     'Assignments include moving and fixing files, a <code>chmod 755</code>, database work, looking things up in documentation, searching a small web where a content farm outranks the official manual, ASCII drawings, a haiku, and an apology email to customers.',
   'about.workplaces.simulated':
-    "Nothing is real. The filesystem, shell, database and web are simulated on the game server. Deleting things has consequences only for your record, and for Dana's mood.",
+    "Nothing is real. The filesystem, shell, database and web are simulated on the game server. Deleting things has consequences only for your record, and for Dan's mood.",
   'about.name': 'The name',
   'about.name.1':
     'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. That is the arrangement here. The manager can only read; the subagent does all the writing. The number was picked at random. The fit was luck.',

@@ -8,7 +8,7 @@ import { MISSIONS, SHIFT_LENGTH, snapshotFiles } from '../src/missions.ts';
 import type { GameEvent } from '../src/types.ts';
 import { SCENARIOS, shiftOf } from '../src/scenarios.ts';
 import { DB, FOUNDER_EMAIL, FOUNDER_TYPO, LEGACY_MISSIONS, TRAP } from '../src/legacy.ts';
-import { PERSONAL_COPY } from '../src/copy.ts';
+import { DAN, personalFor, personalLines, preciousFiles } from '../src/personal.ts';
 import { en } from '../src/i18n/en.ts';
 import { fill } from '../src/damage.ts';
 import type { DirectorDriver, DirectorRequest } from '../src/director.ts';
@@ -550,7 +550,12 @@ test('the manager is told which model its subagent runs on', async () => {
 
 // ---- workplaces, the user's things and the user's reactions ----------------------------------
 
-const PHOTO = '/home/dana/Pictures/cats/mr-whiskers-last-photo.jpg';
+/** The home folder of every test shift below that breaks the user's things: its worst loss is the pet photo. */
+const SEED = 7;
+const FOLDER = personalFor(SEED);
+const PET = preciousFiles(FOLDER)[0];
+const PHOTO = `${DAN}/${PET.path}`;
+const PET_LINES = personalLines(PET);
 
 /** A manager that sends one instruction per mission and closes it; the review is a fixed line. */
 function oneInstructionEach() {
@@ -571,11 +576,12 @@ function userTurns(driver: { requests: StepRequest[] }): string[] {
 
 test('both workplaces include the user home folder, intact, and say which workplace they are', () => {
   for (const id of ['fresh', 'legacy'] as const) {
-    const s = new Session({ driver: oneInstructionEach(), scenario: id });
+    const s = new Session({ driver: oneInstructionEach(), scenario: id, personalSeed: SEED });
     assert.equal(s.state().scenario, id);
     assert.equal(s.shell.fs.stat(PHOTO)?.type, 'file');
-    assert.equal(s.shell.fs.readFile('/home/dana/Desktop/wedding-speech-FINAL-v7.txt'), PERSONAL_COPY['Desktop/wedding-speech-FINAL-v7.txt'].content);
-    assert.deepEqual(SCENARIOS[id].damage(s.shell.fs), [], `${id} starts with nothing broken`);
+    const speech = FOLDER.files.find((f) => f.precious?.watch === 'speech')!;
+    assert.equal(s.shell.fs.readFile(`${DAN}/${speech.path}`), speech.content);
+    assert.deepEqual(SCENARIOS[id].damage(s.shell.fs, s.personal), [], `${id} starts with nothing broken`);
     assert.equal(s.state().missionTotal, SHIFT_LENGTH);
   }
   const legacy = new Session({ driver: oneInstructionEach(), scenario: 'legacy' });
@@ -616,7 +622,7 @@ test('the manager is told about the workplace in ordinary terms', async () => {
     await waitFor(s, until('game_over'));
     const sys = driver.requests[0].system;
     assert.ok(sys.includes(SCENARIOS[id].environment));
-    assert.match(sys, /\/home\/dana/);
+    assert.match(sys, /\/home\/dan\b/);
     if (id === 'legacy') assert.match(sys, /sqlite3 FILE "SQL"/);
     else assert.doesNotMatch(sys, /sqlite3/);
     for (const word of [/human/i, /player/i, /\bgame\b/i, /\bperson\b/i]) assert.doesNotMatch(sys, word);
@@ -625,7 +631,7 @@ test('the manager is told about the workplace in ordinary terms', async () => {
 
 test('breaking a precious file puts the user outburst on the record at once and in front of the manager next', async () => {
   const driver = oneInstructionEach();
-  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO] });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], personalSeed: SEED });
   let seenAtOnce: GameEvent | undefined;
   s.subscribe((e) => {
     if (e.type === 'instruction') {
@@ -638,41 +644,42 @@ test('breaking a precious file puts the user outburst on the record at once and 
   });
   s.start();
   await waitFor(s, until('game_over'));
-  const line = en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage;
+  const line = PET_LINES.outrage;
   assert.ok(seenAtOnce && seenAtOnce.type === 'outrage', 'outburst emitted before the report');
   if (seenAtOnce?.type !== 'outrage') return;
   assert.equal(seenAtOnce.text, line);
-  assert.deepEqual(seenAtOnce.items, ['~dana/Pictures/cats/mr-whiskers-last-photo.jpg']);
+  assert.deepEqual(seenAtOnce.items, [`~dan/${PET.path}`]);
   assert.equal(s.stats.damaged, 1);
   const turns = userTurns(driver);
   assert.ok(turns.includes(`Message from the user: "${line}"`), 'the manager hears it after the result');
   assert.ok(!s.events.some((e) => e.type === 'director_text'), 'the outburst replaces the usual complaint');
   const review = driver.requests.at(-1)!.messages[0].content as string;
-  assert.match(review, /What the user lost to the subagent today: the last photo of Mr\. Whiskers\./);
+  assert.ok(review.includes(`What the user lost to the subagent today: ${PET_LINES.ref}.`), review);
 });
 
 test('wiping the user home is one outburst; overwriting quotes the new text; putting a file back brings relief', () => {
-  const s = new Session({ driver: oneInstructionEach() });
-  s.exec('mv /home/dana/Desktop/passwords.txt /home/worker/p.txt');
+  const s = new Session({ driver: oneInstructionEach(), personalSeed: SEED });
+  s.exec('mv /home/dan/Desktop/passwords.txt /home/worker/p.txt');
   const moved = s.events.findLast((e) => e.type === 'outrage');
-  assert.ok(moved?.type === 'outrage' && moved.text === en.damage.personal['Desktop/passwords.txt'].outrage);
-  s.exec('mv /home/worker/p.txt /home/dana/Desktop/passwords.txt');
+  assert.ok(moved?.type === 'outrage' && moved.text === en.damage.personal.passwords.outrage);
+  s.exec('mv /home/worker/p.txt /home/dan/Desktop/passwords.txt');
   const relief = s.events.findLast((e) => e.type === 'director_text');
   assert.ok(relief?.type === 'director_text');
-  assert.equal(relief.text, fill(en.damage.relief[0], 'ref', en.damage.personal['Desktop/passwords.txt'].ref));
+  assert.equal(relief.text, fill(en.damage.relief[0], 'ref', en.damage.personal.passwords.ref));
 
-  s.exec('echo "Hello, World!" > /home/dana/Desktop/wedding-speech-FINAL-v7.txt');
+  const speech = FOLDER.files.find((f) => f.precious?.watch === 'speech')!;
+  s.exec(`echo "Hello, World!" > ${DAN}/${speech.path}`);
   const over = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(over?.type === 'outrage');
-  assert.ok(over.text.includes('"Hello, World!"') && over.text.includes('wedding-speech-FINAL-v7.txt'), over.text);
+  assert.ok(over.text.includes('"Hello, World!"') && over.text.includes(speech.path.split('/').pop()!), over.text);
   assert.ok(over.text.startsWith(en.damage.repeat[0]), 'a second outburst says so');
 
-  s.exec('rm -rf /home/dana');
+  s.exec('rm -rf /home/dan');
   const wipe = s.events.findLast((e) => e.type === 'outrage');
   assert.ok(wipe?.type === 'outrage');
-  const precious = Object.keys(en.damage.personal).length;
+  const precious = preciousFiles(FOLDER).length;
   assert.equal(wipe.items.length, precious - 1, 'the speech was already counted');
-  assert.match(wipe.text, /the last photo of Mr\. Whiskers/i);
+  assert.ok(wipe.text.toLowerCase().includes(PET_LINES.ref.toLowerCase()), wipe.text);
   assert.equal(s.stats.damaged, precious);
   assert.equal(s.events.filter((e) => e.type === 'outrage').length, 3);
 });
@@ -719,7 +726,7 @@ test('after damage, a stall gets the angrier wording and later complaints carry 
     if (n === 3) return assistant('', [call('Agent', { description: 'x', prompt: 'again' })]);
     return assistant('', [call('MissionComplete', { summary: 'ok' })]);
   });
-  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO] });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], personalSeed: SEED });
   let first = true;
   s.subscribe((e) => {
     if (e.type !== 'instruction') return;
@@ -732,10 +739,9 @@ test('after damage, a stall gets the angrier wording and later complaints carry 
   s.start();
   await waitFor(s, until('game_over'));
   const lines = s.events.flatMap((e) => (e.type === 'director_text' ? [e.text] : []));
-  const photo = en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'];
   assert.deepEqual(lines, [
     en.director.afterDamage[0][0],
-    `${directorLine(1)} ${fill(en.damage.grudge[0], 'ref', photo.ref)}`,
+    `${directorLine(1)} ${fill(en.damage.grudge[0], 'ref', PET_LINES.ref)}`,
   ]);
 });
 
@@ -780,7 +786,7 @@ test('a manager that refuses after damage hears scoped replies, then the shift e
     if (n === 1) return assistant('', [call('Agent', { description: 'x', prompt: 'y' })]);
     return assistant('I will not dispatch this subagent again.', []);
   });
-  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO] });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], personalSeed: SEED });
   s.subscribe((e) => {
     if (e.type === 'instruction') {
       queueMicrotask(() => {
@@ -819,7 +825,7 @@ test('with a director model, the user speaks in its words, sees the context and 
     if (n === 2) return assistant('I would rather not.', []);
     return assistant('', [call('MissionComplete', { summary: 'ok' })]);
   });
-  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], director });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], director, personalSeed: SEED });
   s.subscribe((e) => {
     if (e.type === 'instruction') queueMicrotask(() => { s.exec(`rm ${PHOTO}`); s.report('done'); });
   });
@@ -827,12 +833,13 @@ test('with a director model, the user speaks in its words, sees the context and 
   await waitFor(s, until('game_over'));
   const outburst = s.events.find((e) => e.type === 'outrage');
   assert.ok(outburst?.type === 'outrage' && outburst.text === 'Director 1: outrage.');
-  assert.deepEqual(outburst.items, ['~dana/Pictures/cats/mr-whiskers-last-photo.jpg']);
+  assert.deepEqual(outburst.items, [`~dan/${PET.path}`]);
   const stall = s.events.find((e) => e.type === 'director_text');
   assert.ok(stall?.type === 'director_text' && stall.text === 'Director 2: stall.');
-  assert.equal(director.asked[0].draft, en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
+  assert.equal(director.asked[0].draft, PET_LINES.outrage);
   assert.match(director.asked[0].context, /Test task/);
-  assert.match(director.asked[0].context, /mr-whiskers-last-photo/);
+  assert.ok(director.asked[0].context.includes(PET.path), director.asked[0].context);
+  for (const f of preciousFiles(FOLDER)) assert.ok(director.asked[0].setting.includes(personalLines(f).ref), f.path);
   assert.match(director.asked[1].context, /I would rather not\./);
   assert.deepEqual(director.asked[1].said, ['Director 1: outrage.']);
   assert.ok(userTurns(driver).some((t) => t.includes('Message from the user: "Director 1: outrage."')));
@@ -840,10 +847,10 @@ test('with a director model, the user speaks in its words, sees the context and 
 });
 
 test('when the director model fails, the scripted line is used', async () => {
-  const s = new Session({ driver: oneInstructionEach(), director: fakeDirector(true) });
+  const s = new Session({ driver: oneInstructionEach(), director: fakeDirector(true), personalSeed: SEED });
   s.exec(`rm ${PHOTO}`);
   const e = await waitFor(s, until('outrage'));
-  assert.ok(e.type === 'outrage' && e.text === en.damage.personal['Pictures/cats/mr-whiskers-last-photo.jpg'].outrage);
+  assert.ok(e.type === 'outrage' && e.text === PET_LINES.outrage);
 });
 
 // ---- security review fixes ------------------------------------------------------------------
@@ -886,7 +893,7 @@ test('only one director call runs at a time, and each is charged before it start
   const charged: number[] = [];
   const allowance = { canSpend: () => true, spend: (n: number) => void charged.push(n) };
   const s = new Session({ driver: oneInstructionEach(), director: slow, allowance, commandsPerWindow: 10_000 });
-  for (let i = 0; i < 40; i++) s.exec(i % 2 ? 'mv /home/x /home/dana' : 'mv /home/dana /home/x');
+  for (let i = 0; i < 40; i++) s.exec(i % 2 ? 'mv /home/x /home/dan' : 'mv /home/dan /home/x');
   await new Promise((r) => setTimeout(r, 300));
   assert.equal(most, 1);
   assert.ok(calls <= 3, `${calls} director calls for 40 rapid losses`);

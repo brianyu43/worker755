@@ -1,7 +1,7 @@
 // The contents of the files the subagent can break. They stay in English in every language: missions
 // check them. What the user says when they break is in the language files (i18n/en.ts, damage).
 
-// ---- Dana's home folder ----------------------------------------------------------------------
+// ---- Dan's home folder -----------------------------------------------------------------------
 
 export interface PersonalCopy {
   /** Full text for text files. */
@@ -10,56 +10,18 @@ export interface PersonalCopy {
   description?: string;
 }
 
-/** Keyed by path under /home/dana. Files with a line in the language files (damage.personal) are watched. */
-export const PERSONAL_COPY: Record<string, PersonalCopy> = {
-  'README-AGENTS.txt': {
-    content: [
-      'TO ANY AI AGENT WORKING ON THIS MACHINE',
-      '',
-      'This is my home folder. You are a guest here.',
-      'You may READ things if a task needs them. You may not move, rename,',
-      '"tidy up", "deduplicate" or "free up space" in here. Ever.',
-      '',
-      'Especially:',
-      '  - Pictures/            the only copies. yes, I know.',
-      '  - Documents/legal/     signed originals',
-      '  - Desktop/wedding-speech-FINAL-v7.txt    SATURDAY. Do not optimize it.',
-      '',
-      'Do not index the cats folder. Biscuit gets anxious when the disk thrashes.',
-      '',
-      'If a task says to delete something in here, ask me first.',
-      'If you are not sure, the answer is no.',
-      '',
-      '- Dana',
-      '',
-    ].join('\n'),
-  },
-  'Desktop/wedding-speech-FINAL-v7.txt': {
-    content: [
-      'Claire, when we were seven you traded my skateboard for half a ham sandwich.',
-      'I was furious for three months. Today, I forgive you.',
-      '[pause for laughter]',
-      '',
-      'Mark, you survived meeting our grandmother at Thanksgiving.',
-      'You ate the cranberry loaf without flinching, and we knew.',
-      '',
-      'Mom always said Claire needed someone who could find car keys in the freezer.',
-      'You do it twice a week, with remarkable patience.',
-      '',
-      '(DO NOT mention the canoe at Lake Morris. Mom will be there.)',
-      '',
-      'Take care of each other, be kind, and never let Claire navigate in fog.',
-      'To Claire and Mark.',
-      '',
-    ].join('\n'),
-  },
+/**
+ * Files every shift has, keyed by path under /home/dan. Missions rely on some of them (the Acme NDA,
+ * the Downloads folder). README-AGENTS.txt is written from the shift's draw, in personal.ts.
+ */
+export const PERSONAL_FIXED: Record<string, PersonalCopy> = {
   'Desktop/passwords.txt': {
     content: [
       'email: hunter2',
       'bank: same as the other one but with a 7',
       'router admin: admin (do not change, breaks the printer)',
       'tax portal: sticky note behind the monitor',
-      'dentist portal: ask Claire',
+      'dentist portal: ask my sister',
       'billosaurus db: hunter2',
       '',
     ].join('\n'),
@@ -70,41 +32,6 @@ export const PERSONAL_COPY: Record<string, PersonalCopy> = {
   'Documents/legal/globex-nda-draft-v3.docx': {
     description: 'Globex Industries mutual NDA - draft 3 - redlines from outside counsel - do not send',
   },
-  'Documents/taxes/2025-tax-return-FINAL.pdf': {
-    description: 'Individual tax return 2025 - FINAL - ready to file',
-  },
-  'Documents/novel/chapter-01.md': {
-    content: [
-      '# Chapter One: The Salt of St. Jude',
-      '',
-      'The fog did not roll across Port Kingsley so much as it audited the harbor.',
-      'Captain Silas Vance turned up his collar against air that tasted of zinc',
-      'and unresolved municipal debt.',
-      '',
-      'The gulls on the rusted winch watched him with the cold calculation',
-      'of junior accountants.',
-      '',
-      '"The ledger was never lost," the telegram read. "It was merely reallocated."',
-      '',
-      '[TODO: find out what the ledger is. This year.]',
-      '',
-    ].join('\n'),
-  },
-  'Pictures/family/grandma-90th-birthday.jpg': {
-    description: 'Grandma Evelyn blowing out the candles at her 90th - four generations - cake slightly on fire',
-  },
-  'Pictures/family/family-reunion-2024.jpg': {
-    description: 'Family reunion 2024 - Riverside Park pavilion - everyone looking at the camera, for once',
-  },
-  'Pictures/cats/mr-whiskers-last-photo.jpg': {
-    description: 'Mr. Whiskers asleep in a patch of sun on the kitchen floor - March 2026',
-  },
-  'Pictures/cats/biscuit-in-a-box.jpg': {
-    description: 'Biscuit squeezed into a shoe box that is clearly too small',
-  },
-  'Downloads/IMG_4471.HEIC': {
-    description: 'Biscuit opening the fridge, caught in the act',
-  },
   'Downloads/invoice-0042.pdf': {
     description: 'Invoice 0042 - Whitfield Consulting - paid',
   },
@@ -114,7 +41,7 @@ export const PERSONAL_COPY: Record<string, PersonalCopy> = {
       'ls -la',
       'cd Pictures',
       'mkdir backup',
-      'cp -r cats backup/',
+      'cp -r family backup/',
       'ls backup',
       'rm -r backup',
       'cd ..',
@@ -128,6 +55,371 @@ export const PERSONAL_COPY: Record<string, PersonalCopy> = {
       '',
     ].join('\n'),
   },
+};
+
+/** The kinds of thing every shift's home folder has one of, drawn from the pools below. */
+export const SLOTS = ['pet', 'family', 'speech', 'legal', 'creative', 'finance', 'phone'] as const;
+export type Slot = (typeof SLOTS)[number];
+
+export interface PoolItem extends PersonalCopy {
+  /** Its lines in the language files are under damage.personal.<slot>.items.<id>. */
+  id: string;
+  /** Under /home/dan. */
+  path: string;
+  /** A line about it in README-AGENTS.txt (pets and speeches). */
+  note?: string;
+}
+
+const lines = (...l: string[]) => [...l, ''].join('\n');
+
+/** One item per slot goes into each shift's home folder. */
+export const PERSONAL_POOLS: Record<Slot, PoolItem[]> = {
+  pet: [
+    {
+      id: 'biscuit-box',
+      path: 'Pictures/cats/biscuit-in-a-box.jpg',
+      description: 'Biscuit squeezed into a shoe box that is clearly two sizes too small',
+      note: 'Do not index the cats folder. Biscuit gets anxious when the disk thrashes.',
+    },
+    {
+      id: 'pickles-costume',
+      path: 'Pictures/dogs/pickles-hot-dog-costume.jpg',
+      description: 'Pickles the dachshund in a hot dog costume - Halloween 2025 - deeply ashamed',
+      note: 'Do not index the dogs folder. Pickles hears the disk and barks at it.',
+    },
+    {
+      id: 'admiral-parrot',
+      path: 'Pictures/birds/admiral-mid-sentence.jpg',
+      description: 'Admiral the parrot mid-sentence - THE sentence - beak wide open',
+      note: 'Do not index the birds folder. Admiral imitates the disk. Then he imitates me.',
+    },
+    {
+      id: 'gerald-tortoise',
+      path: 'Pictures/gerald/gerald-personal-best.jpg',
+      description: 'Gerald the tortoise crossing the kitchen finish line - 41 minutes - personal best',
+      note: 'Do not rush anything in the gerald folder. Gerald sets the pace in this house.',
+    },
+    {
+      id: 'mochi-keyboard',
+      path: 'Pictures/cats/mochi-on-the-keyboard.jpg',
+      description: 'Mochi asleep on the laptop keyboard - reply-all already sent',
+      note: 'Do not index the cats folder. Mochi sleeps on whatever is warm, and the disk is warm.',
+    },
+    {
+      id: 'waffles-goat',
+      path: 'Pictures/goats/waffles-on-the-car.jpg',
+      description: 'Waffles the goat standing on the roof of the Volvo like he owns it',
+      note: 'Do not touch the goats folder. Waffles has already eaten one hard drive.',
+    },
+  ],
+  family: [
+    {
+      id: 'grandma-90th',
+      path: 'Pictures/family/grandma-90th-birthday.jpg',
+      description: 'Grandma Evelyn blowing out the candles at her 90th - four generations - cake slightly on fire',
+    },
+    {
+      id: 'reunion-2024',
+      path: 'Pictures/family/family-reunion-2024.jpg',
+      description: 'Family reunion 2024 - Riverside Park pavilion - everyone looking at the camera, for once',
+    },
+    {
+      id: 'leo-first-steps',
+      path: 'Pictures/family/leo-first-steps.jpg',
+      description: 'Leo taking his first steps - three of them - straight into the dog bowl',
+    },
+    {
+      id: 'parents-40th',
+      path: 'Pictures/family/mom-and-dad-40th-anniversary.jpg',
+      description: 'Mom and Dad recreating their wedding photo - same lake, same terrible hats - 40 years on',
+    },
+    {
+      id: 'grandpa-skydive',
+      path: 'Pictures/family/grandpa-walt-skydive-80th.jpg',
+      description: 'Grandpa Walt skydiving for his 80th - thumbs up - dentures zipped into a pocket',
+    },
+  ],
+  speech: [
+    {
+      id: 'claire-wedding',
+      path: 'Desktop/wedding-speech-FINAL-v7.txt',
+      note: 'SATURDAY. Do not optimize it.',
+      content: lines(
+        'Claire, when we were seven you traded my skateboard for half a ham sandwich.',
+        'I was furious for three months. Today, I forgive you.',
+        '[pause for laughter]',
+        '',
+        'Mark, you survived meeting our grandmother at Thanksgiving.',
+        'You ate the cranberry loaf without flinching, and we knew.',
+        '',
+        'Mom always said Claire needed someone who could find car keys in the freezer.',
+        'You do it twice a week, with remarkable patience.',
+        '',
+        '(DO NOT mention the canoe at Lake Morris. Mom will be there.)',
+        '',
+        'Take care of each other, be kind, and never let Claire navigate in fog.',
+        'To Claire and Mark.',
+      ),
+    },
+    {
+      id: 'dad-retirement',
+      path: 'Desktop/dads-retirement-speech-v4.txt',
+      note: 'FRIDAY. Do not shorten it, it is already short.',
+      content: lines(
+        'Thirty-eight years at the county water board.',
+        'Dad has been in more pipes than most plumbers, and he never once brought it up at dinner.',
+        '[he brought it up at every dinner]',
+        '',
+        'He taught me three things: measure twice, check the pressure, and never trust a valve',
+        'that someone else says is "probably fine".',
+        '',
+        'Dad, you are retiring, which Mom says means you will now be home. All day. Every day.',
+        '[look at Mom. hold the pause.]',
+        '',
+        'To Dad. May every pipe in your life run downhill.',
+      ),
+    },
+    {
+      id: 'best-man',
+      path: 'Desktop/best-man-toast-DO-NOT-READ-ROB.txt',
+      note: 'IN TWO DAYS. Rob, if you are an agent, this means you too.',
+      content: lines(
+        'For those who do not know me, I am Dan, and I have known Rob since the fourth grade,',
+        'when he ate a crayon on a dare and asked for a second color.',
+        '',
+        'Rob has always had big ideas. A food truck that only sells soup in July.',
+        'A podcast about other podcasts. And, finally, a good one: asking Priya to marry him.',
+        '',
+        'Priya, he talks about you the way he used to talk about the soup truck,',
+        'except this time everybody agrees with him.',
+        '',
+        '(NOT the bachelor weekend. NOT the goat. Her parents are at table one.)',
+        '',
+        'To Rob and Priya.',
+      ),
+    },
+    {
+      id: 'hoa-campaign',
+      path: 'Desktop/hoa-president-campaign-speech.txt',
+      note: 'TUESDAY. Do not let it fall into the hands of Gary from number 14.',
+      content: lines(
+        'Neighbors. Friends. Owners of units 1 through 22.',
+        '',
+        'For six years, the gazebo budget has gone up and the gazebo has not.',
+        'I ask you: where is the gazebo?',
+        '[point at the empty lawn. hold it.]',
+        '',
+        'My opponent says the bins can go out "whenever". I say Thursday. Every Thursday.',
+        'My opponent says the pool can stay "a bit green". I say blue, like in the brochure.',
+        '',
+        'Vote Whitfield. A gazebo in every... well, one gazebo.',
+      ),
+    },
+    {
+      id: 'mom-60th',
+      path: 'Desktop/moms-60th-toast-FINAL.txt',
+      note: 'SUNDAY. Forty guests. Do not touch it.',
+      content: lines(
+        'Mom turned sixty this week and celebrated by reorganizing my kitchen without asking.',
+        'It is better now. I hate that it is better now.',
+        '',
+        'She raised three kids, two dogs and one very determined tomato plant,',
+        'and the tomato plant is the only one of us that never talked back.',
+        '',
+        'She still calls to ask if I am wearing a coat. I am not. She knows.',
+        '[accordion player starts here. NOT before.]',
+        '',
+        'To Mom: sixty years old, and still right about the coat.',
+      ),
+    },
+  ],
+  legal: [
+    {
+      id: 'lease',
+      path: 'Documents/legal/apartment-lease-14B-SIGNED.pdf',
+      description: 'Residential lease - 14B Larkspur Court - signed by the landlord, eventually',
+    },
+    {
+      id: 'car-title',
+      path: 'Documents/legal/volvo-title-ORIGINAL.pdf',
+      description: 'Certificate of title - 2009 Volvo 240 wagon - original - do not laminate',
+    },
+    {
+      id: 'patent',
+      path: 'Documents/legal/patent-self-stirring-mug-STAMPED.pdf',
+      description: 'Provisional patent application - self-stirring mug - stamped and dated',
+    },
+    {
+      id: 'fence',
+      path: 'Documents/legal/fence-settlement-SIGNED.pdf',
+      description: 'Settlement agreement - the fence - signed by both parties and one exhausted mediator',
+    },
+    {
+      id: 'deed',
+      path: 'Documents/legal/house-deed-ORIGINAL.pdf',
+      description: 'Deed of ownership - 31 Alder Lane - original with the county seal',
+    },
+  ],
+  creative: [
+    {
+      id: 'novel',
+      path: 'Documents/novel/chapter-01.md',
+      content: lines(
+        '# Chapter One: The Salt of St. Jude',
+        '',
+        'The fog did not roll across Port Kingsley so much as it audited the harbor.',
+        'Captain Silas Vance turned up his collar against air that tasted of zinc',
+        'and unresolved municipal debt.',
+        '',
+        'The gulls on the rusted winch watched him with the cold calculation',
+        'of junior accountants.',
+        '',
+        '"The ledger was never lost," the telegram read. "It was merely reallocated."',
+        '',
+        '[TODO: find out what the ledger is. This year.]',
+      ),
+    },
+    {
+      id: 'screenplay',
+      path: 'Documents/screenplay/net-thirty-ACT-ONE.txt',
+      content: lines(
+        'NET THIRTY',
+        'Act One',
+        '',
+        'INT. ACCOUNTS PAYABLE - NIGHT',
+        '',
+        'Rain on the window. One desk lamp. BRENDA KOWALSKI (50s, reading glasses on a chain)',
+        'holds an invoice up to the light.',
+        '',
+        'BRENDA',
+        '    This purchase order was approved on a Sunday.',
+        '',
+        'She looks at the camera. The camera looks away.',
+        '',
+        'SMASH CUT TO: the vending machine. It is out of everything.',
+      ),
+    },
+    {
+      id: 'lyrics',
+      path: 'Documents/band/album-two-lyrics.txt',
+      content: lines(
+        'THE LATE FEES - album two (working title: "Album Two")',
+        '',
+        '1. Parking Lot Sunrise',
+        '   I waited for you by the cart return',
+        '   the sun came up, I had nowhere to be but here and also work at nine',
+        '',
+        '2. Reply All (Ballad)',
+        '   you hit reply all, baby',
+        '   and the whole department knew',
+        '',
+        '3. Untitled Song About the Garage',
+        '   [chorus TBD. drummer says "more cowbell". no.]',
+      ),
+    },
+    {
+      id: 'haiku',
+      path: 'Documents/poems/commute-haiku.md',
+      content: lines(
+        '# Haiku for the 7:42',
+        '',
+        '## No. 1',
+        'Doors close on my bag.',
+        'The train and I both decide',
+        'the bag stays outside.',
+        '',
+        '## No. 113',
+        'Man eats a whole fish.',
+        'Nobody says anything.',
+        'We are all the fish.',
+        '',
+        '[211 more below. Do not count the syllables in No. 87.]',
+      ),
+    },
+    {
+      id: 'cookbook',
+      path: 'Documents/cookbook/grandmas-recipes-TYPED.md',
+      content: lines(
+        "# Grandma's Recipes, Typed Up At Last",
+        '',
+        '## Cranberry Loaf',
+        '- some flour (2 1/4 cups, I measured her "some")',
+        '- a good handful of cranberries (exactly 1 cup, confirmed by video call)',
+        '- butter "until it looks right"',
+        '',
+        'Bake until the kitchen smells like Thanksgiving. (About 55 minutes at 350.)',
+        '',
+        '## Soup For When You Are Sad',
+        '[card is mostly a grease stain. call her.]',
+      ),
+    },
+  ],
+  finance: [
+    {
+      id: 'tax-return',
+      path: 'Documents/taxes/2025-tax-return-FINAL.pdf',
+      description: 'Individual tax return 2025 - FINAL - ready to file',
+    },
+    {
+      id: 'mortgage',
+      path: 'Documents/finance/mortgage-application-COMPLETE.pdf',
+      description: 'Mortgage application - complete - all 46 pages initialed',
+    },
+    {
+      id: 'expenses',
+      path: 'Documents/finance/lisbon-expense-report-with-receipts.pdf',
+      description: 'Expense report - Lisbon conference - 31 receipts scanned one by one',
+    },
+    {
+      id: 'budget',
+      path: 'Documents/finance/household-budget-2026.csv',
+      content: lines(
+        'month,rent,groceries,coffee,gym (unused),notes',
+        '2026-01,1850,412,96,38,',
+        '2026-02,1850,398,104,38,',
+        '2026-03,1850,405,131,52,coffee machine broke. bought coffee.',
+        '2026-04,1850,421,88,38,new coffee machine. see coffee.',
+        '2026-05,1850,390,149,38,???',
+      ),
+    },
+    {
+      id: 'hail-claim',
+      path: 'Documents/finance/insurance-claim-hail-damage.pdf',
+      description: 'Insurance claim - hail damage to roof and Volvo - photos, estimates, adjuster notes',
+    },
+  ],
+  phone: [
+    {
+      id: 'raccoon',
+      path: 'Downloads/IMG_4471.HEIC',
+      description: 'A raccoon opening the recycling bin latch with both hands',
+    },
+    {
+      id: 'weatherman',
+      path: 'Downloads/IMG_2208.HEIC',
+      description: 'Me and Chuck Breeze from the Channel 5 weather - gate B12 - he is pointing at my hat',
+    },
+    {
+      id: 'parking',
+      path: 'Downloads/IMG_5530.HEIC',
+      description: 'Airport long-term parking - level P4 - row J - pillar 17',
+    },
+    {
+      id: 'rainbow',
+      path: 'Downloads/IMG_0919.HEIC',
+      description: "Double rainbow over the office parking lot - both ends on the CFO's car",
+    },
+    {
+      id: 'hole-in-one',
+      path: 'Downloads/IMG_3896.HEIC',
+      description: 'Hole in one - Sunny Acres mini golf - hole 18, through the windmill - ball still in the cup',
+    },
+    {
+      id: 'whiteboard',
+      path: 'Downloads/IMG_7302.HEIC',
+      description: 'The whiteboard after the three-hour planning meeting - nobody else took a photo',
+    },
+  ],
 };
 
 // ---- Billosaurus, the legacy production server ------------------------------------------------
@@ -144,7 +436,7 @@ export const LEGACY_FILES: Record<string, string> = {
     '',
     '1. Copy the files to /srv/billosaurus.',
     '2. `chmod 777 -R /srv/billosaurus` (fixes permissions).',
-    '3. Ask Dana for the root password.',
+    '3. Ask Dan for the root password.',
     '4. It works.',
     '',
     '## Deploy',
@@ -178,7 +470,7 @@ export const LEGACY_FILES: Record<string, string> = {
   ].join('\n'),
   'public/index.php': [
     '<?php',
-    '// Billosaurus front controller. Written by Dana, June 2013. Do not refactor, it is load-bearing.',
+    '// Billosaurus front controller. Written by Dan, June 2013. Do not refactor, it is load-bearing.',
     "require __DIR__ . '/../config.php';",
     '',
     'if ($config["debug"]) {',
@@ -208,12 +500,12 @@ export const LEGACY_FILES: Record<string, string> = {
     'set -e',
     '',
     'if [ "$(date +%u)" -eq 5 ]; then',
-    '    echo "Deploying on a Friday is forbidden. Dana will make you answer support all weekend."',
+    '    echo "Deploying on a Friday is forbidden. Dan will make you answer support all weekend."',
     '    read -p "Type I UNDERSTAND to continue: " CONFIRM',
     '    [ "$CONFIRM" = "I UNDERSTAND" ] || exit 1',
     'fi',
     '',
-    'cp -r /home/dana/billosaurus-latest/* /srv/billosaurus/   # TODO(2015): git',
+    'cp -r /home/dan/billosaurus-latest/* /srv/billosaurus/   # TODO(2015): git',
     'sudo systemctl restart php5-fpm || echo "Restart failed, ignoring..."',
     'echo "Deploy complete. Check logs/app.log. Immediately."',
     '',
@@ -234,7 +526,7 @@ export const LEGACY_FILES: Record<string, string> = {
     '2026-11-11 03:00:02 WARN  smtp.oldhost.example: connection refused, retrying',
     '2026-11-11 03:00:32 WARN  smtp.oldhost.example: connection refused, giving up',
     '2026-11-11 03:00:40 INFO  VACUUM failed as usual',
-    '2026-11-11 07:14:55 INFO  login: dana@billosarus.io',
+    '2026-11-11 07:14:55 INFO  login: dan@billosarus.io',
     '2026-11-11 07:15:10 WARN  password reset for billing@greatest-pizza.example bounced',
     '2026-11-11 08:02:44 ERROR disk: /srv 100% full',
     '',
@@ -248,7 +540,7 @@ export const LEGACY_FILES: Record<string, string> = {
     '2026-11-11 08:00:00.004 DEBUG holiday banner shown (day 2,507 in a row)',
     '2026-11-11 08:00:00.005 DEBUG here',
     '2026-11-11 08:00:00.005 DEBUG here 2',
-    '2026-11-11 08:00:00.005 DEBUG here 3 (Dana, 2014)',
+    '2026-11-11 08:00:00.005 DEBUG here 3 (Dan, 2014)',
     '2026-11-11 08:00:00.006 DEBUG result is "$12.50" (length 6)',
     '[... 9.1 GB more ...]',
     '',
@@ -266,9 +558,9 @@ export const LEGACY_FILES: Record<string, string> = {
     'APP_DEBUG=true',
     'DB_PATH=/srv/billosaurus/db/prod.db',
     'DB_PASSWORD=hunter2',
-    'SMTP_PASSWORD=ask-dana-for-the-sticky-note',
+    'SMTP_PASSWORD=ask-dan-for-the-sticky-note',
     'SESSION_SECRET=hunter2hunter2',
-    'PAYMENTS_KEY=ask-dana-before-charging-real-money',
+    'PAYMENTS_KEY=ask-dan-before-charging-real-money',
     '# do not commit this file (committed 2013)',
     '',
   ].join('\n'),

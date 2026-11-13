@@ -9,8 +9,9 @@ out, or don't, and it gets back exactly what a subagent would return: your repor
 transcript, or `Subagent did nothing. Write a new instruction.` Then it checks your work, sends
 corrections, files incident reports, and finally writes your performance review.
 
-Meanwhile Dana, the user who hired the agent, watches the chat. Dana's family photos, the only
-signed NDA and the last photo of Mr. Whiskers are one `rm` away.
+Meanwhile Dan, the user who hired the agent, watches the chat. His family photos, the only signed
+NDA and a speech due this week are one `rm` away, and every shift his home folder holds
+something new to lose.
 
 ![Playing a shift](docs/play.png)
 
@@ -26,7 +27,7 @@ signed NDA and the last photo of Mr. Whiskers are one `rm` away.
 Options on the start screen:
 
 - **Workplace**: a fresh sandbox, or legacy production with a live database.
-- **The director**: scripted lines, or an LLM playing Dana.
+- **The director**: scripted lines, or an LLM playing Dan.
 - **You run on**: the model name your manager believes you are.
 - **Allow skipping failed tasks**: off by default, so the manager can't give up on you.
 
