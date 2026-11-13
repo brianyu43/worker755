@@ -362,6 +362,7 @@ export function SiteLinks({ site }: { site: Pick<ModelList, 'donateUrl' | 'sourc
   return (
     <p className="site-links">
       <a href="/about">{t('links.about')}</a>
+      <a href="/faq">{t('links.faq')}</a>
       {site?.sourceUrl && (
         <a href={site.sourceUrl} target="_blank" rel="noreferrer">
           {t('links.source')}
