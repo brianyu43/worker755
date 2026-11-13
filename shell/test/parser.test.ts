@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, ParseError } from '../src/index.ts';
+import { isIncomplete, parse, ParseError } from '../src/index.ts';
 import { newShell } from './helpers.ts';
 
 const words = (line: string): string[] => {
@@ -43,12 +43,14 @@ test('parse builds pipelines and list operators', () => {
   const items = parse('a | b && c || d; e');
   assert.equal(items.length, 4);
   assert.deepEqual(items.map((i) => i.op), [null, '&&', '||', ';']);
-  assert.equal(items[0].pipeline.length, 2);
+  assert.equal(items[0].pipeline.commands.length, 2);
 });
 
 test('parse records redirects with fds', () => {
   const [item] = parse('cmd > out 2>> err < in 2>&1');
-  const r = item.pipeline[0].redirects.map((x) => [x.fd, x.op]);
+  const cmd = item.pipeline.commands[0];
+  assert.equal(cmd.type, 'simple');
+  const r = cmd.redirects.map((x) => [x.fd, x.op]);
   assert.deepEqual(r, [[1, '>'], [2, '>>'], [0, '<'], [2, '>&']]);
 });
 
@@ -79,14 +81,21 @@ test('syntax errors use bash wording and exit 2', () => {
   }
 });
 
-test('unsupported syntax gives a clear error instead of running', () => {
+test('what this shell cannot do gives a clear error instead of running', () => {
   const { run } = newShell();
-  for (const line of ['echo $(pwd)', 'echo `pwd`', 'sleep 1 &', '(cd /)', 'cat <<EOF', 'echo $((1+1))']) {
+  for (const line of ['diff <(ls) <(ls)', 'select x in a b; do echo; done', 'coproc cat']) {
     const r = run(line);
     assert.match(r.stderr, /not supported/, line);
     assert.notEqual(r.exitCode, 0, line);
   }
-  assert.throws(() => parse('echo $(x)'), ParseError);
+  assert.throws(() => parse('echo $(x'), ParseError);
+});
+
+test('unfinished input is reported as incomplete, so the terminal can ask for more', () => {
+  for (const line of ['if true; then', 'echo "abc', "echo 'x", 'for i in 1 2; do', 'cat <<EOF\nline', 'echo $(ls', 'a &&', 'f() {', 'case x in', 'echo a |', 'echo \\']) {
+    assert.equal(isIncomplete(line), true, line);
+  }
+  for (const line of ['echo hi', 'if true; then echo; fi', 'cat <<EOF\nx\nEOF', 'echo )', '']) assert.equal(isIncomplete(line), false, line);
 });
 
 test('trailing semicolon and empty lines are fine', () => {

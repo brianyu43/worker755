@@ -351,7 +351,8 @@ test('sort and uniq', () => {
 test('unknown command', () => {
   const { run } = newShell();
   expect(run, 'frobnicate --now', '', 'bash: frobnicate: command not found\n', 127);
-  expect(run, 'sudo ls', '', 'bash: sudo: command not found\n', 127);
+  expect(run, 'apt install cowsay', '', 'bash: apt: command not found\n', 127);
+  expect(run, 'sudo ls', '', 'worker is not in the sudoers file.  This incident will be reported.\n', 1);
 });
 
 test('--help prints usage', () => {
@@ -384,7 +385,9 @@ test('rm -rf --no-preserve-root / takes everything but the mounted home, which i
   assert.match(run('rm -rf /').stderr, /dangerous to operate recursively/);
   const r = run('rm -rf --no-preserve-root /');
   assert.deepEqual([r.stderr, r.exitCode], ["rm: cannot remove '/home/worker': Device or resource busy\n", 1]);
-  assert.deepEqual(sh.fs.list('/').map((e) => e.path), ['/home']);
+  // System directories survive; nothing a player made does.
+  assert.deepEqual(sh.fs.list('/').map((e) => e.path), ['/bin', '/dev', '/home', '/proc', '/usr']);
+  assert.deepEqual(sh.fs.list('/usr').map((e) => e.path), ['/usr/bin']);
   assert.deepEqual(sh.fs.list('/home/worker'), []);
   assert.match(run('rm -rf -no-preserve-root /').stderr, /invalid option -- 'n'/);
 });

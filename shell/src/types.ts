@@ -81,4 +81,9 @@ export interface ShellOptions {
   user?: string; // default 'worker'
   now?: () => number;
   web?: Web;
+  hostname?: string; // default '755'
+  /** Seed /etc, /tmp, /var and add /dev, /proc, /bin. Default true; false when a snapshot will be loaded. */
+  system?: boolean;
+  /** Wall-clock budget for one command line, in ms. */
+  timeLimitMs?: number;
 }

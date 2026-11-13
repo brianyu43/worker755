@@ -2,7 +2,7 @@
 
 import type { Command, CommandContext } from './context.ts';
 import {
-  abs, fail, lq, lsTime, modeString, msgOf, nameCompare, pad2, parseOptions, q, statArg, usage,
+  abs, fail, lq, lsTime, modeString, msgOf, nameCompare, ownerOf, pad2, parseOptions, q, statArg, usage,
 } from './context.ts';
 import { errorText, VfsError } from '../vfs.ts';
 import { basename, dirname, isWithin, join } from '../path.ts';
@@ -65,8 +65,9 @@ function lsLong(ctx: CommandContext, entries: LsEntry[], human: boolean): string
   }));
   const lw = Math.max(0, ...rows.map((r) => r.links.length));
   const sw = Math.max(0, ...rows.map((r) => r.size.length));
-  const user = ctx.state.user;
-  return rows.map((r) => `${r.mode} ${r.links.padStart(lw)} ${user} ${user} ${r.size.padStart(sw)} ${r.time} ${r.name}\n`).join('');
+  const owners = entries.map((e) => ownerOf(ctx, e.st.path));
+  const ow = Math.max(0, ...owners.map((o) => o.length));
+  return rows.map((r, k) => `${r.mode} ${r.links.padStart(lw)} ${owners[k].padEnd(ow)} ${owners[k].padEnd(ow)} ${r.size.padStart(sw)} ${r.time} ${r.name}\n`).join('');
 }
 
 /** GNU ls column layout for an 80-column terminal, filled top-to-bottom. */
@@ -612,7 +613,6 @@ export const stat: Command = (ctx) => {
   if (typeof opts === 'number') return opts;
   if (opts.operands.length === 0) return usage(ctx, 'missing operand');
   let status = 0;
-  const user = ctx.state.user;
   for (const arg of opts.operands) {
     const st = statArg(ctx, arg);
     if (typeof st === 'string') {
@@ -622,6 +622,7 @@ export const stat: Command = (ctx) => {
     }
     const size = st.type === 'dir' ? DIR_SIZE : st.size;
     const blk = st.type === 'dir' ? 8 : Math.ceil(st.size / 4096) * 8;
+    const user = ownerOf(ctx, st.path);
     const kind = st.type === 'dir' ? 'directory' : st.size === 0 ? 'regular empty file' : 'regular file';
     const mode = st.mode.toString(8).padStart(4, '0');
     const fmt = opts.values.get('c');
@@ -644,7 +645,7 @@ export const stat: Command = (ctx) => {
       continue;
     }
     const t = statTime(st.mtime);
-    const id = `( 1000/${user.padStart(8)})`;
+    const id = `(${(user === 'root' ? '0' : '1000').padStart(5)}/${user.padStart(8)})`;
     ctx.out(
       `  File: ${arg}\n` +
         `  Size: ${String(size).padEnd(10)}\tBlocks: ${String(blk).padEnd(10)} IO Block: 4096   ${kind}\n` +
@@ -719,109 +720,314 @@ export const tree: Command = (ctx) => {
 
 // ---- find --------------------------------------------------------------------------------
 
-type Test = (shown: string, st: StatResult, depth: number) => boolean;
+
+/** One file as an expression sees it. */
+interface Visit {
+  shown: string;
+  st: StatResult;
+  depth: number;
+}
+
+type Expr = (v: Visit) => boolean;
+
+/** find's expression, parsed: tests, actions, operators. */
+interface FindPlan {
+  expr: Expr;
+  /** True when the expression has an action, so nothing is printed by default. */
+  hasAction: boolean;
+  maxDepth: number;
+  minDepth: number;
+  /** Visit a directory's contents before the directory itself (-depth, -delete). */
+  depthFirst: boolean;
+  /** Batches for `-exec … {} +`, run once the walk ends. */
+  batches: { argv: string[]; paths: string[] }[];
+}
+
+/** Compare a number the way -size, -mtime and friends do: +n is more than n, -n less, n exactly. */
+function numericTest(spec: string): ((n: number) => boolean) | null {
+  const m = /^([+-]?)(\d+)$/.exec(spec);
+  if (!m) return null;
+  const n = Number(m[2]);
+  return m[1] === '+' ? (x) => x > n : m[1] === '-' ? (x) => x < n : (x) => x === n;
+}
 
 export const find: Command = (ctx) => {
   const args = ctx.args;
   let i = 0;
   const paths: string[] = [];
-  while (i < args.length && !args[i].startsWith('-') && args[i] !== '!' && args[i] !== '(') paths.push(args[i++]);
+  while (i < args.length && (!args[i].startsWith('-') || args[i] === '-') && args[i] !== '!' && args[i] !== '(') paths.push(args[i++]);
   if (paths.length === 0) paths.push('.');
 
-  const tests: Test[] = [];
-  let maxDepth = Infinity;
-  let minDepth = 0;
-  let negateNext = false;
+  const plan: FindPlan = { expr: () => true, hasAction: false, maxDepth: Infinity, minDepth: 0, depthFirst: false, batches: [] };
+  let status = 0;
+  let quit = false;
+  const pruned = new Set<string>();
   let lastPredicate = '';
-  const add = (t: Test): void => {
-    const neg = negateNext;
-    negateNext = false;
-    tests.push(neg ? (s, st, d) => !t(s, st, d) : t);
+  class Bad extends Error {}
+  const bad = (message: string): never => {
+    ctx.err(message);
+    throw new Bad();
   };
-  while (i < args.length) {
-    const a = args[i++];
-    const needArg = (): string | null => {
-      if (i >= args.length) {
-        ctx.err(`find: missing argument to \`${a}'\n`);
-        return null;
-      }
-      return args[i++];
-    };
+  const needArg = (a: string): string => {
+    if (i >= args.length) bad(`find: missing argument to \`${a}'\n`);
+    return args[i++];
+  };
+
+  // Recursive descent over: or := and (-o and)* ; and := unary ((-a)? unary)* ; unary := ! unary | ( or ) | primary
+  const parseOr = (): Expr => {
+    let left = parseAnd();
+    while (args[i] === '-o' || args[i] === '-or') {
+      i++;
+      const l = left;
+      const r = parseAnd();
+      left = (v) => l(v) || r(v);
+    }
+    return left;
+  };
+  const parseAnd = (): Expr => {
+    let left = parseUnary();
+    while (i < args.length && args[i] !== '-o' && args[i] !== '-or' && args[i] !== ')' && args[i] !== ',') {
+      if (args[i] === '-a' || args[i] === '-and') i++;
+      const l = left;
+      const r = parseUnary();
+      left = (v) => l(v) && r(v);
+    }
+    return left;
+  };
+  const parseUnary = (): Expr => {
+    const a = args[i];
+    if (a === undefined) bad('find: expected an expression\n');
+    if (a === '!' || a === '-not') {
+      i++;
+      const e = parseUnary();
+      return (v) => !e(v);
+    }
+    if (a === '(') {
+      i++;
+      const e = parseOr();
+      if (args[i] !== ')') bad("find: invalid expression; I was expecting to find a ')' somewhere but did not see one.\n");
+      i++;
+      return e;
+    }
+    i++;
+    return primary(a);
+  };
+
+  const primary = (a: string): Expr => {
     switch (a) {
-      case '!':
-      case '-not':
-        negateNext = !negateNext;
-        break;
-      case '-a':
-      case '-and':
-      case '-print':
-        break;
+      case '-true':
+        return () => true;
+      case '-false':
+        return () => false;
       case '-name':
       case '-iname': {
-        const p = needArg();
-        if (p === null) return 1;
-        const re = globToRegex(p, a === '-iname');
-        add((s) => re.test(s === '/' ? '/' : nameOf(stripSlash(s))));
+        const re = globToRegex(needArg(a), a === '-iname');
         lastPredicate = a;
-        break;
+        return (v) => re.test(v.shown === '/' ? '/' : nameOf(stripSlash(v.shown)));
       }
       case '-path':
-      case '-wholename': {
-        const p = needArg();
-        if (p === null) return 1;
-        const re = globToRegex(p);
-        add((s) => re.test(s));
-        break;
+      case '-wholename':
+      case '-ipath': {
+        const re = globToRegex(needArg(a), a === '-ipath');
+        lastPredicate = a;
+        return (v) => re.test(v.shown);
+      }
+      case '-regex':
+      case '-iregex': {
+        const src = needArg(a);
+        let re: RegExp;
+        try {
+          re = new RegExp(`^(?:${src})$`, a === '-iregex' ? 'i' : '');
+        } catch {
+          return bad(`find: invalid regular expression ${lq(src)}\n`);
+        }
+        return (v) => re.test(v.shown);
       }
       case '-type': {
-        const t = needArg();
-        if (t === null) return 1;
-        if (t === 'f' || t === 'd') add((_s, st) => st.type === (t === 'f' ? 'file' : 'dir'));
-        else if (/^[lbcps]$/.test(t)) add(() => false); // valid types this filesystem never has
-        else {
-          ctx.err(`find: Unknown argument to -type: ${t}\n`);
-          return 1;
-        }
-        break;
+        const t = needArg(a);
+        const kinds = t.split(',');
+        if (!kinds.every((k) => /^[fdlbcps]$/.test(k))) bad(`find: Unknown argument to -type: ${t}\n`);
+        return (v) => kinds.includes(v.st.type === 'file' ? 'f' : 'd');
       }
       case '-empty':
-        add((_s, st) => (st.type === 'dir' ? ctx.fs.list(st.path).length === 0 : st.size === 0));
-        break;
+        return (v) => (v.st.type === 'dir' ? ctx.fs.list(v.st.path).length === 0 : v.st.size === 0);
+      case '-size': {
+        const spec = needArg(a);
+        const m = /^([+-]?\d+)([bcwkMG]?)$/.exec(spec);
+        if (!m) return bad(`find: invalid -size type in ${lq(spec)}\n`);
+        const unit = { b: 512, c: 1, w: 2, k: 1024, M: 1024 ** 2, G: 1024 ** 3, '': 512 }[m[2]]!;
+        const cmp = numericTest(m[1])!;
+        // Sizes are rounded up to whole units, as GNU find does.
+        return (v) => cmp(Math.ceil((v.st.type === 'dir' ? DIR_SIZE : v.st.size) / unit));
+      }
+      case '-mtime':
+      case '-mmin': {
+        const spec = needArg(a);
+        const cmp = numericTest(spec);
+        if (!cmp) return bad(`find: invalid argument ${lq(spec)} to ${lq(a)}\n`);
+        const unit = a === '-mtime' ? 86_400_000 : 60_000;
+        const now = ctx.state.now();
+        return (v) => cmp(Math.floor((now - v.st.mtime) / unit));
+      }
+      case '-newer': {
+        const ref = needArg(a);
+        const st = statArg(ctx, ref);
+        if (typeof st === 'string') return bad(`find: ${lq(ref)}: ${errorText(st)}\n`);
+        return (v) => v.st.mtime > st.mtime;
+      }
+      case '-perm': {
+        const spec = needArg(a);
+        const m = /^([-/]?)([0-7]{1,4})$/.exec(spec);
+        if (!m) return bad(`find: invalid mode ${lq(spec)}\n`);
+        const mode = parseInt(m[2], 8);
+        if (m[1] === '-') return (v) => (v.st.mode & mode) === mode;
+        if (m[1] === '/') return (v) => mode === 0 || (v.st.mode & mode) !== 0;
+        return (v) => (v.st.mode & 0o7777) === mode;
+      }
+      case '-executable':
+        return (v) => (v.st.mode & 0o100) !== 0;
+      case '-readable':
+        return (v) => (v.st.mode & 0o400) !== 0;
+      case '-writable':
+        return (v) => (v.st.mode & 0o200) !== 0;
+      case '-user':
+      case '-group': {
+        const who = needArg(a);
+        return (v) => ownerOf(ctx, v.st.path) === who || (who === '1000' && ownerOf(ctx, v.st.path) !== 'root') || (who === '0' && ownerOf(ctx, v.st.path) === 'root');
+      }
       case '-maxdepth':
       case '-mindepth': {
-        const v = needArg();
-        if (v === null) return 1;
-        if (!/^\d+$/.test(v)) {
-          ctx.err(`find: Expected a positive decimal integer argument to ${a}, but got ${lq(v)}\n`);
-          return 1;
-        }
-        if (a === '-maxdepth') maxDepth = Number(v);
-        else minDepth = Number(v);
-        break;
+        const v = needArg(a);
+        if (!/^\d+$/.test(v)) bad(`find: Expected a positive decimal integer argument to ${a}, but got ${lq(v)}\n`);
+        if (a === '-maxdepth') plan.maxDepth = Number(v);
+        else plan.minDepth = Number(v);
+        return () => true;
       }
-      case '-o':
-      case '-or':
+      case '-depth':
+        plan.depthFirst = true;
+        return () => true;
+      case '-xdev':
+      case '-mount':
+      case '-noleaf':
+      case '-follow':
+        return () => true;
+      case '-prune':
+        return (v) => {
+          if (v.st.type === 'dir') pruned.add(v.st.path);
+          return true;
+        };
+      case '-quit':
+        return () => {
+          quit = true;
+          return true;
+        };
+      case '-print':
+        plan.hasAction = true;
+        return (v) => {
+          ctx.out(v.shown + '\n');
+          return true;
+        };
+      case '-print0':
+        plan.hasAction = true;
+        return (v) => {
+          ctx.out(v.shown + '\0');
+          return true;
+        };
+      case '-printf': {
+        plan.hasAction = true;
+        const format = needArg(a);
+        return (v) => {
+          ctx.out(findPrintf(format, v));
+          return true;
+        };
+      }
+      case '-ls':
+        plan.hasAction = true;
+        return (v) => {
+          const size = v.st.type === 'dir' ? DIR_SIZE : v.st.size;
+          ctx.out(`${String(1000 + v.depth).padStart(7)} ${String(Math.ceil(size / 1024) * 4).padStart(6)} ${modeString(v.st.type, v.st.mode)}   1 ${ownerOf(ctx, v.st.path).padEnd(8)} ${ownerOf(ctx, v.st.path).padEnd(8)} ${String(size).padStart(8)} ${lsTime(v.st.mtime, ctx.state.now())} ${v.shown}\n`);
+          return true;
+        };
       case '-delete':
+        plan.hasAction = true;
+        plan.depthFirst = true;
+        return (v) => {
+          if (v.st.path === ctx.state.cwd && v.shown === '.') return true;
+          try {
+            if (v.st.type === 'dir') ctx.fs.rmdir(v.st.path);
+            else ctx.fs.remove(v.st.path);
+            return true;
+          } catch (e) {
+            ctx.err(`find: cannot delete ${lq(v.shown)}: ${msgOf(e)}\n`);
+            status = 1;
+            return false;
+          }
+        };
       case '-exec':
-        ctx.err(`find: ${a} is not supported in this shell\n`);
-        return 1;
-      default:
-        if (a.startsWith('-')) ctx.err(`find: unknown predicate \`${a}'\n`);
-        else {
-          ctx.err(`find: paths must precede expression: \`${a}'\n`);
-          if (lastPredicate) ctx.err(`find: possible unquoted pattern after predicate \`${lastPredicate}'?\n`);
+      case '-execdir':
+      case '-ok':
+      case '-okdir': {
+        plan.hasAction = true;
+        const argv: string[] = [];
+        while (i < args.length && args[i] !== ';' && !(args[i] === '+' && argv[argv.length - 1] === '{}')) argv.push(args[i++]);
+        if (i >= args.length || !argv.length) bad(`find: missing argument to \`${a}'\n`);
+        const batch = args[i++] === '+';
+        const inDir = a.endsWith('dir');
+        const target = (v: Visit) => (inDir ? './' + nameOf(stripSlash(v.st.path)) : v.shown);
+        if (batch) {
+          const b = { argv: argv.slice(0, -1), paths: [] as string[] };
+          plan.batches.push(b);
+          return (v) => {
+            b.paths.push(target(v));
+            return true;
+          };
         }
-        return 1;
+        return (v) => {
+          const cmd = argv.map((w) => w.replaceAll('{}', target(v)));
+          if (inDir) {
+            const saved = ctx.state.cwd;
+            ctx.state.cwd = v.st.type === 'dir' && v.depth === 0 ? v.st.path : dirname(v.st.path);
+            try {
+              return ctx.run(cmd, null) === 0;
+            } finally {
+              ctx.state.cwd = saved;
+            }
+          }
+          return ctx.run(cmd, null) === 0;
+        };
+      }
+      default:
+        if (a.startsWith('-')) return bad(`find: unknown predicate \`${a}'\n`);
+        ctx.err(`find: paths must precede expression: \`${a}'\n`);
+        if (lastPredicate) ctx.err(`find: possible unquoted pattern after predicate \`${lastPredicate}'?\n`);
+        throw new Bad();
     }
-  }
+  };
 
-  let status = 0;
+  try {
+    if (i < args.length) {
+      plan.expr = parseOr();
+      if (i < args.length) bad(`find: unexpected ${lq(args[i])}\n`);
+    }
+  } catch (e) {
+    if (e instanceof Bad) return 1;
+    throw e;
+  }
+  const expr = plan.expr;
+  const check = (v: Visit): void => {
+    if (v.depth < plan.minDepth) return;
+    if (expr(v) && !plan.hasAction) ctx.out(v.shown + '\n');
+  };
   const visit = (shown: string, st: StatResult, depth: number): void => {
-    if (depth >= minDepth && tests.every((t) => t(shown, st, depth))) ctx.out(shown + '\n');
-    if (st.type === 'dir' && depth < maxDepth) {
+    if (quit) return;
+    ctx.tick();
+    const v = { shown, st, depth };
+    if (!plan.depthFirst) check(v);
+    if (st.type === 'dir' && depth < plan.maxDepth && !pruned.has(st.path) && ctx.fs.stat(st.path)) {
       const children = [...ctx.fs.list(st.path)].sort((a, b) => nameCompare(nameOf(a.path), nameOf(b.path)));
       for (const child of children) visit(join(shown, nameOf(child.path)), child, depth + 1);
     }
+    if (plan.depthFirst && !quit) check(v);
   };
   for (const p of paths) {
     const st = statArg(ctx, p);
@@ -832,6 +1038,37 @@ export const find: Command = (ctx) => {
     }
     visit(p, st, 0);
   }
+  for (const b of plan.batches) {
+    // ARG_MAX-sized batches, as find does with `-exec … +`.
+    for (let k = 0; k < b.paths.length; k += 5000) if (ctx.run([...b.argv, ...b.paths.slice(k, k + 5000)], null) !== 0) status = 1;
+  }
   return status;
 };
 
+/** The directives of `find -printf` that make sense here. */
+function findPrintf(format: string, v: Visit): string {
+  const unescaped = format.replace(/\\([nt0\\])/g, (_m, c: string) => (c === 'n' ? '\n' : c === 't' ? '\t' : c === '0' ? '\0' : '\\'));
+  return unescaped.replace(/%([-\d]*)([pfhPsdmMtTyk%])/g, (_m, width: string, d: string) => {
+    let s: string;
+    const p = v.shown;
+    switch (d) {
+      case 'p': s = p; break;
+      case 'f': s = nameOf(stripSlash(p)); break;
+      case 'h': s = p.includes('/') ? dirname(p) || '/' : '.'; break;
+      case 'P': s = p.replace(/^[^/]*\/?/, ''); break;
+      case 's': s = String(v.st.type === 'dir' ? DIR_SIZE : v.st.size); break;
+      case 'k': s = String(Math.ceil((v.st.type === 'dir' ? DIR_SIZE : v.st.size) / 1024)); break;
+      case 'd': s = String(v.depth); break;
+      case 'm': s = (v.st.mode & 0o7777).toString(8); break;
+      case 'M': s = modeString(v.st.type, v.st.mode); break;
+      case 'y': s = v.st.type === 'dir' ? 'd' : 'f'; break;
+      case 't': s = new Date(v.st.mtime).toUTCString(); break;
+      case 'T': s = String(Math.floor(v.st.mtime / 1000)); break;
+      case '%': s = '%'; break;
+      default: s = '';
+    }
+    if (!width) return s;
+    const w = Number(width.replace('-', ''));
+    return width.startsWith('-') ? s.padEnd(w) : s.padStart(w);
+  });
+}

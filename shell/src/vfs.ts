@@ -42,11 +42,21 @@ export class VfsError extends Error {
   }
 }
 
+/** What a device or kernel file produces when read. */
+export type Device = 'null' | 'zero' | 'random' | 'full' | 'tty' | (() => string);
+
+/** A system directory's contents: device files and nested directories. */
+export interface DeviceDir {
+  [name: string]: Device | DeviceDir;
+}
+
 interface FileNode {
   type: 'file';
   mode: number;
   mtime: number;
   content: string;
+  /** /dev and /proc files: read from a generator, never stored. */
+  device?: Device;
 }
 
 interface DirNode {
@@ -54,7 +64,26 @@ interface DirNode {
   mode: number;
   mtime: number;
   children: Map<string, Node>;
+  /** Part of the system (/dev, /proc, /bin, /usr/bin): read-only, outside the quotas and snapshots. */
+  virtual?: boolean;
 }
+
+const isVirtual = (n: Node): boolean => (n.type === 'dir' ? !!n.virtual : n.device !== undefined);
+
+/** A file or directory as it travels between the browser and the server. */
+export interface Entry {
+  path: string;
+  type: NodeType;
+  mode: number;
+  mtime: number;
+  content?: string;
+}
+
+/** How a path changed since the journal was last taken: its own mode/time, or the whole thing. */
+export type Mark = 'meta' | 'tree';
+
+/** Bytes a device file yields per read, so `cat /dev/zero` ends. */
+const DEVICE_CHUNK = 16 * 1024;
 
 type Node = FileNode | DirNode;
 
@@ -89,6 +118,8 @@ export class MemoryVfs implements Vfs {
   /** Bytes in all files, and entries (files and directories, the root included). */
   private bytes = 0;
   private nodes = 1;
+  /** Paths changed since the journal was last taken; null while not recording. */
+  private journal: Map<string, Mark> | null = null;
 
   constructor(now: () => number = Date.now) {
     this.now = now;
@@ -155,7 +186,7 @@ export class MemoryVfs implements Vfs {
     const p = this.abs(path);
     const node = this.lookup(p);
     if (node.type === 'dir') throw new VfsError('EISDIR', p);
-    return node.content;
+    return node.device !== undefined ? readDevice(node.device) : node.content;
   }
 
   writeFile(path: string, content: string): void {
@@ -164,6 +195,9 @@ export class MemoryVfs implements Vfs {
     const name = basename(p);
     const existing = parent.children.get(name);
     if (existing && existing.type === 'dir') throw new VfsError('EISDIR', p);
+    if (existing?.device !== undefined) return this.writeDevice(p, existing.device);
+    if (parent.virtual) throw new VfsError('EACCES', p);
+    this.mark(p, 'tree');
     const text = String(content);
     this.reserve(p, byteLength(text), existing ? byteLength(existing.content) : 0, existing ? 0 : 1);
     const t = this.now();
@@ -199,9 +233,9 @@ export class MemoryVfs implements Vfs {
       type: 'dir',
       mode: node.mode,
       size: 0,
-      children: sortedNames(node).map((child) =>
-        this.treeOf(path === '/' ? '/' + child : path + '/' + child, node.children.get(child)!),
-      ),
+      children: sortedNames(node)
+        .filter((child) => !isVirtual(node.children.get(child)!))
+        .map((child) => this.treeOf(path === '/' ? '/' + child : path + '/' + child, node.children.get(child)!)),
     };
   }
 
@@ -218,7 +252,9 @@ export class MemoryVfs implements Vfs {
   appendFile(path: string, content: string): void {
     const p = this.abs(path);
     const node = this.tryLookup(p);
+    if (node && node.type === 'file' && node.device !== undefined) return this.writeDevice(p, node.device);
     if (node && node.type === 'file') {
+      this.mark(p, 'tree');
       const old = byteLength(node.content);
       this.reserve(p, old + byteLength(content), old, 0);
       node.content += content;
@@ -240,7 +276,9 @@ export class MemoryVfs implements Vfs {
         if (node.type !== 'dir') throw new VfsError('ENOTDIR', sofar);
         let next = node.children.get(part);
         if (!next) {
+          if (node.virtual) throw new VfsError('EACCES', sofar);
           this.reserve(sofar, 0, 0, 1);
+          this.mark(sofar, 'tree');
           next = { type: 'dir', mode, mtime: this.now(), children: new Map() };
           node.children.set(part, next);
           node.mtime = this.now();
@@ -254,13 +292,16 @@ export class MemoryVfs implements Vfs {
     const parent = this.parentOf(p);
     const name = basename(p);
     if (parent.children.has(name)) throw new VfsError('EEXIST', p);
+    if (parent.virtual) throw new VfsError('EACCES', p);
     this.reserve(p, 0, 0, 1);
+    this.mark(p, 'tree');
     parent.children.set(name, { type: 'dir', mode, mtime: this.now(), children: new Map() });
     parent.mtime = this.now();
   }
 
   /** Bytes and entries in a subtree. */
   private measure(node: Node): { bytes: number; nodes: number } {
+    if (isVirtual(node)) return { bytes: 0, nodes: 0 };
     if (node.type === 'file') return { bytes: byteLength(node.content), nodes: 1 };
     let bytes = 0;
     let nodes = 1;
@@ -312,8 +353,11 @@ export class MemoryVfs implements Vfs {
     const node = this.lookup(dir) as DirNode;
     for (const name of [...node.children.keys()]) {
       const child = dir === '/' ? `/${name}` : `${dir}/${name}`;
-      if (this.mountWithin(child)) this.clearAround(child);
+      const c = node.children.get(name)!;
+      if (isVirtual(c)) continue;
+      if (this.mountWithin(child) || this.virtualWithin(c)) this.clearAround(child);
       else {
+        this.mark(child, 'tree');
         this.release(node.children.get(name)!);
         node.children.delete(name);
       }
@@ -330,6 +374,8 @@ export class MemoryVfs implements Vfs {
     if (this.mounts.has(p)) throw new VfsError('EBUSY', p);
     if (node.children.size > 0) throw new VfsError('ENOTEMPTY', p);
     const parent = this.parentOf(p);
+    if (node.virtual || parent.virtual) throw new VfsError('EACCES', p);
+    this.mark(p, 'tree');
     this.release(node);
     parent.children.delete(basename(p));
     parent.mtime = this.now();
@@ -341,12 +387,18 @@ export class MemoryVfs implements Vfs {
     const node = this.lookup(p);
     if (node.type === 'dir' && !recursive) throw new VfsError('EISDIR', p);
     if (p === '/') throw new VfsError('EACCES', p);
+    if (isVirtual(node) || this.parentOf(p).virtual) throw new VfsError('EACCES', p);
     const mount = this.mountWithin(p);
     if (mount) {
       this.clearAround(p);
       throw new VfsError('EBUSY', mount);
     }
+    if (this.virtualWithin(node)) {
+      this.clearAround(p);
+      throw new VfsError('EACCES', p);
+    }
     const parent = this.parentOf(p);
+    this.mark(p, 'tree');
     this.release(node);
     parent.children.delete(basename(p));
     parent.mtime = this.now();
@@ -360,6 +412,16 @@ export class MemoryVfs implements Vfs {
     this.clearAround('/');
     const mount = [...this.mounts].sort()[0];
     if (mount) throw new VfsError('EBUSY', mount);
+    const sys = [...this.root.children.entries()].find(([, n]) => isVirtual(n));
+    if (sys) throw new VfsError('EACCES', '/' + sys[0]);
+  }
+
+  /** True when a virtual node lies at or below `node`. */
+  private virtualWithin(node: Node): boolean {
+    if (isVirtual(node)) return true;
+    if (node.type === 'file') return false;
+    for (const c of node.children.values()) if (this.virtualWithin(c)) return true;
+    return false;
   }
 
   /** rename(2): move `from` to exactly `to`, replacing a file or an empty directory there. */
@@ -373,6 +435,11 @@ export class MemoryVfs implements Vfs {
     if (node.type === 'dir' && isWithin(src, dst)) throw new VfsError('EINVAL', dst);
     const dstParent = this.parentOf(dst);
     const existing = dstParent.children.get(basename(dst));
+    if (this.virtualWithin(node) || this.parentOf(src).virtual || dstParent.virtual || (existing && isVirtual(existing))) {
+      throw new VfsError('EACCES', this.virtualWithin(node) || this.parentOf(src).virtual ? src : dst);
+    }
+    this.mark(src, 'tree');
+    this.mark(dst, 'tree');
     if (existing) {
       if (existing.type === 'dir' && node.type !== 'dir') throw new VfsError('EISDIR', dst);
       if (existing.type !== 'dir' && node.type === 'dir') throw new VfsError('ENOTDIR', dst);
@@ -397,6 +464,7 @@ export class MemoryVfs implements Vfs {
       const parent = this.parentOf(dst);
       const existing = parent.children.get(basename(dst));
       if (existing && existing.type !== 'dir') throw new VfsError('ENOTDIR', dst);
+      if (parent.virtual || (existing && isVirtual(existing))) throw new VfsError('EACCES', dst);
       if (existing && existing.type === 'dir') {
         // Merge into the existing directory, like `cp -r src existing-dir-name` onto itself.
         for (const [name] of (clone as DirNode).children) {
@@ -406,18 +474,22 @@ export class MemoryVfs implements Vfs {
       }
       const add = this.measure(clone);
       this.reserve(dst, add.bytes, 0, add.nodes);
+      this.mark(dst, 'tree');
       parent.children.set(basename(dst), clone);
       parent.mtime = this.now();
       return;
     }
     const isNew = this.tryLookup(dst) === null;
-    this.writeFile(dst, node.content);
+    this.writeFile(dst, node.device !== undefined ? readDevice(node.device) : node.content);
     if (isNew) this.chmod(dst, node.mode); // cp keeps the source's mode on new files
   }
 
   private cloneNode(node: Node): Node {
     const t = this.now();
-    if (node.type === 'file') return { type: 'file', mode: node.mode, mtime: t, content: node.content };
+    if (node.type === 'file') {
+      const content = node.device !== undefined ? readDevice(node.device) : node.content;
+      return { type: 'file', mode: node.device !== undefined ? DEFAULT_FILE_MODE : node.mode, mtime: t, content };
+    }
     const children = new Map<string, Node>();
     for (const [name, child] of node.children) children.set(name, this.cloneNode(child));
     return { type: 'dir', mode: node.mode, mtime: t, children };
@@ -425,7 +497,10 @@ export class MemoryVfs implements Vfs {
 
   chmod(path: string, mode: number): void {
     const p = this.abs(path);
-    this.lookup(p).mode = mode & 0o7777;
+    const node = this.lookup(p);
+    if (isVirtual(node)) throw new VfsError('EACCES', p);
+    node.mode = mode & 0o7777;
+    this.mark(p, 'meta');
   }
 
   /** Create an empty file, or update the timestamp of an existing file or directory. */
@@ -433,14 +508,160 @@ export class MemoryVfs implements Vfs {
     const p = this.abs(path);
     const node = this.tryLookup(p);
     if (node) {
+      if (isVirtual(node)) return;
       node.mtime = this.now();
+      this.mark(p, 'meta');
       return;
     }
     this.writeFile(p, '');
   }
 
+  private writeDevice(p: string, device: Device): void {
+    if (device === 'full') throw new VfsError('ENOSPC', p);
+    if (typeof device === 'function') throw new VfsError('EACCES', p);
+  }
+
+  // ---- system directories -------------------------------------------------------------
+
+  /**
+   * Adds a read-only system directory (/dev, /proc, /bin, /usr/bin) whose files are generated on read.
+   * It takes no quota, never shows in tree() or snapshots, and cannot be changed.
+   */
+  addSystemDir(path: string, files: DeviceDir, mode = DEFAULT_DIR_MODE): void {
+    const p = this.abs(path);
+    const parent = this.parentOf(p);
+    const build = (spec: DeviceDir): DirNode => {
+      const children = new Map<string, Node>();
+      for (const [name, v] of Object.entries(spec)) {
+        if (typeof v === 'string' || typeof v === 'function') {
+          const devMode = typeof v === 'function' ? 0o444 : v === 'tty' ? 0o620 : 0o666;
+          children.set(name, { type: 'file', mode: devMode, mtime: this.now(), content: '', device: v });
+        } else children.set(name, build(v));
+      }
+      return { type: 'dir', mode: 0o555, mtime: this.now(), children, virtual: true };
+    };
+    const dir = build(files);
+    dir.mode = mode;
+    const existing = parent.children.get(basename(p));
+    if (existing) this.release(existing);
+    parent.children.set(basename(p), dir);
+  }
+
+  /** True when `path` is inside a system directory. */
+  isSystem(path: string): boolean {
+    const node = this.tryLookup(this.abs(path));
+    return node !== null && isVirtual(node);
+  }
+
+  // ---- journal and snapshots ----------------------------------------------------------
+
+  private mark(path: string, how: Mark): void {
+    if (!this.journal) return;
+    if (how === 'meta' && this.journal.has(path)) return;
+    this.journal.set(path, how);
+  }
+
+  /** Starts recording which paths change. */
+  record(): void {
+    this.journal = new Map();
+  }
+
+  /** The paths changed since record() or the last takeJournal(), and starts over. */
+  takeJournal(): Map<string, Mark> {
+    const j = this.journal ?? new Map<string, Mark>();
+    if (this.journal) this.journal = new Map();
+    return j;
+  }
+
+  /** Runs `fn` without recording its changes. */
+  unrecorded<T>(fn: () => T): T {
+    const saved = this.journal;
+    this.journal = null;
+    try {
+      return fn();
+    } finally {
+      this.journal = saved;
+    }
+  }
+
+  /** Every ordinary file and directory at and below `path`, parents first; system directories left out. */
+  exportEntries(path = '/'): Entry[] {
+    const p = this.abs(path);
+    const out: Entry[] = [];
+    const walk = (at: string, node: Node): void => {
+      if (isVirtual(node)) return;
+      if (node.type === 'file') {
+        out.push({ path: at, type: 'file', mode: node.mode, mtime: node.mtime, content: node.content });
+        return;
+      }
+      out.push({ path: at, type: 'dir', mode: node.mode, mtime: node.mtime });
+      for (const name of sortedNames(node)) walk(at === '/' ? '/' + name : at + '/' + name, node.children.get(name)!);
+    };
+    walk(p, this.lookup(p));
+    return out;
+  }
+
+  /** Sets a node's mode and time as they were elsewhere, without touching its parent. */
+  setMeta(path: string, mode: number, mtime: number): void {
+    const p = this.abs(path);
+    const node = this.lookup(p);
+    if (isVirtual(node)) return;
+    node.mode = mode & 0o7777;
+    node.mtime = mtime;
+  }
+
+  /**
+   * Puts entries in place (parents first, as exportEntries gives them): directories are created or
+   * kept, files written, modes and times set. Quotas apply. Throws VfsError.
+   */
+  importEntries(entries: Entry[]): void {
+    for (const e of entries) {
+      const p = this.abs(e.path);
+      const node = this.tryLookup(p);
+      if (e.type === 'dir') {
+        if (node && node.type !== 'dir') this.remove(p, true);
+        if (p !== '/') this.mkdir(p, { recursive: true });
+      } else {
+        if (node && node.type === 'dir') this.remove(p, true);
+        this.writeFile(p, e.content ?? '');
+      }
+      this.setMeta(p, e.mode, e.mtime);
+    }
+  }
+
+  /** Empties the filesystem down to its mount points and system directories. */
+  clear(): void {
+    this.clearAround('/');
+  }
+
   typeOf(path: string): NodeType | null {
     return this.stat(path)?.type ?? null;
+  }
+}
+
+let seed = 0x2545f491;
+
+/** What reading a device or kernel file gives. */
+function readDevice(device: Device): string {
+  switch (device) {
+    case 'null':
+    case 'tty':
+      return '';
+    case 'zero':
+    case 'full':
+      return '\0'.repeat(DEVICE_CHUNK);
+    case 'random': {
+      let out = '';
+      for (let i = 0; i < DEVICE_CHUNK; i++) {
+        seed ^= seed << 13;
+        seed ^= seed >>> 17;
+        seed ^= seed << 5;
+        out += String.fromCharCode((seed >>> 0) & 0xff);
+      }
+      return out;
+    }
+    default:
+      return device();
   }
 }
 

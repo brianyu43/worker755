@@ -7,11 +7,11 @@ import { join } from '../path.ts';
 import type { VfsErrorCode } from '../types.ts';
 import { foldCase } from '../foldcase.ts';
 
-type Input = { ok: true; text: string } | { ok: false; code: VfsErrorCode };
+export type Input = { ok: true; text: string } | { ok: false; code: VfsErrorCode };
 
 /** Read a file operand ('-' is stdin). */
-function readInput(ctx: CommandContext, arg: string): Input {
-  if (arg === '-') return { ok: true, text: ctx.stdin };
+export function readInput(ctx: CommandContext, arg: string): Input {
+  if (arg === '-' || arg === '/dev/stdin' || arg === '/dev/fd/0') return { ok: true, text: ctx.stdin };
   if (arg === '/dev/null') return { ok: true, text: '' };
   const st = statArg(ctx, arg);
   if (typeof st === 'string') return { ok: false, code: st };

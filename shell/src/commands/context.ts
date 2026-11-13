@@ -15,6 +15,7 @@ export interface ShellState {
   lastExit: number;
   now: () => number;
   web?: Web;
+  hostname: string;
 }
 
 export interface CommandContext {
@@ -29,6 +30,18 @@ export interface CommandContext {
   err(text: string): void;
   setAction(action: Action): void;
   commandNames(): string[];
+  /** True once stdout can take no more (a full pipe or the output cap), so endless writers stop. */
+  outputFull(): boolean;
+  /** Exported variables. */
+  env(): Record<string, string>;
+  /** Runs another command (xargs, env, find -exec, timeout) with this command's output; returns its status. */
+  run(argv: string[], stdin?: string | null): number;
+  /** Runs another command with its stdout collected instead of printed (awk's `cmd | getline`). */
+  capture(argv: string[], stdin?: string | null): { status: number; stdout: string };
+  /** Moves the clock forward instead of waiting. */
+  sleep(ms: number): void;
+  /** Counts one unit of work against the command line's budget; throws when it runs out. */
+  tick(): void;
 }
 
 export type Command = (ctx: CommandContext) => number;
@@ -36,6 +49,14 @@ export type Command = (ctx: CommandContext) => number;
 /** Absolute path for an argument, relative to the current directory. */
 export function abs(ctx: CommandContext, path: string): string {
   return resolvePath(ctx.state.cwd, path);
+}
+
+/** Who owns a path: the player owns their home and what they put in /tmp; the system owns the rest. */
+export function ownerOf(ctx: CommandContext, path: string): string {
+  const home = ctx.state.home;
+  if (path === home || path.startsWith(home + '/')) return ctx.state.user;
+  if (/^\/(var\/)?tmp\/./.test(path)) return ctx.state.user;
+  return 'root';
 }
 
 /** GNU 'shell-escape' quoting, used by ls, rm, cp, mv, …: 'name' */

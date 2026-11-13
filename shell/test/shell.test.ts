@@ -143,19 +143,17 @@ test('brace expansion', () => {
   ]);
 });
 
-test('variables: a few read-only ones, others error clearly', () => {
+test('variables: set, read, special and unset', () => {
   const { run } = newShell();
   assert.equal(run('echo $HOME $USER').stdout, '/home/worker worker\n');
   run('mkdir x; cd x');
   assert.equal(run('echo "$PWD" ${OLDPWD}').stdout, '/home/worker/x /home/worker\n');
   assert.equal(run('echo cost: $').stdout, 'cost: $\n');
-  const r = run('echo $FOO');
-  assert.equal(r.exitCode, 1);
-  assert.match(r.stderr, /\$FOO: variables are not supported/);
-  const a = run('FOO=bar');
-  assert.equal(a.exitCode, 1);
-  assert.match(a.stderr, /variable assignment is not supported/);
+  assert.deepEqual(run('echo [$FOO]'), { stdout: '[]\n', stderr: '', exitCode: 0 });
+  assert.equal(run('FOO=bar').exitCode, 0);
+  assert.equal(run('echo $FOO "${FOO}s"').stdout, 'bar bars\n');
   assert.equal(run("echo '$FOO'").stdout, '$FOO\n');
+  assert.equal(run('unset FOO; echo "[$FOO]"').stdout, '[]\n');
 });
 
 test('exec never throws, whatever the input', () => {
@@ -221,7 +219,7 @@ test('bash and sh run a script without the execute bit; -c runs a line', () => {
   const { run } = newShell();
   run('printf "echo one\\nfalse\\necho two\\n" > s.sh');
   assert.deepEqual(run('bash s.sh'), { stdout: 'one\ntwo\n', stderr: '', exitCode: 0 });
-  assert.equal(run('sh -e s.sh').stdout, 'one\ntwo\n');
+  assert.deepEqual(run('sh -e s.sh'), { stdout: 'one\n', stderr: '', exitCode: 1 });
   assert.deepEqual(run("bash -c 'echo $0 $1' me you"), { stdout: 'me you\n', stderr: '', exitCode: 0 });
   assert.equal(run('bash missing.sh').stderr, 'bash: missing.sh: No such file or directory\n');
   assert.equal(run('echo "echo piped" | bash').stdout, 'piped\n');

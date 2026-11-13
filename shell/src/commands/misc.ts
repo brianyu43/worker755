@@ -4,6 +4,7 @@ import type { Command } from './context.ts';
 import { abs, DAY_NAMES, MONTH_NAMES, pad2, statArg } from './context.ts';
 import { errorText } from '../vfs.ts';
 import { dirname } from '../path.ts';
+import { WHATIS } from './sysinfo.ts';
 
 export const pwd: Command = (ctx) => {
   ctx.out(ctx.state.cwd + '\n');
@@ -157,15 +158,16 @@ const DESCRIPTIONS: Record<string, string> = {
   false: 'do nothing, unsuccessfully',
 };
 
-const HIDDEN_FROM_HELP = new Set(['edit', 'vi', 'vim']);
+const HIDDEN_FROM_HELP = new Set(['edit', 'vi', 'vim', ':', '[', 'gawk', 'mawk']);
 
 export const help: Command = (ctx) => {
   const names = ctx.commandNames().filter((n) => !HIDDEN_FROM_HELP.has(n)).sort();
   const width = Math.max(...names.map((n) => n.length)) + 2;
   let text = 'Available commands:\n';
-  for (const n of names) text += `  ${n.padEnd(width)}${DESCRIPTIONS[n] ?? ''}`.trimEnd() + '\n';
-  text += '\nOperators: |  &&  ||  ;  >  >>  <  2>  2>&1  &>\n';
-  text += 'Quoting: \'single\', "double", backslash. Expansion: ~, *, ?, [abc], {a,b}, {1..3}, $HOME, $PWD, $?\n';
+  for (const n of names) text += `  ${n.padEnd(width)}${DESCRIPTIONS[n] ?? WHATIS[n] ?? ''}`.trimEnd() + '\n';
+  text += '\nOperators: |  &&  ||  ;  &  >  >>  <  <<EOF  <<<  2>  2>&1  &>  ( … )  { …; }\n';
+  text += 'Quoting: \'single\', "double", backslash. Expansion: ~, *, ?, [abc], {a,b}, {1..3}, $VAR, ${VAR:-x}, $(cmd), $((1+2))\n';
+  text += 'Shell: if/for/while/case, functions, [[ … ]], alias, export, source, history, man COMMAND, COMMAND --help\n';
   text += 'Scripts: ./run.sh (after chmod +x), bash FILE, sh FILE, bash -c \'…\', source FILE; inside: $1, $#, $@, exit N\n';
   ctx.out(text);
   return 0;
