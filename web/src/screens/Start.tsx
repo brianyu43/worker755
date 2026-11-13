@@ -182,9 +182,17 @@ export function Start({ onStart }: Props) {
       </div>
 
       <div className="start-copy">
-        <label className="field language-picker">
-          <span className="field-label">{t('start.language')}</span>
-          <select className="select" value={language} onChange={(e) => changeLanguage(e.target.value as Language)}>
+        <label className="language-picker" title={t('start.language')}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M1.5 8h13M8 1.5c2 2 2.6 4.2 2.6 6.5S10 12.5 8 14.5M8 1.5C6 3.5 5.4 5.7 5.4 8S6 12.5 8 14.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
+          <select
+            className="language-select"
+            aria-label={t('start.language')}
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value as Language)}
+          >
             {LANGUAGES.map((code) => (
               <option key={code} value={code} lang={code}>
                 {LANGUAGE_LABELS[code]}

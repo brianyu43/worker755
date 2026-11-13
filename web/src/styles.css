@@ -3575,6 +3575,48 @@ a.btn-ink {
 .faq-answer p:last-child {
   margin-bottom: 10px;
 }
-.language-picker { margin: 0 0 1rem auto; max-width: 13rem; }
+/* The language switch: a small pill in the page's top-right corner, like a header control. */
+.start {
+  position: relative;
+}
+.language-picker {
+  position: absolute;
+  top: 14px;
+  right: clamp(16px, 4vw, 40px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 13px;
+}
+.language-picker:focus-within {
+  outline: 2px solid var(--hl);
+  outline-offset: 2px;
+}
+.language-select {
+  min-width: 0;
+  max-width: 11rem;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.language-select:focus {
+  outline: none;
+}
+@media (max-width: 720px) {
+  /* Room above the title for the switch. */
+  .start {
+    padding-top: 64px;
+  }
+}
 html[lang='zh-CN'] body, html[lang='ja'] body, html[lang='hi'] body { line-height: 1.55; }
 .start-copy, .feed, .work-order, .review { overflow-wrap: anywhere; }
