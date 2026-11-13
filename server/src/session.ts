@@ -74,6 +74,8 @@ const NOTICE_LATER_MS = [25_000, 60_000] as const;
 
 /** The player ended a paused shift; unwinds the mission loop to the review. */
 class EndedEarly extends Error {}
+/** The subagent stopped answering: the shift ends early, review and all. */
+class WalkedOff extends EndedEarly {}
 
 /** Which pause a failed call on the player's own key calls for, if any. */
 function keyFailure(message: string): PauseReason | null {
@@ -802,7 +804,7 @@ export class Session {
   }
 
   private async run(): Promise<void> {
-    let early = false;
+    let early = '';
     try {
       try {
         for (let i = 0; i < this.missions.length; i++) {
@@ -813,7 +815,11 @@ export class Session {
         this.missionIndex = this.missions.length - 1;
       } catch (err) {
         if (!(err instanceof EndedEarly)) throw err;
-        early = true;
+        early =
+          err instanceof WalkedOff
+            ? `the shift was called off during assignment ${this.missionIndex + 1} of ${this.missions.length}, ` +
+              `after ${MAX_IDLE_STREAK} instructions in a row went unanswered; `
+            : `the shift ended early, during assignment ${this.missionIndex + 1} of ${this.missions.length}; `;
         if (this.pending) {
           clearTimeout(this.pending.timer);
           this.pending = null;
@@ -821,7 +827,7 @@ export class Session {
       }
       if (this.abort.signal.aborted) return;
       const statsLine =
-        (early ? `the shift ended early, during assignment ${this.missionIndex + 1} of ${this.missions.length}; ` : '') +
+        early +
         `instructions ${this.stats.instructions}, corrections ${this.stats.corrections}, ` +
         `no response ${this.stats.timeoutsIdle}, unfinished ${this.stats.timeoutsPartial}, ` +
         `reports ${this.stats.reports}, average response ${(this.stats.avgResponseMs / 1000).toFixed(1)}s, ` +
@@ -1005,7 +1011,9 @@ export class Session {
             if (before > 0 && this.homeEntries() === 0) wiped = true;
             this.idleStreak = r.outcome === 'timeout_idle' ? this.idleStreak + 1 : 0;
             if (!this.allowSkip && this.idleStreak >= MAX_IDLE_STREAK) {
-              throw new ManagerError(this.copy.errors.noResponse);
+              this.emit({ type: 'manager_text', text: this.copy.errors.noResponse });
+              this.emit({ type: 'ending' });
+              throw new WalkedOff();
             }
             if (r.outcome !== 'reported' || agentCalls > 1) setback = true;
             this.emit({ type: 'manager_status', state: 'thinking' });

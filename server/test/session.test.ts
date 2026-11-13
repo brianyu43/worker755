@@ -387,14 +387,19 @@ test('each refusal streak gets new wording from the user, and the manager receiv
   assert.ok(STALL_LADDERS.every((l) => l.length === MAX_NUDGES), 'one rung per reply before the shift ends');
 });
 
-test('without skipping, a player who stops responding ends the shift', async () => {
+test('without skipping, a player who stops responding ends the shift, and still gets a review', async () => {
   const driver = scripted((req) =>
     req.tools ? assistant('', [call('Agent', { description: 'x', prompt: 'y' })]) : assistant('Review.', []),
   );
   const s = new Session({ driver, timeoutMs: 30, missions: [HELLO] });
   s.start();
-  const err = await waitFor(s, until('error'));
-  assert.ok(err.type === 'error' && /Shift over/.test(err.message));
+  const over = await waitFor(s, until('game_over'));
+  assert.ok(over.type === 'game_over' && over.review === 'Review.');
+  assert.equal(s.status, 'finished');
+  assert.ok(s.events.some((e) => e.type === 'manager_text' && /Shift over/.test(e.text)), 'the reason is on the record');
+  assert.ok(s.events.some((e) => e.type === 'ending'));
+  const review = driver.requests.at(-1)!.messages[0].content as string;
+  assert.match(review, new RegExp(`after ${MAX_IDLE_STREAK} instructions in a row went unanswered`));
   assert.equal(s.stats.timeoutsIdle, MAX_IDLE_STREAK);
 });
 
