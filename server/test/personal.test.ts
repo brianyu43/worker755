@@ -127,6 +127,8 @@ test('the user is Dan everywhere: no Dana left outside the trailer', () => {
       if (skip.has(e.name)) continue;
       const p = join(dir, e.name);
       if (p === fileURLToPath(import.meta.url)) continue;
+      // Saved reviews are runtime data (gitignored), not the game's text.
+      if (p === join(ROOT, 'server', 'data')) continue;
       if (e.isDirectory()) walk(p);
       else if (/\.(ts|tsx|md|json|html|css|sql|sh|txt)$/.test(e.name)) {
         readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
