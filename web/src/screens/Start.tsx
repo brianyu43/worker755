@@ -47,7 +47,9 @@ export function Start({ onStart }: Props) {
   const [models, setModels] = useState<ModelList | null>(null);
   const [model, setModel] = useState<string>('');
   const [allowSkip, setAllowSkip] = useState(false);
-  const [subagent, setSubagent] = useState('claude-opus-5.5');
+  const [subagent, setSubagent] = useState('');
+  /** The badge gets a random knock-off model name once the list arrives, unless the player typed one. */
+  const named = useRef(false);
   const [scenario, setScenario] = useState<Workplace>('fresh');
   const [director, setDirector] = useState('');
   const [face, setFace] = useState(loadFace);
@@ -78,6 +80,10 @@ export function Start({ onStart }: Props) {
           return;
         }
         setModels(m);
+        if (!named.current && m.subagents.length) {
+          named.current = true;
+          setSubagent((cur) => cur || m.subagents[Math.floor(Math.random() * m.subagents.length)]);
+        }
         setModel((cur) => (m.models.some((x) => x.id === cur) ? cur : m.default));
         setDirector((cur) => (!cur || m.models.some((x) => x.id === cur) ? cur : ''));
       })

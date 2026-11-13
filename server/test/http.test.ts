@@ -264,7 +264,7 @@ test('the subagent name reaches the session, cleaned to a plain label', async ()
   const none = (await api('POST', '/api/sessions', {})).json as SessionState;
   assert.equal(none.subagent, '');
   const models = (await api('GET', '/api/models')).json;
-  assert.ok(models.subagents.includes('claude-opus-5.5'));
+  assert.ok(models.subagents.includes('ShallowSeek-R0'));
 });
 
 test('a scripted game on the legacy server, played over long-polling, upsets nobody', async () => {
