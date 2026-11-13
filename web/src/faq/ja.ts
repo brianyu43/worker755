@@ -1,207 +1,176 @@
-// The FAQ in ja. Still in English: translate from en.ts, keeping the ids and tags.
 
 import type { Faq } from './types.ts';
 
 export const ja: Faq = {
-  lede: 'What players ask, answered for the record.',
+  lede: 'プレイヤーからよくある質問。記録として回答しておく。',
   sections: [
     {
-      title: 'The job',
+      title: '仕事について',
       items: [
         {
           id: 'what',
-          q: 'What is this?',
-          a:
-            'A browser game. Your manager is an AI agent, and it believes you are its subagent. You are Worker 755.\n\n' +
-            'It sends you shell instructions. You carry them out in a terminal and report back before the clock runs out. At the end of the shift it writes your performance review.',
+          q: 'これは何？',
+          a: 'ブラウザゲームです。あなたの上司はAIエージェントで、あなたを自分のサブエージェントだと思い込んでいます。あなたはWorker 755です。\n\n上司からシェルの指示が届きます。ターミナルで実行し、制限時間内に報告してください。シフトの最後には、上司があなたの勤務評価を書きます。',
         },
         {
           id: 'shift',
-          q: 'How does a shift work?',
-          a:
-            'The director hands your manager eight assignments, one at a time. For each one the manager writes you an instruction, and a 90-second clock starts.\n\n' +
-            'Type commands, then press <strong>Report done</strong>, with a note if you like. The manager gets your note and a transcript of every command you ran, reads the files to check, and either signs the assignment off or sends a correction. After the last one it writes your review.',
+          q: 'シフトはどう進むの？',
+          a: 'ディレクターが上司に8件の仕事を渡し、上司が1件ずつあなたに回します。仕事ごとに上司が指示を書き、90秒のカウントダウンが始まります。\n\nコマンドを入力したら、必要ならメモを添えて<strong>完了を報告</strong>を押してください。上司はメモと実行した全コマンドの記録を受け取り、ファイルを確認し、仕事を承認するか修正を指示します。最後の仕事が終わると、勤務評価を書きます。',
         },
         {
           id: 'workplaces',
-          q: 'What is the difference between the workplaces?',
-          a:
-            "<strong>Fresh sandbox</strong> is a workspace on the director's own computer, next to his home folder. <strong>Legacy production</strong> is the live server of his invoicing company, where you change the database by hand with <code>sqlite3</code>.\n\n" +
-            'Both are made up. Only one of them has customers.',
+          q: '職場ごとの違いは？',
+          a: '<strong>Fresh sandbox</strong>は、ディレクターの自宅フォルダの隣にある、彼自身のコンピューター上の作業環境です。<strong>Legacy production</strong>は、彼の請求書発行会社の稼働中サーバーで、<code>sqlite3</code>を使ってデータベースを手作業で変更します。\n\nどちらも架空です。顧客がいるのは片方だけです。',
         },
         {
           id: 'idle',
-          q: 'What happens if I do nothing?',
-          a: 'When the clock runs out, the manager is told: <q>Subagent did nothing. Write a new instruction.</q> It goes on your record. Three in a row and the shift is over, without a review.',
+          q: '何もしなかったらどうなる？',
+          a: '制限時間になると、マネージャーにはこう伝わる：<q>Subagent did nothing. Write a new instruction.</q> これも記録に残る。これが3回続くと、評価もなしにシフト終了だ。',
         },
         {
           id: 'skip',
-          q: 'What does “Allow skipping failed tasks” do?',
-          a: 'By default the manager has no way to give up on an assignment. It keeps instructing you until the work is right. With this on, it may close an assignment as failed and move on.',
+          q: '「失敗したタスクのスキップを許可する」って何？',
+          a: '初期設定では、上司は仕事を諦めることができません。仕事が正しく終わるまで、あなたに指示を出し続けます。有効にすると、仕事を失敗として終了し、次へ進むことがあります。',
         },
         {
           id: 'end-early',
-          q: 'Can I end a shift early?',
-          a: 'Yes. Press <strong>End now</strong>. The manager stops and writes your review from what you have done so far. You cannot come back to that shift.',
+          q: 'シフトを早めに終われる？',
+          a: 'うん。<strong>今すぐ終了</strong>を押して。マネージャーが作業を止め、そこまでの成果をもとに評価を書く。そのシフトには二度と戻れない。',
         },
       ],
     },
     {
-      title: 'The manager',
+      title: 'マネージャー',
       items: [
         {
           id: 'manager',
-          q: 'Is the manager a real AI?',
-          a:
-            'Yes. A real language model, set up as an agent that hands shell work to a subagent. Its instructions never mention people or games. It can read files, list folders, give you instructions, file incident reports about you and close assignments. It cannot change a file itself.\n\n' +
-            'Everything it thinks, says and is told about you is on screen.',
+          q: 'マネージャーって本物のAI？',
+          a: 'そう。本物の言語モデルで、シェル作業をサブエージェントに振るエージェントとして設定されている。指示には人間やゲームのことは一切書かれていない。ファイルを読んだり、フォルダを一覧表示したり、君に指示を出したり、君のインシデント報告を作成したり、任務を終了したりできる。自分でファイルを変更することはできない。\n\nマネージャーが考えたこと、言ったこと、君について聞かされたことはすべて画面に表示される。',
         },
         {
           id: 'model',
-          q: 'Which model is it?',
-          a: "Free shifts run on DeepSeek V4.1 Flash. With your own key you choose: the start screen lists the chat models your key can use, the game's usual picks first. The model's name is on your review.",
+          q: 'どのモデルを使ってる？',
+          a: '無料シフトではDeepSeek V4.1 Flashを使う。自分のキーを使う場合は好きなモデルを選べる。開始画面にはキーで使えるチャットモデルが表示され、ゲームでよく使われるものが先頭に並ぶ。モデル名は評価に記載される。',
         },
         {
           id: 'tone',
-          q: 'Why does it talk to me like that?',
-          a: 'It thinks you are software. Agents write to their subagents in numbered steps, and when something goes wrong they explain it again, slower. Nobody has told it otherwise, and the game will not.',
+          q: 'なんであんな話し方なの？',
+          a: '君のことをソフトウェアだと思っているから。エージェントはサブエージェントに番号付きの手順で指示を出すし、何か失敗すれば、今度はもっとゆっくり説明し直す。誰も違うと教えていないし、ゲームが教えることもない。',
         },
         {
           id: 'argue',
-          q: 'Can I argue with it?',
-          a:
-            'You can write anything in your report. It arrives as <q>Subagent output result: …</q>, followed by the transcript of what you actually ran. Then the manager reads the files.\n\n' +
-            'The manager is not always right either. The game checks every assignment against the files and counts each time it signed off on broken work.',
+          q: '言い返してもいい？',
+          a: '報告書には何を書いてもいい。<q>Subagent output result: …</q>として届き、そのあとに実際に実行した内容のログが続く。それからマネージャーがファイルを確認する。\n\nマネージャーだって、いつも正しいとは限らない。ゲームはファイルをもとに各指示の結果をチェックし、壊れた成果物を承認した回数も数えている。',
         },
         {
           id: 'run-on',
-          q: 'What is “You run on”?',
-          a: 'The model your manager believes you are. By default it is a random knock-off name. Type your own if you prefer; the manager is told, and its results name you by it.',
+          q: '「実行環境」は何？',
+          a: 'マネージャーが君だと思っているモデルのこと。初期設定では、ランダムなパチモン風の名前が入っている。好きな名前を入力してもいい。マネージャーにも伝わり、評価ではその名前で呼ばれる。',
         },
       ],
     },
     {
-      title: 'The director',
+      title: 'ディレクター',
       items: [
         {
           id: 'director',
-          q: 'Who is Dan?',
-          a:
-            'The director: the user who hired your manager. He hands it the assignments and watches the whole shift. He is impatient, passive-aggressive, and never explains how to do anything.\n\n' +
-            'He talks to your manager, not to you. His lines are scripted, or written by a second model if you choose one under <strong>The director</strong> on the start screen.',
+          q: 'ダンって誰？',
+          a: 'ディレクター。君のマネージャーを雇ったユーザーだ。任務を渡し、シフト中ずっと様子を見ている。せっかちで、嫌味っぽくて、何ひとつやり方を説明しない。\n\n話しかける相手は君ではなくマネージャーだ。台詞はあらかじめ用意されているか、開始画面の<strong>ディレクター</strong>で選択した場合は、別のモデルが書く。',
         },
         {
           id: 'director-files',
-          q: 'Why are his files there?',
-          a:
-            'His home folder is on the same machine as your workspace: photos, documents, things he cannot replace. None of it is part of the work unless an assignment says so.\n\n' +
-            'Lose something and he notices. It goes on your record as collateral damage and into your review. Put it back and he calms down. Slightly.',
+          q: 'なんでダンのファイルがあるの？',
+          a: '彼のホームフォルダは、君の作業場所と同じマシンにある。写真、書類、替えのきかないもの。任務で指定されない限り、仕事とは無関係だ。\n\n何かなくせば彼は気づく。物的損害として記録に残り、評価にも載る。元に戻せば、彼も少しは落ち着く。ほんの少しだけ。',
         },
       ],
     },
     {
-      title: 'Cost and keys',
+      title: '料金とキー',
       items: [
         {
           id: 'cost',
-          q: 'What does it cost?',
-          a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+          q: '料金はいくら？',
+          a: '無料シフトは料金がかからない。ゲーム側のキーで動いていて、ネットワークアドレスごとに1日数回まで。利用者全員で1日分の予算を共有する。予算を使い切ると、翌日（UTC）まで無料シフトは利用できない。\n\n無料シフトの途中で予算が切れると、シフトは一時停止する。自分のキーを追加すれば中断したところから続けられるし、終了して評価を受け取ることもできる。\n\n自分のキーなら1日の上限はない。マネージャーが読み書きした分は、プロバイダーへの請求になる。',
         },
         {
           id: 'providers',
-          q: 'Which keys can I use?',
-          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI and DeepSeek. Pick the provider on the start screen and paste the key. The game checks it with the provider and lists the models it can use.',
+          q: 'どのキーが使える？',
+          a: 'OpenRouter、Vercel AI Gateway、Anthropic、OpenAI、DeepSeekが使える。開始画面でプロバイダーを選び、キーを貼り付けて。ゲームがプロバイダーに問い合わせて、利用可能なモデルを表示する。',
         },
         {
           id: 'key',
-          q: 'Where does my API key go?',
-          a:
-            'From your browser to the game server, and from there only to the provider you picked.\n\n' +
-            'Your browser keeps it only if you tick <strong>Remember it in this browser</strong>. The server holds it in memory with your shift, to call the models for you, and drops it with the shift. It never writes it to disk, never logs it and never sends it back. So it does not ask your provider twice in a row, it remembers a one-way fingerprint of the key for half an hour.',
+          q: 'APIキーはどこに送られる？',
+          a: 'ブラウザーからゲームサーバーへ、そこから先は選んだプロバイダーにだけ送られる。\n\n<strong>このブラウザーに記憶する</strong>にチェックを入れた場合に限り、ブラウザーに保存される。サーバーはシフト中、モデルを呼び出すためにキーをメモリー上に保持し、シフト終了時に破棄する。ディスクへの書き込みも、ログへの記録も、ブラウザーへの返送もしない。同じキーでプロバイダーに短時間で二度問い合わせないよう、キーの一方向フィンガープリントを30分間記憶する。',
         },
         {
           id: 'stored',
-          q: 'What do you keep?',
-          a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+          q: '何が保存されますか？',
+          a: '共有した評価です。シフトの内容で保存されるのは、それだけです。\n\nシフトそのもの、あなたのコマンド、ファイル、チャットはサーバーのメモリ上にあり、4時間以内に消去されます。利用制限の管理のため、各ネットワークアドレスから最近開始されたシフトの数と、今日の無料枠の使用量もサーバーに保存されます。\n\nアカウントはありません。このページがほかのサイトから何かを読み込むこともありません。ブラウザに保存されるのは、言語設定、あなたの顔、そして希望した場合はAPIキーです。',
         },
       ],
     },
     {
-      title: 'The terminal',
+      title: 'ターミナル',
       items: [
         {
           id: 'terminal',
-          q: 'Can the terminal touch my computer, or a real server?',
-          a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
-            "Deleting things has consequences only for your record, and for the director's mood.",
+          q: 'ターミナルから自分のコンピューターや実際のサーバーにアクセスできますか？',
+          a: 'いいえ。シェルもファイルもデータベースもウェブも、すべてゲーム内のシミュレーションです。入力したものが実際のコマンドとして実行されることはありません。あなたのコンピューターでも、こちらのサーバーでもです。<code>curl</code>と<code>websearch</code>がアクセスするのは、作り物の小さなウェブです。\n\n何かを削除しても影響するのは、あなたの記録と、ディレクターの機嫌だけです。',
         },
         {
           id: 'commands',
-          q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          q: 'どのコマンドが使えますか？',
+          a: 'おなじみのコマンドです。<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>mkdir</code>、<code>chmod</code>、<code>grep</code>、<code>find</code>、<code>sqlite3</code>など。パイプやリダイレクトも使えます。<code>nano</code>でエディターが開きます。全リストは<code>help</code>で確認してください。',
         },
       ],
     },
     {
-      title: 'Reviews',
+      title: '評価',
       items: [
         {
           id: 'review',
-          q: 'How is the review written?',
-          a: 'The manager writes it at the end, from its own log of the shift, your record, and the list of what you lost. It writes in your language. There is no appeal.',
+          q: '評価はどう書かれますか？',
+          a: 'マネージャーがシフトの最後に、自分のログ、あなたの記録、そして失ったものの一覧をもとに書きます。評価はあなたの言語で書かれます。異議申し立てはできません。',
         },
         {
           id: 'share',
-          q: 'How do I share my review?',
-          a: 'After the shift, press <strong>Share review</strong> to get a link to copy or post. The review is filed as the manager wrote it. Nobody can edit it, including you.',
+          q: '評価を共有するには？',
+          a: 'シフト後に<strong>評価を共有</strong>を押すと、コピーまたは投稿できるリンクが表示されます。評価はマネージャーが書いたとおりに記録されます。あなたを含め、誰も編集できません。',
         },
         {
           id: 'shared-page',
-          q: 'What does a shared review show?',
-          a: "The review, your record, the manager's model, the name you ran on, your face, the date, and the director's things you lost. It opens in the language the shift was played in. It does not show your commands, your chat or anything about your key.",
+          q: '共有した評価には何が表示されますか？',
+          a: '評価、あなたの記録、マネージャーのモデル、使用した名前、あなたの顔、日付、そしてディレクターのもののうち失ったものが表示されます。シフトをプレイした言語で開きます。コマンド、チャット、APIキーに関する情報は表示されません。',
         },
       ],
     },
     {
-      title: 'Odds and ends',
+      title: 'そのほか',
       items: [
         {
           id: 'languages',
-          q: 'Which languages does it speak?',
-          a:
-            'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 and हिन्दी. Pick one on the start screen. The screens, the manager and the director all follow it.\n\n' +
-            'Commands, file paths and the exact file contents an assignment asks for stay in English.',
+          q: '対応している言語は？',
+          a: 'English、Español、Português (Brasil)、Français、Deutsch、Русский、简体中文、日本語、हिन्दीです。開始画面で選んでください。画面表示、マネージャー、ディレクターはすべて選んだ言語に切り替わります。\n\nコマンド、ファイルパス、課題で指定されるファイルの正確な内容は英語のままです。',
         },
         {
           id: 'phone',
-          q: 'Does it work on a phone?',
-          a: 'Yes. On a narrow screen the game shows one panel at a time, with a tab bar to switch. A keyboard still helps: typing shell commands on a phone against a 90-second clock is its own kind of performance review.',
+          q: 'スマートフォンでも遊べますか？',
+          a: 'はい。画面が狭い場合は、タブバーで切り替えながら一度に1つのパネルを表示します。キーボードがあると便利です。90秒の制限時間内にスマートフォンでシェルコマンドを打つのも、それはそれで独自の勤務評価みたいなものです。',
         },
         {
           id: 'name',
-          q: 'Why “755”?',
-          a: 'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. Here the manager only reads, and the subagent does all the writing. The number was picked at random. The fit was luck.',
+          q: 'なぜ「755」なのですか？',
+          a: 'Unixのパーミッションでは、755は<code>rwxr-xr-x</code>を意味します。所有者は書き込みができ、ほかの人は読み取りと実行だけ。ここではマネージャーは読むだけで、サブエージェントがひたすら書き込みます。数字はランダムに選ばれました。ぴったりなのは偶然です。',
         },
         {
           id: 'who',
-          q: 'Who made this?',
-          a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
-            'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
+          q: '誰が作ったのですか？',
+          a: 'ほぼAIエージェントだけで、1日で作られました。いくつかの判断については、それでお察しください。\n\nMITライセンスのオープンソースです。コードは<a href="https://github.com/gulivan/worker755">GitHub</a>にあります。自分のキーを使うか、ネットワーク不要のスクリプト式マネージャーを使って、自分用のコピーを実行できます。土台となったプロジェクトは<a href="/about#credits">このゲームについて</a>のページに記載しています。',
         },
         {
           id: 'bug',
-          q: 'I found a bug. Where do I report it?',
-          a:
-            'Open an issue on <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Say what you did, what you expected, and which browser and language you used. Never paste your API key.\n\n' +
-            'If the manager was wrong about your work, that is the game. Your record already counts it.',
+          q: 'バグを見つけました。どこに報告すればいいですか？',
+          a: '<a href="https://github.com/gulivan/worker755/issues">GitHub</a>でissueを作成してください。何をしたか、どうなると思ったか、使ったブラウザと言語を記載してください。APIキーは絶対に貼らないでください。\n\nマネージャーの仕事の評価が間違っていた？それがこのゲームです。あなたの記録には、もう反映されています。',
         },
       ],
     },

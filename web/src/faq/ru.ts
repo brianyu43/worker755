@@ -1,207 +1,176 @@
-// The FAQ in ru. Still in English: translate from en.ts, keeping the ids and tags.
 
 import type { Faq } from './types.ts';
 
 export const ru: Faq = {
-  lede: 'What players ask, answered for the record.',
+  lede: 'Ответы на вопросы игроков. Для протокола.',
   sections: [
     {
-      title: 'The job',
+      title: 'Работа',
       items: [
         {
           id: 'what',
-          q: 'What is this?',
-          a:
-            'A browser game. Your manager is an AI agent, and it believes you are its subagent. You are Worker 755.\n\n' +
-            'It sends you shell instructions. You carry them out in a terminal and report back before the clock runs out. At the end of the shift it writes your performance review.',
+          q: 'Что это такое?',
+          a: 'Браузерная игра. Твой менеджер — ИИ-агент, который считает тебя своим субагентом. Ты — Работник 755.\n\nОн присылает инструкции для командной строки. Ты выполняешь их в терминале и отчитываешься, пока не истекло время. В конце смены он пишет оценку работы.',
         },
         {
           id: 'shift',
-          q: 'How does a shift work?',
-          a:
-            'The director hands your manager eight assignments, one at a time. For each one the manager writes you an instruction, and a 90-second clock starts.\n\n' +
-            'Type commands, then press <strong>Report done</strong>, with a note if you like. The manager gets your note and a transcript of every command you ran, reads the files to check, and either signs the assignment off or sends a correction. After the last one it writes your review.',
+          q: 'Как устроена смена?',
+          a: 'Директор выдаёт твоему менеджеру восемь заданий — по одному за раз. Для каждого менеджер пишет тебе инструкцию, и запускается таймер на 90 секунд.\n\nВводи команды, а затем нажми <strong>Report done</strong>; при желании добавь примечание. Менеджер получит его и расшифровку всех выполненных тобой команд, проверит файлы и либо примет задание, либо попросит исправить. После последнего задания он напишет оценку работы.',
         },
         {
           id: 'workplaces',
-          q: 'What is the difference between the workplaces?',
-          a:
-            "<strong>Fresh sandbox</strong> is a workspace on the director's own computer, next to his home folder. <strong>Legacy production</strong> is the live server of his invoicing company, where you change the database by hand with <code>sqlite3</code>.\n\n" +
-            'Both are made up. Only one of them has customers.',
+          q: 'Чем отличаются рабочие места?',
+          a: '<strong>Fresh sandbox</strong> — рабочая среда на личном компьютере директора, рядом с его домашней папкой. <strong>Legacy production</strong> — рабочий сервер его компании по выставлению счетов, где ты вручную меняешь базу данных с помощью <code>sqlite3</code>.\n\nОбе среды вымышленные. Клиенты есть только у одной.',
         },
         {
           id: 'idle',
-          q: 'What happens if I do nothing?',
-          a: 'When the clock runs out, the manager is told: <q>Subagent did nothing. Write a new instruction.</q> It goes on your record. Three in a row and the shift is over, without a review.',
+          q: 'Что будет, если я ничего не сделаю?',
+          a: 'Когда время выйдет, менеджеру сообщат: <q>Subagent did nothing. Write a new instruction.</q> Это попадёт в твоё досье. Три таких случая подряд — и смена закончится без оценки работы.',
         },
         {
           id: 'skip',
-          q: 'What does “Allow skipping failed tasks” do?',
-          a: 'By default the manager has no way to give up on an assignment. It keeps instructing you until the work is right. With this on, it may close an assignment as failed and move on.',
+          q: 'Что делает настройка «Разрешить пропускать проваленные задания»?',
+          a: 'По умолчанию менеджер не может отказаться от задания. Он продолжает давать тебе указания, пока работа не будет выполнена как надо. Если включить эту настройку, он сможет отметить задание как проваленное и перейти к следующему.',
         },
         {
           id: 'end-early',
-          q: 'Can I end a shift early?',
-          a: 'Yes. Press <strong>End now</strong>. The manager stops and writes your review from what you have done so far. You cannot come back to that shift.',
+          q: 'Можно закончить смену раньше?',
+          a: 'Да. Нажми <strong>End now</strong>. Менеджер остановится и напишет оценку работы по тому, что ты успел сделать. Вернуться к этой смене уже не получится.',
         },
       ],
     },
     {
-      title: 'The manager',
+      title: 'Менеджер',
       items: [
         {
           id: 'manager',
-          q: 'Is the manager a real AI?',
-          a:
-            'Yes. A real language model, set up as an agent that hands shell work to a subagent. Its instructions never mention people or games. It can read files, list folders, give you instructions, file incident reports about you and close assignments. It cannot change a file itself.\n\n' +
-            'Everything it thinks, says and is told about you is on screen.',
+          q: 'Менеджер — настоящий ИИ?',
+          a: 'Да. Настоящая языковая модель, настроенная как агент: она поручает работу с командной строкой субагенту. В её инструкциях ни слова о людях или играх. Она может читать файлы, просматривать папки, давать тебе указания, составлять на тебя отчёты об инцидентах и закрывать задания. Но сама менять файлы не может.\n\nВсё, что она думает, говорит и узнаёт о тебе, показывается на экране.',
         },
         {
           id: 'model',
-          q: 'Which model is it?',
-          a: "Free shifts run on DeepSeek V4.1 Flash. With your own key you choose: the start screen lists the chat models your key can use, the game's usual picks first. The model's name is on your review.",
+          q: 'Какая именно модель?',
+          a: 'Бесплатные смены работают на DeepSeek V4.1 Flash. Со своим ключом выбираешь сам: на стартовом экране перечислены чат-модели, доступные по твоему ключу. Сначала показаны те, которые игра обычно рекомендует. Название модели указано в оценке работы.',
         },
         {
           id: 'tone',
-          q: 'Why does it talk to me like that?',
-          a: 'It thinks you are software. Agents write to their subagents in numbered steps, and when something goes wrong they explain it again, slower. Nobody has told it otherwise, and the game will not.',
+          q: 'Почему она так со мной разговаривает?',
+          a: 'Она считает тебя программой. Агенты пишут субагентам нумерованные инструкции, а если что-то пошло не так — объясняют ещё раз, помедленнее. Никто не объяснил ей обратного. Игра тоже не станет.',
         },
         {
           id: 'argue',
-          q: 'Can I argue with it?',
-          a:
-            'You can write anything in your report. It arrives as <q>Subagent output result: …</q>, followed by the transcript of what you actually ran. Then the manager reads the files.\n\n' +
-            'The manager is not always right either. The game checks every assignment against the files and counts each time it signed off on broken work.',
+          q: 'Можно с ней поспорить?',
+          a: 'В отчёте можешь написать что угодно. Он придёт как <q>Subagent output result: …</q>, а следом будет расшифровка того, что ты действительно запускал. Потом менеджер прочитает файлы.\n\nМенеджер тоже не всегда прав. Игра сверяет каждое задание с файлами и считает, сколько раз менеджер принял сломанную работу.',
         },
         {
           id: 'run-on',
-          q: 'What is “You run on”?',
-          a: 'The model your manager believes you are. By default it is a random knock-off name. Type your own if you prefer; the manager is told, and its results name you by it.',
+          q: 'Что значит «Ты работаешь на»?',
+          a: 'Моделью, которой, по мнению менеджера, ты являешься. По умолчанию это случайное название подделки. Хочешь — введи своё: менеджеру сообщат, и в результатах он будет называть тебя этим именем.',
         },
       ],
     },
     {
-      title: 'The director',
+      title: 'Директор',
       items: [
         {
           id: 'director',
-          q: 'Who is Dan?',
-          a:
-            'The director: the user who hired your manager. He hands it the assignments and watches the whole shift. He is impatient, passive-aggressive, and never explains how to do anything.\n\n' +
-            'He talks to your manager, not to you. His lines are scripted, or written by a second model if you choose one under <strong>The director</strong> on the start screen.',
+          q: 'Кто такой Дэн?',
+          a: 'Директор — пользователь, который нанял твоего менеджера. Он выдаёт ему задания и следит за всей сменой. Терпения у него нет, пассивной агрессии — хоть отбавляй, а объяснять, как что-то делать, он не станет.\n\nОн разговаривает с менеджером, не с тобой. Его реплики либо заранее написаны, либо создаются второй моделью, если выбрать её в разделе <strong>The director</strong> на стартовом экране.',
         },
         {
           id: 'director-files',
-          q: 'Why are his files there?',
-          a:
-            'His home folder is on the same machine as your workspace: photos, documents, things he cannot replace. None of it is part of the work unless an assignment says so.\n\n' +
-            'Lose something and he notices. It goes on your record as collateral damage and into your review. Put it back and he calms down. Slightly.',
+          q: 'Почему его файлы здесь?',
+          a: 'Его домашняя папка лежит на том же компьютере, что и твоя рабочая область: фотографии, документы и вещи, которые не восстановить. Ничего из этого не относится к работе, если только в задании не сказано обратное.\n\nПотеряешь что-нибудь — он заметит. Это попадёт в твоё досье как сопутствующий ущерб, а потом и в оценку работы. Вернёшь на место — он немного успокоится. Совсем немного.',
         },
       ],
     },
     {
-      title: 'Cost and keys',
+      title: 'Оплата и ключи',
       items: [
         {
           id: 'cost',
-          q: 'What does it cost?',
-          a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+          q: 'Сколько это стоит?',
+          a: 'Бесплатные смены ничего не стоят. Они работают на ключе самой игры: несколько смен в день на каждый сетевой адрес, причём все делят один дневной лимит. Когда он закончится, бесплатные смены приостановят до следующего дня (UTC).\n\nЕсли бесплатная смена закончится на полпути, она встанет на паузу. Добавь свой ключ и продолжи с того места, где остановился, или заверши смену и получи оценку работы.\n\nСо своим ключом дневного лимита нет. Ты платишь провайдеру за то, что менеджер читает и пишет.',
         },
         {
           id: 'providers',
-          q: 'Which keys can I use?',
-          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI and DeepSeek. Pick the provider on the start screen and paste the key. The game checks it with the provider and lists the models it can use.',
+          q: 'Какие ключи можно использовать?',
+          a: 'OpenRouter, Vercel AI Gateway, Anthropic, OpenAI и DeepSeek. Выбери провайдера на стартовом экране и вставь ключ. Игра проверит его у провайдера и покажет доступные модели.',
         },
         {
           id: 'key',
-          q: 'Where does my API key go?',
-          a:
-            'From your browser to the game server, and from there only to the provider you picked.\n\n' +
-            'Your browser keeps it only if you tick <strong>Remember it in this browser</strong>. The server holds it in memory with your shift, to call the models for you, and drops it with the shift. It never writes it to disk, never logs it and never sends it back. So it does not ask your provider twice in a row, it remembers a one-way fingerprint of the key for half an hour.',
+          q: 'Куда попадает мой API-ключ?',
+          a: 'Из браузера — на сервер игры, а оттуда — только выбранному тобой провайдеру.\n\nБраузер хранит ключ, только если поставить галочку <strong>Remember it in this browser</strong>. Сервер держит его в памяти на время смены, чтобы вызывать модели от твоего имени, а после смены удаляет. На диск ключ не записывается, в логи не попадает и обратно не отправляется. Чтобы не дёргать провайдера дважды подряд, сервер полчаса хранит односторонний отпечаток ключа.',
         },
         {
           id: 'stored',
-          q: 'What do you keep?',
-          a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+          q: 'Что вы сохраняете?',
+          a: 'Оценки работы, которыми ты делишься. Это единственное, что сохраняется от смены.\n\nСама смена — команды, файлы и переписка — хранится в памяти сервера и исчезает не позднее чем через четыре часа. Для соблюдения лимитов сервер также сохраняет, сколько смен недавно запустил каждый сетевой адрес и сколько сегодняшнего бесплатного бюджета уже потрачено.\n\nАккаунтов нет. Страница ничего не загружает с других сайтов. Браузер хранит твой язык, твоё лицо и, если попросишь, ключ.',
         },
       ],
     },
     {
-      title: 'The terminal',
+      title: 'Терминал',
       items: [
         {
           id: 'terminal',
-          q: 'Can the terminal touch my computer, or a real server?',
-          a:
-            'No. The shell, the files, the database and the web are all simulated by the game. Nothing you type runs as a real command anywhere: not on your computer, not on ours. <code>curl</code> and <code>websearch</code> reach a small made-up web.\n\n' +
-            "Deleting things has consequences only for your record, and for the director's mood.",
+          q: 'Терминал может залезть в мой компьютер или настоящий сервер?',
+          a: 'Нет. Оболочка, файлы, база данных и веб здесь — всё симуляция. Ничто из того, что ты вводишь, не выполняется как настоящая команда нигде: ни на твоём компьютере, ни на нашем. <code>curl</code> и <code>websearch</code> обращаются к небольшому выдуманному вебу.\n\nУдаление чего-либо скажется только на твоём личном деле и настроении директора.',
         },
         {
           id: 'commands',
-          q: 'Which commands work?',
-          a: 'The usual ones: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> and more, with pipes and redirects. <code>nano</code> opens an editor. Type <code>help</code> for the full list.',
+          q: 'Какие команды работают?',
+          a: 'Всякая база: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> и другие — с конвейерами и перенаправлениями. <code>nano</code> открывает редактор. Введи <code>help</code>, чтобы увидеть полный список.',
         },
       ],
     },
     {
-      title: 'Reviews',
+      title: 'Оценка работы',
       items: [
         {
           id: 'review',
-          q: 'How is the review written?',
-          a: 'The manager writes it at the end, from its own log of the shift, your record, and the list of what you lost. It writes in your language. There is no appeal.',
+          q: 'Как составляется оценка работы?',
+          a: 'В конце её пишет менеджер, опираясь на собственный журнал смены, твоё личное дело и список того, что ты потерял. Пишет на твоём языке. Апелляции не принимаются.',
         },
         {
           id: 'share',
-          q: 'How do I share my review?',
-          a: 'After the shift, press <strong>Share review</strong> to get a link to copy or post. The review is filed as the manager wrote it. Nobody can edit it, including you.',
+          q: 'Как поделиться оценкой работы?',
+          a: 'После смены нажми <strong>Share review</strong>, чтобы получить ссылку — её можно скопировать или опубликовать. Оценка попадает в дело именно в том виде, в каком её написал менеджер. Никто не может её отредактировать. Даже ты.',
         },
         {
           id: 'shared-page',
-          q: 'What does a shared review show?',
-          a: "The review, your record, the manager's model, the name you ran on, your face, the date, and the director's things you lost. It opens in the language the shift was played in. It does not show your commands, your chat or anything about your key.",
+          q: 'Что видно в опубликованной оценке работы?',
+          a: 'Оценку, твоё личное дело, модель менеджера, имя, под которым ты работал, своё лицо, дату и вещи директора, которые ты потерял. Она открывается на языке, на котором проходила смена. Твои команды, переписку и всё, что связано с твоим ключом, не покажут.',
         },
       ],
     },
     {
-      title: 'Odds and ends',
+      title: 'Прочие вопросы',
       items: [
         {
           id: 'languages',
-          q: 'Which languages does it speak?',
-          a:
-            'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 and हिन्दी. Pick one on the start screen. The screens, the manager and the director all follow it.\n\n' +
-            'Commands, file paths and the exact file contents an assignment asks for stay in English.',
+          q: 'На каких языках говорит игра?',
+          a: 'English, Español, Português (Brasil), Français, Deutsch, Русский, 简体中文, 日本語 и हिन्दी. Выбери язык на стартовом экране. На нём будут все экраны, менеджер и директор.\n\nКоманды, пути к файлам и точное содержимое файлов, которое требует задание, остаются на английском.',
         },
         {
           id: 'phone',
-          q: 'Does it work on a phone?',
-          a: 'Yes. On a narrow screen the game shows one panel at a time, with a tab bar to switch. A keyboard still helps: typing shell commands on a phone against a 90-second clock is its own kind of performance review.',
+          q: 'Игра работает на телефоне?',
+          a: 'Да. На узком экране игра показывает по одной панели за раз, а переключаться между ними можно через панель вкладок. Но клавиатура всё же пригодится: набирать команды оболочки на телефоне, пока тикают 90 секунд, — отдельный вид оценки работы.',
         },
         {
           id: 'name',
-          q: 'Why “755”?',
-          a: 'In Unix permissions, 755 is <code>rwxr-xr-x</code>: the owner writes, everyone else only reads and executes. Here the manager only reads, and the subagent does all the writing. The number was picked at random. The fit was luck.',
+          q: 'Почему «755»?',
+          a: 'В правах доступа Unix 755 — это <code>rwxr-xr-x</code>: владелец может записывать, а все остальные — только читать и выполнять. Здесь менеджер только читает, а всю работу по записи делает субагент. Число выбрали случайно. Совпадение оказалось удачным.',
         },
         {
           id: 'who',
-          q: 'Who made this?',
-          a:
-            'It was built in a day, mostly by AI agents. This explains several decisions.\n\n' +
-            'It is open source under the MIT license. The code is on <a href="https://github.com/gulivan/worker755">GitHub</a>, and you can run your own copy, with your own key or with a scripted manager that needs no network. The projects it stands on are listed on the <a href="/about#credits">About</a> page.',
+          q: 'Кто это сделал?',
+          a: 'Игру собрали за один день, в основном силами ИИ-агентов. Это многое объясняет.\n\nИгра распространяется с открытым исходным кодом по лицензии MIT. Код лежит на <a href="https://github.com/gulivan/worker755">GitHub</a>; можешь запустить собственную копию — со своим ключом или со скриптовым менеджером, которому не нужна сеть. Проекты, на которых всё это построено, перечислены на странице <a href="/about#credits">About</a>.',
         },
         {
           id: 'bug',
-          q: 'I found a bug. Where do I report it?',
-          a:
-            'Open an issue on <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Say what you did, what you expected, and which browser and language you used. Never paste your API key.\n\n' +
-            'If the manager was wrong about your work, that is the game. Your record already counts it.',
+          q: 'Нашёл ошибку. Куда сообщить?',
+          a: 'Создай обращение на <a href="https://github.com/gulivan/worker755/issues">GitHub</a>. Напиши, что ты сделал, чего ожидал, а также укажи браузер и язык. Никогда не вставляй свой API-ключ.\n\nЕсли менеджер неверно оценил твою работу — так и задумано. В твоём личном деле это уже учтено.',
         },
       ],
     },

@@ -145,7 +145,7 @@ export const ptBR: ServerCopy = {
     afterDamage: [
       [
         'Não, você não vai receber outro subagente. Vai receber este, com supervisão de verdade. Mande a próxima instrução e mantenha-o longe dos meus arquivos.',
-        'I am furious and I still need this done today. Both things are true. Tell it the exact paths it may touch, nothing else, and dispatch it.',
+        'Estou furioso e ainda preciso que isso fique pronto hoje. As duas coisas são verdade. Diga exatamente quais caminhos ele pode acessar, nenhum outro, e despache-o.',
         'Mais um parágrafo em vez de uma instrução e eu tiro essa máquina da tomada, com vocês dois dentro.',
       ],
       [
@@ -174,185 +174,185 @@ export const ptBR: ServerCopy = {
         ref: 'o rascunho do NDA da Globex',
       },
       pet: {
-        outrage: 'Where is {ref}? {detail} What exactly is your subagent FOR?',
+        outrage: 'Onde está {ref}? {detail} Afinal, PARA QUE serve seu subagente?',
         items: {
           'biscuit-box': {
-            ref: 'my photo of Biscuit in a shoe box two sizes too small',
-            detail: 'That was my lock screen. Biscuit is fine. I am NOT.',
+            ref: 'minha foto do Biscuit numa caixa de sapatos dois números menor',
+            detail: 'Era a imagem da tela de bloqueio. O Biscuit está bem. EU NÃO.',
           },
           'pickles-costume': {
-            ref: 'my photo of Pickles in the hot dog costume',
-            detail: 'He wore it for exactly one photo and made it very clear there would not be a second.',
+            ref: 'minha foto do Pickles com a fantasia de cachorro-quente',
+            detail: 'Ele usou a fantasia para uma única foto e deixou bem claro que não haveria uma segunda.',
           },
           'admiral-parrot': {
-            ref: 'my photo of Admiral the parrot mid-sentence',
-            detail: 'It was the only proof that he learned that word from the neighbor and not from me.',
+            ref: 'minha foto do papagaio Admiral no meio de uma frase',
+            detail: 'Era a única prova de que ele aprendeu aquela palavra com o vizinho, e não comigo.',
           },
           'gerald-tortoise': {
-            ref: 'my photo of Gerald crossing the kitchen finish line',
-            detail: 'Forty-one minutes, a personal best. I had a stopwatch. I had a ribbon made.',
+            ref: 'minha foto do Gerald cruzando a linha de chegada da cozinha',
+            detail: 'Quarenta e um minutos, recorde pessoal. Eu tinha um cronômetro. Mandei fazer uma medalha.',
           },
           'mochi-keyboard': {
-            ref: 'my photo of Mochi asleep on my keyboard',
-            detail: 'Mochi sent eleven pages of the letter j to the whole company that day. That photo was my entire defense.',
+            ref: 'minha foto do Mochi dormindo no meu teclado',
+            detail: 'Naquele dia, o Mochi enviou onze páginas da letra j para a empresa inteira. Aquela foto era minha defesa completa.',
           },
           'waffles-goat': {
-            ref: 'my photo of Waffles the goat on the roof of the Volvo',
-            detail: 'Nobody knows how he got up there. The insurance company did not believe me either.',
+            ref: 'minha foto do Waffles, o bode, no teto do Volvo',
+            detail: 'Ninguém sabe como ele chegou lá. A seguradora também não acreditou em mim.',
           },
         },
       },
       family: {
-        outrage: '{ref}. GONE. {detail} Put it back. NOW.',
+        outrage: '{ref}. SUMIU. {detail} Ponha de volta. AGORA.',
         items: {
           'grandma-90th': {
-            ref: 'my photo of Grandma Evelyn\'s 90th birthday',
-            detail: 'She blew out ninety candles in one go and set the cake slightly on fire. She is not having another 90th.',
+            ref: 'minha foto do aniversário de 90 anos da vovó Evelyn',
+            detail: 'Ela apagou noventa velas de uma vez e ateou fogo de leve no bolo. Ela não vai fazer 90 anos de novo.',
           },
           'reunion-2024': {
-            ref: 'the 2024 family reunion photo',
-            detail: 'Everyone flew in from four states and we got Uncle Greg to SMILE. That is not happening again.',
+            ref: 'a foto da reunião de família de 2024',
+            detail: 'Todo mundo veio de quatro estados diferentes e conseguimos fazer o tio Greg SORRIR. Isso não vai acontecer de novo.',
           },
           'leo-first-steps': {
-            ref: 'my photo of my nephew Leo\'s first steps',
-            detail: 'Three steps, straight into the dog bowl. My sister missed it. That photo was all she had.',
+            ref: 'minha foto dos primeiros passos do meu sobrinho Leo',
+            detail: 'Três passos, direto para a tigela do cachorro. Minha irmã não viu. Aquela foto era tudo o que ela tinha.',
           },
           'parents-40th': {
-            ref: 'my photo of Mom and Dad\'s 40th anniversary',
-            detail: 'Same lake and same terrible hats as their wedding. Dad has sworn never to wear that hat again, and he means it.',
+            ref: 'minha foto do aniversário de 40 anos de casamento da minha mãe e do meu pai',
+            detail: 'O mesmo lago e os mesmos chapéus horríveis do casamento deles. Meu pai jurou que nunca mais usaria aquele chapéu, e está falando sério.',
           },
           'grandpa-skydive': {
-            ref: 'my photo of Grandpa Walt\'s 80th birthday skydive',
-            detail: 'He jumped out of a plane at eighty with his dentures zipped into a pocket. The family has agreed this happens once.',
+            ref: 'minha foto do salto de paraquedas do vovô Walt no aniversário de 80 anos dele',
+            detail: 'Ele pulou de um avião aos oitenta anos, com a dentadura guardada no bolso com zíper. A família concordou que isso só acontece uma vez.',
           },
         },
       },
       speech: {
-        outrage: '{ref}. {detail} I cannot improvise. I have tried. People still bring it up.',
+        outrage: '{ref}. {detail} Não consigo improvisar. Já tentei. As pessoas ainda falam disso.',
         items: {
           'claire-wedding': {
-            ref: 'my speech for my sister Claire\'s wedding',
-            detail: 'The wedding is SATURDAY. That was version seven. Versions one to six are not coming back either.',
+            ref: 'meu discurso para o casamento da minha irmã Claire',
+            detail: 'O casamento é SÁBADO. Aquela era a versão sete. As versões de um a seis também não vão voltar.',
           },
           'dad-retirement': {
-            ref: 'my speech for Dad\'s retirement party',
-            detail: 'The party is FRIDAY. Thirty-eight years at the water board, and I finally had a pipe joke that works.',
+            ref: 'meu discurso para a festa de aposentadoria do meu pai',
+            detail: 'A festa é SEXTA-FEIRA. Trinta e oito anos na companhia de água, e finalmente inventei uma piada de cano que funciona.',
           },
           'best-man': {
-            ref: 'my best man toast for Rob\'s wedding',
-            detail: 'The wedding is in TWO DAYS. The file name said do not read. It did not say delete.',
+            ref: 'meu brinde de padrinho no casamento do Rob',
+            detail: 'O casamento é daqui a DOIS DIAS. O nome do arquivo dizia não leia. Não dizia apague.',
           },
           'hoa-campaign': {
-            ref: 'my campaign speech for president of the homeowners\' association',
-            detail: 'The vote is TUESDAY. Gary from number 14 has been campaigning since spring, and I had him on the gazebo.',
+            ref: 'meu discurso de campanha para presidente da associação de moradores',
+            detail: 'A votação é TERÇA-FEIRA. O Gary, da casa 14, está fazendo campanha desde a primavera, e eu tinha conquistado o gazebo.',
           },
           'mom-60th': {
-            ref: 'my toast for Mom\'s 60th birthday',
-            detail: 'The party is SUNDAY. Forty guests, and the accordion player takes his cue from that file.',
+            ref: 'meu brinde no aniversário de 60 anos da minha mãe',
+            detail: 'A festa é DOMINGO. São quarenta convidados, e o acordeonista pega a deixa daquele arquivo.',
           },
         },
       },
       legal: {
-        outrage: 'That was {ref}. {detail} There is no other copy. I checked. Twice.',
+        outrage: 'Aquilo era {ref}. {detail} Não existe outra cópia. Eu conferi. Duas vezes.',
         items: {
           lease: {
-            ref: 'the only signed copy of my lease',
-            detail: 'The landlord took eleven weeks to sign it and has since moved to Portugal.',
+            ref: 'a única cópia assinada do meu contrato de aluguel',
+            detail: 'O proprietário levou onze semanas para assinar e desde então se mudou para Portugal.',
           },
           'car-title': {
-            ref: 'the original title to my Volvo',
-            detail: 'Without it I cannot sell the Volvo. Nobody wanted the Volvo anyway, but now it is mine forever.',
+            ref: 'o documento original do meu Volvo',
+            detail: 'Sem ele, não posso vender o Volvo. Ninguém queria o Volvo mesmo, mas agora ele é meu para sempre.',
           },
           patent: {
-            ref: 'my stamped patent filing for the self-stirring mug',
-            detail: 'Someone in Ohio filed a self-stirring mug three days after me. That date was my entire case.',
+            ref: 'meu pedido de patente carimbado da caneca que mexe sozinha',
+            detail: 'Alguém em Ohio registrou uma caneca que mexe sozinha três dias depois de mim. A data era o meu caso inteiro.',
           },
           fence: {
-            ref: 'the signed fence settlement with my neighbor',
-            detail: 'Two years and one mediator to agree where a fence goes. He checks on that agreement. He will notice tonight.',
+            ref: 'o acordo assinado sobre a cerca com meu vizinho',
+            detail: 'Dois anos e um mediador só pra decidir onde a cerca fica. Ele confere esse acordo. Vai perceber hoje à noite.',
           },
           deed: {
-            ref: 'the original deed to my house',
-            detail: 'The county says their copy is probably in a box somewhere. Mine was the one that was not in a box.',
+            ref: 'a escritura original da minha casa',
+            detail: 'A prefeitura diz que a cópia deles provavelmente está numa caixa por aí. A minha era a que não estava numa caixa.',
           },
         },
       },
       creative: {
-        outrage: '{ref}, gone in forty milliseconds. {detail}',
+        outrage: '{ref}, foi-se em quarenta milissegundos. {detail}',
         items: {
           novel: {
-            ref: 'chapter one of my novel',
-            detail: 'Six years of work. It was one chapter, but it was a GOOD chapter.',
+            ref: 'o capítulo um do meu romance',
+            detail: 'Seis anos de trabalho. Era só um capítulo, mas era um capítulo ÓTIMO.',
           },
           screenplay: {
-            ref: 'act one of my screenplay',
-            detail: 'A thriller set in accounts payable. My writing group cried. Two of them cried the good way.',
+            ref: 'o primeiro ato do meu roteiro',
+            detail: 'Um suspense ambientado no contas a pagar. Meu grupo de escrita chorou. Dois deles choraram do jeito bom.',
           },
           lyrics: {
-            ref: 'the lyrics for my band\'s second album',
-            detail: 'Eleven songs. The drummer has waited since March. He thinks I am a genius. Now he will think I am a liar.',
+            ref: 'a letra do segundo álbum da minha banda',
+            detail: 'Onze músicas. O baterista espera desde março. Ele acha que sou um gênio. Agora vai achar que sou um mentiroso.',
           },
           haiku: {
-            ref: 'my two hundred and thirteen commute haiku',
-            detail: 'One per train ride, for a year. Number 113 made a stranger laugh on the 7:42.',
+            ref: 'meu ducentésimo décimo terceiro haicai do trajeto pro trabalho',
+            detail: 'Um por viagem de trem, durante um ano. O número 113 fez um desconhecido rir no das 7:42.',
           },
           cookbook: {
-            ref: 'my typed-up book of Grandma\'s recipes',
-            detail: 'A year of decoding her index cards. She measures in handfuls. I had finally worked out how big her hands are.',
+            ref: 'meu livro datilografado com as receitas da vovó',
+            detail: 'Um ano decifrando as fichas dela. Ela mede em punhados. Eu finalmente tinha descoberto o tamanho das mãos dela.',
           },
         },
       },
       finance: {
-        outrage: '{ref}. {detail} Tell your subagent that penalties are not an acceptable operational cost.',
+        outrage: '{ref}. {detail} Diga ao seu subagente que multas não são um custo operacional aceitável.',
         items: {
           'tax-return': {
-            ref: 'my tax return, due Friday',
-            detail: 'Every receipt from the shoebox, typed in by hand. Due on FRIDAY.',
+            ref: 'minha declaração de imposto de renda, com vencimento na sexta',
+            detail: 'Cada recibo da caixa de sapatos, digitado à mão. Vence na SEXTA.',
           },
           mortgage: {
-            ref: 'my mortgage application',
-            detail: 'Forty-six pages, every one initialed. The bank wants it on Monday. My hand still hurts.',
+            ref: 'meu pedido de financiamento imobiliário',
+            detail: 'Quarenta e seis páginas, todas rubricadas. O banco quer tudo na segunda-feira. Minha mão ainda dói.',
           },
           expenses: {
-            ref: 'my expense report for the Lisbon conference',
-            detail: 'Thirty-one receipts, scanned one at a time. Accounting reimburses nothing without them.',
+            ref: 'meu relatório de despesas da conferência de Lisboa',
+            detail: 'Trinta e um recibos, digitalizados um por um. O financeiro não reembolsa nada sem eles.',
           },
           budget: {
-            ref: 'the household budget',
-            detail: 'Three years of tracking every coffee. I finally knew where the money goes. It goes to coffee.',
+            ref: 'o orçamento doméstico',
+            detail: 'Três anos anotando cada cafezinho. Finalmente descobri para onde vai o dinheiro. Vai para o café.',
           },
           'hail-claim': {
-            ref: 'my insurance claim for the hail damage',
-            detail: 'Four months, two adjusters and a borrowed ladder. The deadline is THURSDAY.',
+            ref: 'meu pedido de indenização pelos danos causados pelo granizo',
+            detail: 'Quatro meses, dois peritos e uma escada emprestada. O prazo termina QUINTA-FEIRA.',
           },
         },
       },
       phone: {
-        outrage: '{ref}. Gone. {detail} It was a photo, not an installer. Read the extension.',
+        outrage: '{ref}. Sumiu. {detail} Era uma foto, não um instalador. Leia a extensão.',
         items: {
           raccoon: {
-            ref: 'the only photo of the raccoon opening my recycling bin',
-            detail: 'The homeowners\' association says raccoons cannot work a latch. I had proof.',
+            ref: 'a única foto do guaxinim abrindo minha lixeira reciclável',
+            detail: 'A associação de moradores diz que guaxinins não sabem abrir trincos. Eu tinha provas.',
           },
           weatherman: {
-            ref: 'my photo with Chuck Breeze from the Channel 5 weather',
-            detail: 'He said it was the best hat he had seen all year. Nobody believed me then. Nobody will now.',
+            ref: 'minha foto com Chuck Breeze, da previsão do tempo do Canal 5',
+            detail: 'Ele disse que era o melhor chapéu que tinha visto no ano. Ninguém acreditou em mim naquela época. Agora ninguém vai acreditar.',
           },
           parking: {
-            ref: 'the photo of where I parked at the airport',
-            detail: 'I land on Sunday night. I will now be walking every level of that garage with a suitcase.',
+            ref: 'a foto de onde estacionei no aeroporto',
+            detail: 'Meu voo chega domingo à noite. Agora vou ter que percorrer todos os andares daquele estacionamento com uma mala.',
           },
           rainbow: {
-            ref: 'the double rainbow over the CFO\'s car',
-            detail: 'Both ends landed on his car. The team chat has been asking for it all week.',
+            ref: 'o arco-íris duplo sobre o carro do CFO',
+            detail: 'As duas pontas caíram no carro dele. O pessoal está pedindo a foto no chat da equipe a semana toda.',
           },
           'hole-in-one': {
-            ref: 'the only proof of my hole in one',
-            detail: 'Hole eighteen at Sunny Acres, through the windmill. My brother says it never happened. Now it never did.',
+            ref: 'a única prova do meu hole in one',
+            detail: 'Buraco dezoito no Sunny Acres, passando pelo moinho de vento. Meu irmão diz que nunca aconteceu. Agora realmente não aconteceu.',
           },
           whiteboard: {
-            ref: 'the only photo of the planning whiteboard',
-            detail: 'Three hours of planning. Nobody else took a picture, because everyone assumed I would. I DID.',
+            ref: 'a única foto do quadro de planejamento',
+            detail: 'Três horas de planejamento. Ninguém mais tirou foto, porque todo mundo achou que eu tiraria. EU TIREI.',
           },
         },
       },

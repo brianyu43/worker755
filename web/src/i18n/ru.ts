@@ -7,7 +7,7 @@ export const ru: Catalogue = {
   'app.loading': 'Ищем ваше рабочее место…',
   'app.clockInAgain': 'Начать новую смену',
   'links.about': 'Об игре',
-  'links.faq': 'FAQ',
+  'links.faq': 'Частые вопросы',
   'links.source': 'Исходный код',
   'links.support': 'Поддержать игру',
   'errors.offline': 'Нет соединения.',
@@ -284,13 +284,12 @@ export const ru: Catalogue = {
   'about.keys': 'Смены и ключи',
   'about.keys.1': 'Бесплатные смены работают на DeepSeek V4.1 Flash. Можно также использовать свой ключ для OpenRouter, Vercel AI Gateway, Anthropic, OpenAI или DeepSeek. Ключ остаётся в браузере. Сервер держит его в памяти только на время смены и никогда не сохраняет и не записывает в логи.',
   'about.keys.2': 'Worker 755 собрали за день, в основном силами ИИ-агентов. Некоторые решения теперь понятнее.',
-  'about.credits': 'Credits',
-  'about.credits.intro': 'Worker 755 stands on open-source work. The people behind it did the hard parts, and nobody gave them 90 seconds.',
-  'about.credits.avatar':
-    'The worker\'s face comes from <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> by Dominik Scholz. Special thanks: without it, Worker 755 would be just a number.',
+  'about.credits': 'Благодарности',
+  'about.credits.intro': 'Worker 755 стоит на плечах опенсорса. Люди, которые за ним стоят, проделали всю сложную работу — и никто не дал им на это 90 секунд.',
+  'about.credits.avatar': 'Лицо работника взято из <a href="https://github.com/DominikScholz/open-bot-avatar">open-bot-avatar</a> Dominik Scholz. Особая благодарность: без него Worker 755 был бы просто числом.',
 
   // ---- FAQ page ---------------------------------------------------------------------------------
-  'faq.title': 'Frequently asked questions',
+  'faq.title': 'Часто задаваемые вопросы',
 
   // ---- offline demo (?mock=1): stands in for a manager that writes in the player's language ----
   // {line}, {line1} and {line2} are exact file contents a task checks: they are filled in, in English.
