@@ -115,12 +115,12 @@ export const es: Faq = {
         {
           id: 'terminal',
           q: '¿La terminal puede acceder a mi ordenador o a un servidor real?',
-          a: 'No. El shell, los archivos, la base de datos y la web son simulaciones del juego. Nada de lo que escribas se ejecuta como un comando real en ninguna parte: ni en tu ordenador ni en el nuestro. <code>curl</code> y <code>websearch</code> acceden a una pequeña web inventada.\n\nBorrar cosas solo tiene consecuencias para tu expediente y para el humor del director.',
+          a: 'No. La shell, sus archivos y la base de datos son una máquina Linux simulada que funciona dentro de esta pestaña del navegador, aislada de tu ordenador. Nada de lo que escribas se ejecuta como un comando real, ni en tu ordenador ni en el nuestro. El juego guarda una copia de tus archivos en su servidor, en memoria, solo para que tu gerente pueda revisar tu trabajo, y la elimina al terminar el turno. <code>curl</code> y <code>websearch</code> acceden a una pequeña web ficticia.\n\nBorrar cosas solo tiene consecuencias para tu expediente y para el humor del director.',
         },
         {
           id: 'commands',
           q: '¿Qué comandos funcionan?',
-          a: 'Los de siempre: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> y muchos más, con tuberías y redirecciones. <code>nano</code> abre un editor. Escribe <code>help</code> para ver la lista completa.',
+          a: 'Los de siempre: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>tar</code>, <code>sqlite3</code> y el resto de coreutils, con tuberías, redirecciones, variables, bucles y scripts. <code>nano</code> abre un editor. Escribe <code>help</code> para ver la lista completa, o <code>man</code> y <code>--help</code> para consultar un comando.',
         },
       ],
     },

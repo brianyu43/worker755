@@ -115,12 +115,12 @@ export const fr: Faq = {
         {
           id: 'terminal',
           q: 'Le terminal peut-il accéder à mon ordinateur ou à un vrai serveur ?',
-          a: 'Non. Le shell, les fichiers, la base de données et le Web sont entièrement simulés par le jeu. Rien de ce que vous saisissez ne s’exécute comme une véritable commande, ni sur votre ordinateur, ni sur le nôtre. <code>curl</code> et <code>websearch</code> donnent accès à un petit Web fictif.\n\nSupprimer des choses n’a de conséquences que sur votre dossier et sur l’humeur du directeur.',
+          a: 'Non. Le shell, ses fichiers et la base de données sont une machine Linux simulée qui tourne dans cet onglet du navigateur, isolée de ton ordinateur. Rien de ce que tu saisis ne s’exécute comme une vraie commande, ni sur ton ordinateur ni sur le nôtre. Le jeu conserve une copie de tes fichiers sur son serveur, en mémoire, uniquement pour que ton manager puisse vérifier ton travail, puis la supprime à la fin du service. <code>curl</code> et <code>websearch</code> accèdent à un petit web fictif.\n\nSupprimer des choses n’a de conséquences que sur ton dossier et sur l’humeur du directeur.',
         },
         {
           id: 'commands',
           q: 'Quelles commandes fonctionnent ?',
-          a: 'Les classiques : <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> et bien d’autres, avec des pipes et des redirections. <code>nano</code> ouvre un éditeur. Tapez <code>help</code> pour voir la liste complète.',
+          a: 'Les classiques : <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>tar</code>, <code>sqlite3</code> et le reste de coreutils, avec les tubes, les redirections, les variables, les boucles et les scripts. <code>nano</code> ouvre un éditeur. Tape <code>help</code> pour la liste complète, ou <code>man</code> et <code>--help</code> pour obtenir de l’aide sur une commande.',
         },
       ],
     },

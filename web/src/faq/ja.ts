@@ -114,13 +114,13 @@ export const ja: Faq = {
       items: [
         {
           id: 'terminal',
-          q: 'ターミナルから自分のコンピューターや実際のサーバーにアクセスできますか？',
-          a: 'いいえ。シェルもファイルもデータベースもウェブも、すべてゲーム内のシミュレーションです。入力したものが実際のコマンドとして実行されることはありません。あなたのコンピューターでも、こちらのサーバーでもです。<code>curl</code>と<code>websearch</code>がアクセスするのは、作り物の小さなウェブです。\n\n何かを削除しても影響するのは、あなたの記録と、ディレクターの機嫌だけです。',
+          q: 'ターミナルから自分のパソコンや実在のサーバーにアクセスできますか？',
+          a: 'いいえ。シェルとそのファイル、データベースは、このブラウザーのタブ内で動くシミュレーション上のLinuxマシンで、あなたのパソコンとは隔離されています。入力したものが、あなたのパソコンでもこちらのサーバーでも、本物のコマンドとして実行されることはありません。ゲームでは、マネージャーが作業を確認できるよう、ファイルのコピーをサーバーのメモリ上に一時保存し、シフトが終わると破棄します。<code>curl</code> と <code>websearch</code> は、ちょっとした架空のウェブにアクセスします。\n\n物を削除しても影響するのは、あなたの記録とディレクターの機嫌だけです。',
         },
         {
           id: 'commands',
           q: 'どのコマンドが使えますか？',
-          a: 'おなじみのコマンドです。<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>mkdir</code>、<code>chmod</code>、<code>grep</code>、<code>find</code>、<code>sqlite3</code>など。パイプやリダイレクトも使えます。<code>nano</code>でエディターが開きます。全リストは<code>help</code>で確認してください。',
+          a: 'おなじみのコマンドです。<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>grep</code>、<code>find</code>、<code>sed</code>、<code>awk</code>、<code>tar</code>、<code>sqlite3</code>、その他のcoreutils一式が使えます。パイプ、リダイレクト、変数、ループ、スクリプトにも対応しています。<code>nano</code>でエディターが開きます。全コマンド一覧は<code>help</code>、個別のコマンドについては<code>man</code>や<code>--help</code>をどうぞ。',
         },
       ],
     },

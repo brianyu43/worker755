@@ -115,12 +115,12 @@ export const de: Faq = {
         {
           id: 'terminal',
           q: 'Kann das Terminal auf meinen Computer oder einen echten Server zugreifen?',
-          a: 'Nein. Shell, Dateien, Datenbank und Web werden alle vom Spiel simuliert. Nichts, was du eingibst, wird irgendwo als echter Befehl ausgeführt: weder auf deinem Computer noch auf unserem. <code>curl</code> und <code>websearch</code> greifen auf ein kleines, frei erfundenes Web zu.\n\nLöschen hat nur Folgen für deine Akte und die Laune des Direktors.',
+          a: 'Nein. Die Shell, ihre Dateien und die Datenbank sind ein simuliertes Linux-System, das in diesem Browser-Tab läuft und von deinem Computer abgeschottet ist. Nichts, was du eingibst, wird als echter Befehl ausgeführt – weder auf deinem Computer noch auf unserem. Das Spiel speichert eine Kopie deiner Dateien auf seinem Server, nur im Arbeitsspeicher, damit dein Manager deine Arbeit prüfen kann. Schichtende? Weg damit. <code>curl</code> und <code>websearch</code> greifen auf ein kleines, frei erfundenes Web zu.\n\nLöschen hat nur Folgen für deine Akte und die Laune des Direktors.',
         },
         {
           id: 'commands',
           q: 'Welche Befehle funktionieren?',
-          a: 'Die üblichen: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> und mehr, inklusive Pipes und Umleitungen. <code>nano</code> öffnet einen Editor. Mit <code>help</code> bekommst du die vollständige Liste.',
+          a: 'Die üblichen: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>tar</code>, <code>sqlite3</code> und der Rest von coreutils – mit Pipes, Umleitungen, Variablen, Schleifen und Skripten. <code>nano</code> öffnet einen Editor. Gib <code>help</code> für die vollständige Liste ein oder <code>man</code> und <code>--help</code> für einen bestimmten Befehl.',
         },
       ],
     },

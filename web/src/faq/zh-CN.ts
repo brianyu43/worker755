@@ -114,13 +114,13 @@ export const zhCN: Faq = {
       items: [
         {
           id: 'terminal',
-          q: '终端能访问我的电脑或真实服务器吗？',
-          a: '不能。Shell、文件、数据库和 Web 全都是游戏模拟的。你输入的任何内容都不会在任何地方作为真实命令运行：既不会在你的电脑上，也不会在我们的电脑上。<code>curl</code> 和 <code>websearch</code> 只能访问一个虚构的小型网络。\n\n删除东西只会影响你的工作记录，以及主管的心情。',
+          q: '终端能访问我的电脑或真正的服务器吗？',
+          a: '不能。Shell、它的文件和数据库都是在此浏览器标签页内运行的模拟 Linux 机器，与你的电脑隔绝。你输入的任何内容都不会作为真实命令在你的电脑或我们的电脑上运行。游戏会把你的文件副本暂存在服务器内存中，仅供经理检查你的工作，并在轮班结束时将其清除。<code>curl</code> 和 <code>websearch</code> 可以访问一个虚构的小型网络。\n\n删除东西只会影响你的档案，以及主管的心情。',
         },
         {
           id: 'commands',
           q: '哪些命令能用？',
-          a: '常见的都有：<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>mkdir</code>、<code>chmod</code>、<code>grep</code>、<code>find</code>、<code>sqlite3</code> 等，还支持管道和重定向。<code>nano</code> 会打开编辑器。输入 <code>help</code> 查看完整列表。',
+          a: '常用的都行：<code>ls</code>、<code>cd</code>、<code>cat</code>、<code>mv</code>、<code>cp</code>、<code>rm</code>、<code>grep</code>、<code>find</code>、<code>sed</code>、<code>awk</code>、<code>tar</code>、<code>sqlite3</code>，以及 coreutils 里的其他命令；管道、重定向、变量、循环和脚本也都支持。输入 <code>nano</code> 可打开编辑器。输入 <code>help</code> 查看完整列表，或用 <code>man</code> 和 <code>--help</code> 查询具体命令。',
         },
       ],
     },

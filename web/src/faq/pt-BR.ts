@@ -114,13 +114,13 @@ export const ptBR: Faq = {
       items: [
         {
           id: 'terminal',
-          q: 'O terminal pode mexer no meu computador ou em um servidor de verdade?',
-          a: 'Não. O shell, os arquivos, o banco de dados e a web são todos simulados pelo jogo. Nada do que você digita é executado como um comando real em lugar nenhum: nem no seu computador, nem no nosso. <code>curl</code> e <code>websearch</code> acessam uma web fictícia e bem pequena.\n\nApagar coisas só tem consequências para sua ficha e para o humor do diretor.',
+          q: 'O terminal pode acessar meu computador ou um servidor de verdade?',
+          a: 'Não. O shell, seus arquivos e o banco de dados são uma máquina Linux simulada que roda nesta aba do navegador, isolada do seu computador. Nada do que você digita é executado como um comando de verdade, nem no seu computador nem no nosso. O jogo mantém uma cópia dos seus arquivos no servidor, em memória, só para seu gerente conferir seu trabalho, e a descarta quando o turno acaba. <code>curl</code> e <code>websearch</code> acessam uma pequena web inventada.\n\nApagar coisas só tem consequências para o seu histórico e para o humor do diretor.',
         },
         {
           id: 'commands',
           q: 'Quais comandos funcionam?',
-          a: 'Os de sempre: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>mkdir</code>, <code>chmod</code>, <code>grep</code>, <code>find</code>, <code>sqlite3</code> e outros, com pipes e redirecionamentos. <code>nano</code> abre um editor. Digite <code>help</code> para ver a lista completa.',
+          a: 'Os de sempre: <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>mv</code>, <code>cp</code>, <code>rm</code>, <code>grep</code>, <code>find</code>, <code>sed</code>, <code>awk</code>, <code>tar</code>, <code>sqlite3</code> e o restante do coreutils, com pipes, redirecionamentos, variáveis, loops e scripts. <code>nano</code> abre um editor. Digite <code>help</code> para ver a lista completa, ou <code>man</code> e <code>--help</code> para consultar um comando.',
         },
       ],
     },
