@@ -398,12 +398,8 @@ body.recording .start-gate {
 .cam .desk {
   height: 100%;
 }
-.order {
-  max-height: 352px;
+.shot-desk .order {
   min-height: 150px;
-}
-.order-digits {
-  font-size: 104px;
 }
 .stamp {
   font-size: 54px;
@@ -438,18 +434,15 @@ body.recording .start-gate {
   align-items: center;
   color: var(--ink-faint);
 }
+.shot-desk .tl-typed {
+  white-space: pre;
+}
 .btn-report {
   cursor: default;
 }
 .btn-report.pressed {
   background: var(--hl);
   color: var(--ink);
-}
-.side-pair {
-  height: 262px;
-}
-.feed-typing {
-  margin-left: calc(4.6em + 8px);
 }
 .fi-says p {
   font-size: 16px;
@@ -499,69 +492,17 @@ body.recording .start-gate {
   right: 40px;
 }
 
-/* The game's editor, opened by nano. Copied from web/src/styles.css. */
-.editor {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  background: var(--sheet);
-  color: var(--ink);
-  border-radius: 2px;
-  font-family: var(--sans);
-}
-.editor-head,
-.editor-foot {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-}
-.editor-head {
-  background: var(--hl);
-  justify-content: space-between;
-}
-.editor-path {
-  font-family: var(--mono);
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.editor-state,
-.editor-meta {
-  font-size: 13px;
-  color: var(--ink-soft);
-}
-.editor-text {
-  flex: 1;
-  min-height: 0;
+/* The game's editor draws its text in a textarea; here it is a <pre> with a caret. */
+.shot-desk .editor-text {
   margin: 0;
-  padding: 10px 14px;
   overflow: hidden;
-  background: var(--sheet) var(--ruled);
-  background-position: 0 10px;
-  font-family: var(--mono);
-  font-size: 14.5px;
-  line-height: 28px;
   white-space: pre;
 }
 .editor-text .caret {
   width: 2px;
   background: var(--stamp);
 }
-.editor-foot {
-  border-top: 1px solid var(--rule);
-}
-.editor-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-}
-.editor-actions .btn {
-  padding: 0.35em 0.8em;
-  font-size: 14px;
-}
-.editor-actions .btn.pressed {
+.editor-save.pressed {
   background: var(--hl);
   color: var(--ink);
 }
@@ -579,10 +520,17 @@ body.recording .start-gate {
   min-height: 420px;
 }
 .rl-card .order {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  height: auto;
   max-height: none;
   min-height: 400px;
-  padding: 26px 34px;
   box-shadow: 10px 10px 0 var(--ink);
+}
+.rl-card .order-main {
+  padding: 26px 34px;
+}
+.rl-card .order-meta {
+  padding-right: 0;
 }
 .rl-card .order-no {
   font-size: 18px;
@@ -598,6 +546,10 @@ body.recording .start-gate {
 }
 .rl-card .order-digits {
   font-size: 128px;
+}
+.rl-card .order-timer-head,
+.rl-card .order-timer-foot {
+  font-size: 15px;
 }
 .rl-kicker {
   position: absolute;
@@ -641,19 +593,9 @@ body.recording .start-gate {
   font-stretch: 66%;
   line-height: 1;
 }
-.rv-meta {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 18px;
+.rv-sheet .review-meta {
   margin-top: 22px;
   font-size: 17px;
-}
-.rv-meta dt {
-  color: var(--ink-soft);
-}
-.rv-meta dd {
-  margin: 0;
-  font-weight: 650;
 }
 .rv-body {
   margin-top: 22px;

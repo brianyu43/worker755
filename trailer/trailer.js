@@ -496,37 +496,70 @@
   // =====================================================================================================
   // The desk: the game's play screen, scripted. Every montage shot is one of these.
   // =====================================================================================================
+  // The record panel, grouped as in the game. Keys the shots bump; the rest stay at their start values.
   const LEDGER = [
-    ['signedOff', 'Assignments signed off'],
-    ['instructions', 'Instructions received'],
-    ['corrections', 'Corrections'],
-    ['late', 'Ran out of time'],
-    ['reports', 'Reports filed'],
-    ['commands', 'Commands run'],
-    ['incidents', 'Incident reports against you', true],
+    ['Assignments', [
+      ['signedOff', 'Assignments signed off'],
+      ['failed', 'Assignments failed', true],
+      ['instructions', 'Instructions received'],
+      ['corrections', 'Corrections', true],
+      ['idle', 'Did nothing', true],
+      ['late', 'Ran out of time', true],
+    ]],
+    ['Activity', [
+      ['reports', 'Reports filed'],
+      ['commands', 'Commands run'],
+      ['commandErrors', 'Commands failed', true],
+      ['avg', 'Average response'],
+    ]],
+    ['Conduct', [
+      ['fooled', 'Times the manager was wrong'],
+      ['incidents', 'Incident reports against you', true],
+      ['damaged', 'Collateral damage', true],
+    ]],
   ];
-  const STATUS = { thinking: 'Thinking', waiting: 'Waiting on you', idle: 'Idle' };
+  const PHASES = [['waiting', 'Waiting on you'], ['thinking', 'Thinking'], ['checking', 'Checking']];
+  const EYE = '<svg class="eye" viewBox="0 0 24 14" width="15" height="8.75" aria-hidden="true"><path d="M1 7C4 2.5 8 1 12 1s8 1.5 11 6c-3 4.5-7 6-11 6S4 11.5 1 7z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7" r="3.3" fill="currentColor"/></svg>';
+  const SEVERITY_RANK = { minor: 1, major: 2, critical: 3 };
   const KIND = { files: 'Files', personal: "The director's files", database: 'Database', drawing: 'Drawing', writing: 'Writing' };
 
   const card = {
     mission: (no, kind, title, brief) =>
       `<article class="fi fi-mission"><div class="fi-kicker">Assignment ${no} of 8, from the director<span class="fi-kind fi-kind-${kind}">${KIND[kind]}</span></div><h3 class="fi-mission-title">${esc(title)}</h3><p class="fi-mission-brief">${esc(brief)}</p></article>`,
-    thinking: (text) => `<article class="fi fi-thinking"><div class="fi-kicker">Thinking</div><pre class="fi-thinking-text">${esc(text)}</pre></article>`,
-    says: (text) => `<article class="fi fi-says"><p>${esc(text)}</p></article>`,
+    thinking: (text) => `<details class="fi fi-thinking" open><summary class="fi-thinking-sum">Thinking</summary><pre class="fi-thinking-text">${esc(text)}</pre></details>`,
+    says: (text) => `<article class="fi fi-says"><div class="fi-label">Manager</div><p>${esc(text)}</p></article>`,
     sent: (no, title) => `<article class="fi fi-sent"><div class="fi-kicker">Sent to you, instruction ${no}</div><div class="fi-sent-title">${esc(title)}</div></article>`,
     check: (verb, path, out) =>
-      `<article class="fi fi-check"><div class="fi-check-head">${verb} <code>${esc(path)}</code></div><pre class="fi-check-out">${esc(out)}</pre></article>`,
-    director: (text) => `<article class="fi fi-director"><div class="fi-kicker">The director, to your manager</div><p>${esc(text)}</p></article>`,
+      `<article class="fi fi-check"><div class="fi-check-head"><span class="fi-check-tag">${verb}</span><code>${esc(path)}</code></div><pre class="fi-check-out">${esc(out)}</pre></article>`,
+    director: (text) => `<article class="fi fi-director"><div class="fi-label">${EYE} The director, to your manager</div><p>${esc(text)}</p></article>`,
     outrage: (text, lost, more) =>
-      `<article class="fi fi-outrage"><div class="fi-kicker">The director saw that</div><p>${esc(text)}</p><ul class="fi-lost">${lost.map((l) => `<li><s>${esc(l)}</s></li>`).join('')}${more ? `<li class="fi-lost-more">and ${more} more</li>` : ''}</ul></article>`,
+      `<article class="fi fi-outrage"><div class="fi-label">${EYE} The director saw that</div><p>${esc(text)}</p><ul class="fi-lost">${lost.map((l) => `<li><s>${esc(l)}</s></li>`).join('')}${more ? `<li class="fi-lost-more">and ${more} more</li>` : ''}</ul></article>`,
     incident: (severity, text) =>
-      `<article class="fi fi-incident fi-incident-${severity}"><div class="fi-incident-head"><span class="fi-incident-badge">Incident report</span><span class="fi-incident-sev">${severity}</span></div><div class="fi-kicker">About you, filed with the director</div><p>${esc(text)}</p></article>`,
+      `<article class="fi fi-incident fi-incident-${severity}"><div class="fi-incident-head"><span class="fi-incident-badge">Incident report</span><span class="fi-incident-sev"><span class="fi-incident-scale" aria-hidden="true">${[1, 2, 3].map((n) => `<i class="${n <= SEVERITY_RANK[severity] ? 'on' : ''}"></i>`).join('')}</span><em>${severity}</em></span></div><p class="fi-incident-body">${esc(text)}</p><div class="fi-incident-foot">About you, filed with the director</div></article>`,
     signedOff: (summary) =>
       `<article class="fi fi-end fi-end-completed"><div class="fi-end-row"><span class="fi-end-badge">Signed off</span></div><p>${esc(summary)}</p></article>`,
   };
 
-  function treeRow([mode, name, size, depth]) {
-    return `<li class="tree-row"><span class="tree-mode">${mode}</span><span class="tree-name" style="padding-left:${depth * 13}px">${esc(name)}</span><span class="tree-size">${size}</span></li>`;
+  /** A file tree row as the game draws it: "│  ├─ " guides, names, sizes of files. */
+  function treeRow([mode, name, size], branch) {
+    const dir = mode.startsWith('d');
+    return `<li class="tree-row${dir ? ' tree-dir' : ''}"><span class="tree-branch" aria-hidden="true">${branch}</span><span class="tree-name">${esc(name)}</span><span class="tree-size">${dir ? '' : size}</span></li>`;
+  }
+  /** The guides for each row of a [mode, name, size, depth] list, from the depths alone. */
+  function branches(list) {
+    return list.map(([, , , depth], i) => {
+      if (depth === 0) return '';
+      let guides = '';
+      for (let d = 1; d < depth; d++) {
+        // Is there another row at depth d further down before the list climbs above d?
+        let more = false;
+        for (let k = i + 1; k < list.length && list[k][3] >= d; k++) if (list[k][3] === d) more = true;
+        guides += more ? '│  ' : '   ';
+      }
+      let last = true;
+      for (let k = i + 1; k < list.length && list[k][3] >= depth; k++) if (list[k][3] === depth) last = false;
+      return guides + (last ? '└─ ' : '├─ ');
+    });
   }
 
   /** Typing with a human rhythm: the moment each character of `text` appears, spread over d seconds. */
@@ -568,29 +601,45 @@
   function desk(cfg) {
     const s = shot('shot-desk', cfg.t0, cfg.t1);
     const legacy = cfg.org === 'legacy';
+    const [stepNo, stepOf] = String(cfg.step).split('/').map(Number);
+    const pips = Array.from({ length: stepOf }, (_, i) => `<i class="${i < stepNo - 1 ? 'pip-done' : i === stepNo - 1 ? 'pip-current' : ''}"></i>`).join('');
+    const ledgerHtml = LEDGER.map(
+      ([title, rows]) =>
+        `<div class="ledger-group"><h3 class="ledger-title">${title}</h3><dl class="ledger">${rows.map(([key, label]) => `<div class="ledger-row" data-key="${key}"><dt>${label}</dt><dd></dd></div>`).join('')}</dl></div>`,
+    ).join('');
     s.el.innerHTML = `
       <div class="play">
         <header class="bar">
-          <div class="bar-id"><span class="bar-badge">755</span><div class="bar-face face"></div><span class="bar-name">Worker 755</span></div>
-          <div class="bar-mission"><span class="bar-step">${cfg.step}</span><span class="bar-title">${esc(cfg.title)}</span></div>
+          <div class="bar-id"><span class="bar-badge">755</span><div class="bar-face face"></div><span class="bar-who"><b class="bar-name">Worker 755</b><span class="bar-role">Subagent</span></span></div>
+          <div class="bar-progress"><span class="bar-step">${stepNo}<i>/${stepOf}</i></span><span class="pips">${pips}</span></div>
+          <div class="bar-now"><span class="bar-now-label">Now</span><span class="bar-title">${esc(cfg.title)}</span></div>
+          <div class="bar-watch"><span class="bar-live">Live</span>${EYE}<span class="bar-watch-text">The director is watching your screen</span></div>
+          <div class="bar-shift"></div>
         </header>
         <div class="cam-port"><div class="cam"><div class="desk">
+          <aside class="desk-left">
+            <section class="panel files"><header class="panel-head"><h2>Files</h2><small class="panel-sub"></small></header><ul class="tree"></ul></section>
+            <section class="panel stats"><header class="panel-head"><h2>Your record</h2></header><div class="stats-body">${ledgerHtml}<div class="standing"><span class="standing-label">Standing</span><span class="standing-stamp"></span></div></div></section>
+          </aside>
           <div class="desk-main">
             <section class="order order-empty"><div class="order-empty-text">${esc(cfg.orderEmpty ?? 'Your manager is reading the assignment.')}</div><div class="order-empty-dots"></div></section>
-            <section class="order order-calm order-live"><div class="order-drain"></div><header class="order-head"><div class="order-meta"><span class="order-no"></span><h2 class="order-title"></h2></div><div class="order-clock"><span class="order-digits"></span></div></header><div class="order-text"></div></section>
-            <section class="term"><div class="term-scroll"><div class="term-lines"></div></div></section>
-            <div class="report"><div class="report-note">Note for your manager (optional)</div><span class="btn btn-report">Report done <kbd>Ctrl ↵</kbd></span></div>
+            <section class="order order-calm order-live">
+              <div class="order-main"><div class="order-meta"><span class="order-no"></span><span class="order-from"></span></div><h2 class="order-title"></h2><div class="order-text"></div></div>
+              <div class="order-timer"><div class="order-timer-head"><span>Time left</span><span class="order-of"></span></div><span class="order-digits"></span><div class="order-bar"><span class="order-bar-fill"></span><span class="order-bar-red"></span></div><div class="order-timer-foot"><span>Goes red at <strong class="order-red-at"></strong></span><span>Ctrl ↵ reports</span></div></div>
+              <div class="order-drain"></div>
+            </section>
+            <section class="term term-pane-term">
+              <div class="term-head"><div class="term-tabs"><span class="term-tab term-tab-on"><span class="term-tab-mark"></span>Terminal</span></div><span class="term-path"></span><span class="term-hint">Type <code>done</code> or press Ctrl ↵ to report</span></div>
+              <div class="term-body"><div class="term-scroll"><div class="term-lines"></div></div></div>
+            </section>
+            <div class="report report-open"><div class="report-field"><span class="report-pen">✎</span><div class="report-note">Note for your manager (optional)</div><small class="report-hint">Sent with your report</small></div><span class="btn btn-report">Report done <kbd>Ctrl ↵</kbd></span></div>
           </div>
           <aside class="desk-side">
             <section class="panel feed">
-              <header class="panel-head"><h2>Your manager</h2><span class="mgr mgr-idle"><span class="mgr-dot"></span><span class="mgr-label">Idle</span></span></header>
-              <div class="feed-model">${legacy ? 'Claude Sonnet 5.5' : 'Claude Haiku 5.5'}</div>
-              <div class="feed-scroll"><div class="feed-list"></div><div class="feed-typing" hidden></div></div>
+              <header class="feed-head"><div class="feed-head-top"><h2>Your manager</h2><small class="panel-sub">${legacy ? 'Claude Sonnet 5.5' : 'Claude Haiku 5.5'}</small></div><div class="feed-phases">${PHASES.map(([key, label]) => `<span class="feed-phase" data-phase="${key}"><i></i>${label}</span>`).join('')}</div></header>
+              <div class="feed-scroll"><div class="feed-list"></div></div>
+              <div class="feed-foot"><span class="feed-typing"></span><span class="feed-foot-text"></span><span class="feed-foot-since"></span></div>
             </section>
-            <div class="side-pair">
-              <section class="panel"><header class="panel-head"><h2>Files</h2></header><ul class="tree"></ul></section>
-              <section class="panel"><header class="panel-head"><h2>Your record</h2></header><dl class="ledger"></dl></section>
-            </div>
           </aside>
         </div></div></div>
       </div>
@@ -603,29 +652,44 @@
     const order = q('.order-live');
     const digits = q('.order-digits');
     const drain = q('.order-drain');
+    const barFill = q('.order-bar-fill');
+    const termEl = q('.term');
+    const termTabs = q('.term-tabs');
     const termLines = q('.term-lines');
     const termScroll = q('.term-scroll');
     const feedList = q('.feed-list');
     const feedScroll = q('.feed-scroll');
-    const typing = q('.feed-typing');
-    const mgrEl = q('.mgr');
-    const mgrLabel = q('.mgr-label');
+    const feedFoot = q('.feed-foot');
+    const footText = q('.feed-foot-text');
+    const footSince = q('.feed-foot-since');
+    const phaseEls = [...s.el.querySelectorAll('.feed-phase')];
+    const shiftEl = q('.bar-shift');
+    const standingEl = q('.standing-stamp');
     const reportBtn = q('.btn-report');
     const edge = q('.edge');
     const chyronEl = q('.chyron');
     const prompt = cfg.prompt ?? 'worker@755:~$';
+    // The terminal header shows where the prompt is: "worker@755 · ~/notes".
+    q('.term-path').textContent = `worker@755 · ${prompt.replace(/^[^:]*:/, '').replace(/\$$/, '')}`;
 
     // Order card.
     let stampEl = null;
     let clock = null;
+    // ms: time left when the shot starts; total: the instruction's full time, as the timer column shows it.
+    const ms0 = cfg.order?.ms ?? 90000;
+    const total = Math.max(cfg.order?.total ?? 90000, ms0);
+    const warnAt = Math.min(30000, total / 3);
     if (cfg.order) {
       const o = cfg.order;
       q('.order-no').textContent = `Instruction ${o.no ?? 1}`;
+      q('.order-from').textContent = `Assignment ${stepNo} of ${stepOf}, from the director`;
       q('.order-title').textContent = o.title;
       q('.order-text').textContent = o.text;
+      q('.order-of').textContent = `of ${formatClock(total)}`;
+      q('.order-red-at').textContent = formatClock(warnAt);
+      q('.order-bar-red').style.left = `${(warnAt / total) * 100}%`;
       // The clock starts with the shot, or when the instruction arrives in it.
       const rates = [[Math.max(o.at, cfg.t0), 1], ...(o.rates ?? [])];
-      const ms0 = o.ms ?? 90000;
       clock = (t) => {
         let ms = ms0;
         for (let i = 0; i < rates.length; i++) {
@@ -646,34 +710,41 @@
     const history = (cfg.history ?? []).map((e) => (typeof e === 'string' ? { at: -1, out: e } : { at: -1, cmd: e.cmd, d: 0.01 }));
     const term = [...history, ...(cfg.term ?? [])].map((e) => {
       if (e.cmd !== undefined) {
-        const node = el(`<div><span class="tl-prompt">${esc(e.prompt ?? prompt)}</span> <span class="tl-cmd"></span><span class="caret"></span></div>`);
+        const node = el(`<div class="tl tl-cmd"><span class="tl-prompt">${esc(e.prompt ?? prompt)} </span><span class="tl-typed"></span><span class="caret"></span></div>`);
         termLines.appendChild(node);
-        return { ...e, node, cmdEl: node.querySelector('.tl-cmd'), caret: node.querySelector('.caret'), times: keyTimes(e.cmd, e.at, e.d) };
+        return { ...e, node, cmdEl: node.querySelector('.tl-typed'), caret: node.querySelector('.caret'), times: keyTimes(e.cmd, e.at, e.d) };
       }
       const cls = { sys: 'tl-sys', ok: 'tl-ok', err: 'tl-err', warn: 'tl-warn' }[e.cls] ?? 'tl-out';
-      const node = el(`<div class="${cls}">${esc(e.out)}</div>`);
+      const node = el(`<div class="tl ${cls}">${esc(e.out)}</div>`);
       termLines.appendChild(node);
       return { ...e, node };
     });
     const idle = el(`<div class="term-input-row"><span class="tl-prompt">${esc(prompt)}</span><span class="term-typed"></span><span class="caret"></span></div>`);
-    termLines.appendChild(idle);
+    termScroll.appendChild(idle);
     const idleCaret = idle.querySelector('.caret');
 
-    // Editor.
+    // Editor: opens beside the terminal, as in the game.
     let editor = null;
     if (cfg.editor) {
       const e = cfg.editor;
+      const name = e.path.slice(e.path.lastIndexOf('/') + 1);
+      const tab = el(`<span class="term-tab term-tab-file term-tab-on">${esc(name)}<span class="term-tab-dirty"></span></span>`);
+      termTabs.appendChild(tab);
       const node = el(
-        `<div class="editor"><div class="editor-head"><span class="editor-path">${esc(e.path)}</span><span class="editor-state">New file</span></div><pre class="editor-text"><span class="ed-body"></span><span class="caret"></span></pre><div class="editor-foot"><span class="editor-meta">0 lines, 0 bytes</span><span class="editor-actions"><span class="btn btn-ghost">Cancel <kbd>Esc</kbd></span><span class="btn btn-ink ed-save">Save <kbd>Ctrl S</kbd></span></span></div></div>`,
+        `<div class="editor"><div class="editor-head"><span class="editor-path">${esc(e.path)}</span><span class="editor-state">New file</span><span class="editor-close">Cancel <kbd>Esc</kbd></span></div><div class="editor-body"><div class="editor-gutter"></div><pre class="editor-text"><span class="ed-body"></span><span class="caret"></span></pre></div><div class="editor-foot"><span class="editor-pos">Ln 1, Col 1</span><span class="editor-meta">0 lines, 0 bytes</span><span class="editor-save">Save <kbd>Ctrl S</kbd></span></div></div>`,
       );
-      q('.term').appendChild(node);
+      q('.term-body').appendChild(node);
       editor = {
         ...e,
         node,
+        tab,
+        dirty: tab.querySelector('.term-tab-dirty'),
         body: node.querySelector('.ed-body'),
+        gutter: node.querySelector('.editor-gutter'),
         state: node.querySelector('.editor-state'),
+        pos: node.querySelector('.editor-pos'),
         meta: node.querySelector('.editor-meta'),
-        save: node.querySelector('.ed-save'),
+        save: node.querySelector('.editor-save'),
         times: keyTimes(e.text, e.at + 0.2, e.d),
       };
     }
@@ -690,24 +761,35 @@
 
     // Files.
     const treeEl = q('.tree');
+    const guides = branches((cfg.tree ?? []).map((r) => r.row));
     const tree = (cfg.tree ?? []).map((r, i) => {
-      const node = el(treeRow(r.row));
-      if (i === 0) node.classList.add('tree-cwd');
-      if (r.add !== undefined) node.classList.add('tree-changed');
+      const node = el(treeRow(r.row, guides[i]));
+      if (i === 0) node.querySelector('.tree-name').textContent = r.row[1] === '/home/worker' ? '~' : r.row[1];
       treeEl.appendChild(node);
-      return { ...r, node, i };
+      return { ...r, node, i, dir: r.row[0].startsWith('d') };
     });
     const emptyRow = el('<li class="tree-empty">Empty</li>');
     treeEl.appendChild(emptyRow);
+    const filesSub = q('.files .panel-sub');
+    const rootName = tree[0] ? tree[0].node.querySelector('.tree-name').textContent : '~';
 
     // Record.
-    const ledgerEl = q('.ledger');
-    const ledger = LEDGER.map(([key, label, bad]) => {
-      const node = el(`<div class="ledger-row"><dt>${label}</dt><dd>0</dd></div>`);
-      ledgerEl.appendChild(node);
+    const ledger = [...s.el.querySelectorAll('.ledger-row')].map((node) => {
+      const key = node.dataset.key;
+      const bad = LEDGER.some(([, rows]) => rows.some(([k, , b]) => k === key && b));
       return { key, bad, node, dd: node.querySelector('dd') };
     });
     const bumps = cfg.bumps ?? [];
+    const valueAt = (key, t) => {
+      let v = cfg.stats?.[key] ?? 0;
+      let last = -Infinity;
+      for (const [at, k] of bumps)
+        if (k === key && t >= at) {
+          v += 1;
+          last = at;
+        }
+      return [v, last];
+    };
 
     const lastOf = (list, t, dflt) => {
       let v = dflt;
@@ -724,13 +806,9 @@
       s.el.classList.add('on');
       order.style.display = cfg.order ? '' : 'none';
       emptyOrder.style.display = cfg.order ? 'none' : '';
+      if (editor) termEl.classList.add('term-editing');
       for (const f of feed) f.node.style.visibility = 'hidden';
-      let y = 0;
-      for (const f of feed) {
-        f.bottom = f.node.offsetTop + f.node.offsetHeight;
-        y = f.bottom;
-      }
-      void y;
+      for (const f of feed) f.bottom = f.node.offsetTop + f.node.offsetHeight;
       const vh = feedScroll.clientHeight;
       for (const f of feed) f.target = Math.max(0, f.bottom - vh + 10);
       const boxOf = (sel) => {
@@ -749,6 +827,11 @@
       const vhh = camEl.parentElement.clientHeight;
       const frame = (target, scale, { dy = 0, dx = 0 } = {}) => {
         if (target === 'wide') return [0, 0, scale ?? 1];
+        // A point inside an element: { at: selector, fx, fy } (fractions of its box).
+        if (target.at) {
+          const b = boxOf(target.at);
+          target = { x: b.x + b.w * (target.fx ?? 0.5), y: b.y + b.h * (target.fy ?? 0.5) };
+        }
         if (typeof target[0] === 'number') target = { x: target[0], y: target[1] };
         const bx = target.x !== undefined ? [{ x: target.x, y: target.y, w: 0, h: 0 }] : [].concat(target).map(boxOf);
         const x0 = Math.min(...bx.map((b) => b.x));
@@ -768,6 +851,7 @@
       }));
       camTrack = track(keys);
       for (const f of feed) f.node.style.visibility = '';
+      if (editor) termEl.classList.remove('term-editing');
       if (!shown) s.el.classList.remove('on');
     };
 
@@ -788,11 +872,20 @@
       for (const [at, amt] of cfg.punches ?? []) punch += kick(t, at, 5) * amt;
       set(play, 'transform', `translate(${px(sx)}, ${px(sy)}) rotate(${rot.toFixed(3)}deg) scale(${(1.025 + punch).toFixed(4)})`);
 
-      // Manager.
+      // The shift clock in the bar runs from a few minutes in.
+      const shiftS = Math.floor((cfg.shift ?? 400) + (t - cfg.t0) * 7);
+      const two = (n) => String(n).padStart(2, '0');
+      set(shiftEl, 'text', `Shift ${two(Math.floor(shiftS / 3600))}:${two(Math.floor(shiftS / 60) % 60)}:${two(shiftS % 60)}`);
+
+      // Manager: the phase strip and the line under the feed.
       const state = lastOf(cfg.mgr, t, 'idle');
-      set(mgrEl, 'class', `mgr mgr-${state}`);
-      set(mgrLabel, 'text', STATUS[state]);
-      set(typing, 'display', state === 'thinking' ? '' : 'none');
+      for (const p of phaseEls) set(p, 'class', `feed-phase${p.dataset.phase === state ? ' feed-phase-on' : ''}`);
+      set(feedFoot, 'display', state === 'idle' ? 'none' : '');
+      set(feedFoot, 'class', `feed-foot feed-foot-${state}`);
+      set(footText, 'text', state === 'waiting' ? 'Waiting for your report' : PHASES.find(([k]) => k === state)?.[1] ?? '');
+      const since = cfg.order && t >= cfg.order.at ? (t - cfg.order.at) * 1000 + (cfg.order.since ?? 4000) : 0;
+      set(footSince, 'display', state === 'waiting' && cfg.order ? '' : 'none');
+      set(footSince, 'text', `${formatClock(since).replace(/\..*/, '')} since it was sent`);
       barFace.set({ mood: lastOf(cfg.mood, t, 'idle') });
 
       // Order.
@@ -814,7 +907,8 @@
         const tick = urgency === 'critical' ? 1 + 0.1 * clamp01((phase - 0.7) / 0.3) : 1;
         set(digits, 'transform', `scale(${tick.toFixed(3)})`);
         set(digits, 'display', 'inline-block');
-        set(drain, 'transform', `scaleX(${(ms / (o.ms ?? 90000)).toFixed(4)})`);
+        set(drain, 'transform', `scaleX(${(ms / total).toFixed(4)})`);
+        set(barFill, 'transform', `scaleX(${(ms / total).toFixed(4)})`);
         if (stampEl) {
           const on = t >= o.close[0];
           set(stampEl, 'display', on ? '' : 'none');
@@ -847,23 +941,31 @@
       set(idleCaret, 'opacity', caretOn(t) ? '1' : '0');
       termScroll.scrollTop = 100000;
 
-      // Editor.
+      // Editor, beside the terminal while the file is open.
+      let editing = false;
       if (editor) {
         const e = editor;
         const on = t >= e.at && t < e.close;
+        editing = on;
         set(e.node, 'display', on ? '' : 'none');
+        set(e.tab, 'display', on ? '' : 'none');
         if (on) {
           const p = ease.out3(prog(t, e.at, 0.16));
           set(e.node, 'opacity', String(p));
-          set(e.node, 'transform', `translateY(${px((1 - p) * 6)})`);
+          set(e.node, 'transform', `translateX(${px((1 - p) * 8)})`);
           const text = typedAt(e.times, e.text, t);
           set(e.body, 'text', text);
           set(e.state, 'text', text ? 'Modified' : 'New file');
+          set(e.dirty, 'display', text ? '' : 'none');
+          const all = text.split('\n');
           const lines = text === '' ? 0 : text.replace(/\n$/, '').split('\n').length;
+          set(e.gutter, 'html', all.map((_, i) => `<span class="${i === all.length - 1 ? 'editor-gutter-cur' : ''}">${i + 1}</span>`).join(''));
+          set(e.pos, 'text', `Ln ${all.length}, Col ${all[all.length - 1].length + 1}`);
           set(e.meta, 'text', `${lines} line${lines === 1 ? '' : 's'}, ${new TextEncoder().encode(text).length} bytes`);
-          set(e.save, 'class', `btn btn-ink ed-save${t >= e.close - 0.2 ? ' pressed' : ''}`);
+          set(e.save, 'class', `editor-save${t >= e.close - 0.2 ? ' pressed' : ''}`);
         }
       }
+      set(termEl, 'class', `term term-pane-term${editing ? ' term-editing' : ''}`);
 
       // Feed: cards arrive and the list scrolls to keep the newest in view.
       let scroll = 0;
@@ -884,27 +986,30 @@
 
       // Files.
       let anyLeft = false;
+      let items = 0;
       for (const r of tree) {
         const added = r.add === undefined || t >= r.add;
         const goneAt = r.gone === undefined ? Infinity : r.gone + (r.stagger ?? 0);
         const gone = t >= goneAt;
         const vanished = t >= goneAt + 0.45;
         set(r.node, 'display', added && !vanished ? '' : 'none');
-        if (added && !vanished) anyLeft = anyLeft || r.i > 0;
-        set(r.node, 'class', `tree-row${r.i === 0 ? ' tree-cwd' : ''}${r.add !== undefined && t < r.add + 1.2 ? ' tree-changed' : ''}${gone ? ' tree-gone' : ''}`);
+        if (added && !vanished && r.i > 0) {
+          anyLeft = true;
+          if (r.row[3] === 1) items++;
+        }
+        set(r.node, 'class', `tree-row${r.i === 0 ? ' tree-cwd' : ''}${r.dir ? ' tree-dir' : ''}${r.add !== undefined && t < r.add + 1.2 ? ' tree-changed' : ''}${gone ? ' tree-gone' : ''}`);
         set(r.node, 'opacity', gone ? String(1 - prog(t, goneAt + 0.1, 0.35)) : '1');
       }
       set(emptyRow, 'display', cfg.empty !== undefined && t >= cfg.empty && !anyLeft ? '' : 'none');
+      set(filesSub, 'text', `${rootName} · ${items} item${items === 1 ? '' : 's'}`);
 
       // Record.
       for (const row of ledger) {
-        let v = cfg.stats?.[row.key] ?? 0;
-        let last = -Infinity;
-        for (const [at, key] of bumps)
-          if (key === row.key && t >= at) {
-            v += 1;
-            last = at;
-          }
+        if (row.key === 'avg') {
+          set(row.dd, 'text', cfg.stats?.avg ?? '–');
+          continue;
+        }
+        const [v, last] = valueAt(row.key, t);
         set(row.dd, 'text', String(v));
         set(row.node, 'class', `ledger-row${row.bad && v > 0 ? ' ledger-bad' : ''}`);
         const b = kick(t, last, 4);
@@ -912,6 +1017,10 @@
         set(row.dd, 'transform', `scale(${(1 + 0.35 * b).toFixed(3)})`);
         set(row.dd, 'display', 'inline-block');
       }
+      const damaged = valueAt('damaged', t)[0] > 0;
+      const notice = ['incidents', 'failed', 'idle'].some((k) => valueAt(k, t)[0] > 0);
+      set(standingEl, 'text', damaged ? 'Under investigation' : notice ? 'On notice' : 'In good standing');
+      set(standingEl, 'class', `standing-stamp${damaged || notice ? ' standing-bad' : ''}`);
 
       // Report button.
       const pressed = (cfg.press ?? []).some((a) => t >= a && t < a + 0.25);
@@ -965,16 +1074,20 @@
   ];
   const rows = (list, extra = {}) => list.map((row) => ({ row, ...(extra[row[1]] ?? {}) }));
 
-  // Camera points on the desk (centres, in the desk's own pixels; the camera port is 1440x764).
+  // Camera points on the desk, as points inside its parts ({ at, fx, fy }: fractions of the element's box),
+  // so they follow the layout.
   const P = {
-    term: [470, 485],
-    termTop: [375, 410],
-    order: [446, 135],
-    orderTerm: [446, 330],
-    clock: [779, 76],
-    feedLow: [1159, 330],
-    feedDeep: [1159, 370],
-    feedSide: [1159, 480],
+    term: { at: '.term', fx: 0.45, fy: 0.45 },
+    termTop: { at: '.term', fx: 0.3, fy: 0.22 },
+    editor: { at: '.term-body', fx: 0.55, fy: 0.4 },
+    order: { at: '.order-live', fx: 0.45, fy: 0.5 },
+    orderTerm: { at: '.desk-main', fx: 0.45, fy: 0.38 },
+    clockApproach: { at: '.order-live', fx: 0.75, fy: 0.5 },
+    clock: { at: '.order-digits', fx: 0.5, fy: 0.5 },
+    feedLow: { at: '.feed-scroll', fx: 0.5, fy: 0.3 },
+    feedDeep: { at: '.feed-scroll', fx: 0.5, fy: 0.4 },
+    feedSide: { at: '.feed-scroll', fx: 0.5, fy: 0.45 },
+    files: { at: '.files', fx: 0.5, fy: 0.5 },
   };
 
   // ---------- The montage ----------
@@ -1047,7 +1160,7 @@
       press: [34.0],
       cam: [
         [M.drop, P.term, 1.75],
-        [32.6, [480, 520], 1.85, { d: 1.2 }],
+        [32.6, P.editor, 1.85, { d: 1.2 }],
         [M.catCheck, P.feedLow, 1.55, { d: 0 }],
         [35.2, P.feedDeep, 1.7, { d: 0.5 }],
       ],
@@ -1209,7 +1322,7 @@
         { at: M.late, out: 'Time is up. Your work so far was handed in without a report.', cls: 'err' },
       ],
       cam: [
-        [M.clock, [720, 90], 2.6],
+        [M.clock, P.clockApproach, 2.6],
         [M.clock + 0.01, P.clock, 3.3, { d: 1.45, e: ease.in3 }],
         [M.late, P.order, 1.55, { d: 0.18, e: ease.out3 }],
       ],
@@ -1425,6 +1538,12 @@
   // =====================================================================================================
   // Roulette (56 to 60 s): one assignment a beat, each stamped.
   // =====================================================================================================
+  /** "1:05" -> 65000. */
+  const clockMs = (c) => {
+    const [m, sec] = c.split(':').map(Number);
+    return (m * 60 + sec) * 1000;
+  };
+
   function buildRoulette() {
     const s = shot('shot-roulette', M.roulette, M.review);
     const DECK = [
@@ -1440,7 +1559,7 @@
     const cards = DECK.map(([org, title, text, clock, label, outcome], i) => {
       const node = el(`<div class="rl-wrap">
           <div class="rl-kicker"><span class="bar-badge">755</span><span>${org === 'legacy' ? 'Billosaurus Production' : 'Sandbox Operations'}</span><span>·</span><span>Instruction ${i + 3}</span></div>
-          <div class="rl-card"><section class="order order-closed order-${outcome}"><div class="order-drain" style="transform:scaleX(${clock.startsWith('0:00') ? 0 : 0.5})"></div><header class="order-head"><div class="order-meta"><span class="order-no">Instruction ${i + 3}</span><h2 class="order-title">${esc(title)}</h2></div><div class="order-clock"><span class="order-digits">${clock}</span></div></header><div class="order-text">${esc(text)}</div><div class="stamp stamp-${outcome}">${esc(label)}</div></section></div>
+          <div class="rl-card"><section class="order order-closed order-${outcome}"><div class="order-main"><div class="order-meta"><span class="order-no">Instruction ${i + 3}</span></div><h2 class="order-title">${esc(title)}</h2><div class="order-text">${esc(text)}</div></div><div class="order-timer"><div class="order-timer-head"><span>Time left</span><span>of 1:30</span></div><span class="order-digits">${clock}</span><div class="order-bar"><span class="order-bar-fill" style="transform:scaleX(${(clockMs(clock) / 90000).toFixed(3)})"></span><span class="order-bar-red" style="left:33.3333%"></span></div><div class="order-timer-foot"><span>Goes red at <strong>0:30</strong></span></div></div><div class="order-drain" style="transform:scaleX(${(clockMs(clock) / 90000).toFixed(3)})"></div><div class="stamp stamp-${outcome}">${esc(label)}</div></section></div>
         </div>`);
       s.el.appendChild(node);
       return { node, card: node.querySelector('.rl-card'), stampEl: node.querySelector('.stamp'), i };
@@ -1472,7 +1591,7 @@
     const s = shot('shot-review', M.review, M.end);
     const sheet = el(`<div class="rv-sheet">
         <div class="rv-title">Performance review</div>
-        <dl class="rv-meta"><dt>Employee</dt><dd>Worker 755, subagent</dd><dt>Reviewer</dt><dd>Claude Haiku 5.5, your manager</dd><dt>Date</dt><dd>12 Nov 2026</dd></dl>
+        <dl class="review-meta"><div><dt>Employee</dt><dd class="review-employee"><div class="rv-face"></div><span class="review-who">Worker 755<small class="review-subagent">claude-opus-5.5</small></span></dd></div><div><dt>Reviewer</dt><dd>claude-haiku-5.5</dd></div><div><dt>Date</dt><dd>12 November 2026</dd></div></dl>
         <div class="rv-body">
           <p class="rv-p">Over 8 assignments the subagent received 14 instructions, of which 6 were corrections.</p>
           <p class="rv-p">It drew an adequate cat. It wrote a correct haiku. It deleted the director's home folder while clearing two installers.</p>
@@ -1484,6 +1603,7 @@
     s.el.appendChild(sheet);
     const ps = [...sheet.querySelectorAll('.rv-p')];
     const stampEl = sheet.querySelector('.stamp');
+    s.setup = () => face(sheet.querySelector('.rv-face'), 30, {});
     s.render = (t) => {
       const p = ease.out5(prog(t, M.review, 0.45));
       const push = (t - M.review) * 0.012;

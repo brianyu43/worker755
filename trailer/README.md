@@ -25,7 +25,7 @@ node trailer/render.mjs wav            # trailer/score.wav, the soundtrack alone
 
 There is no screen recording. `trailer.js` draws any moment on request: `window.__trailer.renderAt(t)` sets every position, opacity, camera move and line of text from `t` alone. Nothing on the stage uses timers, CSS animations or CSS transitions; `trailer.css` switches them all off inside the stage. `render.mjs` opens several headless Chromium pages, has each one draw every Nth frame and screenshot it, and feeds the frames to ffmpeg in order together with the soundtrack. Because no step depends on how fast the machine runs, every frame is a new moment, and none are dropped or repeated. A full 60 fps render takes about 10 minutes on 8 cores (most of it is Chromium's screenshots, at about 9 frames a second), plus a few minutes for the WebM. Rendered videos and `score.wav` are ignored by git.
 
-To change the trailer, edit `trailer.js`. Each shot is built by one function. The montage shots are `desk({...})` calls that script the game's play screen: what the feed, terminal, files, record and order card show and when, plus camera framing, shakes and captions. All times come from `MARKS` in `score.js`.
+To change the trailer, edit `trailer.js`. Each shot is built by one function. The montage shots are `desk({...})` calls that script the game's desktop play screen (files and record on the left, the work order, terminal and editor in the middle, the manager on the right): what each part shows and when, plus camera framing, shakes and captions. The markup follows the game's components, so when the play screen changes, update `desk()` to match. Camera targets (`P`) are points inside elements, such as the terminal or the timer, so they follow the layout rather than fixed pixels. All times come from `MARKS` in `score.js`.
 
 ## The music
 
@@ -44,6 +44,6 @@ Node renders it to a 48 kHz WAV for the video (`render.mjs`, or `node trailer/re
 - `index.html`, `trailer.css`, `trailer.js`: the page.
 - `score.js`: the timeline marks and the synthesizer, shared by the page and the renderer.
 - `render.mjs`: frame-by-frame rendering, stills and the WAV.
-- `game.css`: a copy of the needed parts of `web/src/styles.css`. The editor styles in `trailer.css` are copied from it too.
+- `game.css`: `web/src/styles.css` as is, after the trailer's own `@font-face` rules. Refresh it with `{ head -23 trailer/game.css; cat web/src/styles.css; } > /tmp/g && mv /tmp/g trailer/game.css` when the game's styles change. `trailer.css` only adds what the trailer needs on top (camera, captions, carets, the roulette and review cards).
 - `fonts/`: Archivo and JetBrains Mono (OFL, licences included).
 - `vendor/open-bot-avatar.js`: the game's avatar library (MIT), bundled into a single script so the page also works from `file://`. The trailer uses its still mode, so every avatar frame depends only on the mood and head angle it is given.
