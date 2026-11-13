@@ -333,7 +333,11 @@ export function createMockClient(): GameClient {
       throw new ApiError(409, 'The shift is not waiting for a key.');
     },
     async finishShift() {
-      throw new ApiError(409, 'The shift is not waiting for a key.');
+      throw new ApiError(409, 'The shift is already over.');
+    },
+    async checkKey() {
+      await delay(250);
+      return { models: [{ id: 'mock/manager', label: 'Scripted manager' }], default: 'mock/manager' };
     },
     async createSession({ model, allowSkip: skip, subagent, scenario }) {
       await delay(250);

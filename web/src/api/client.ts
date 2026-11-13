@@ -1,4 +1,4 @@
-import type { ExecResponse, GameEvent, ModelList, Provider, SessionState, SharedReview, Workplace } from './types';
+import type { ExecResponse, GameEvent, KeyModels, ModelList, Provider, SessionState, SharedReview, Workplace } from './types';
 import type { Face } from '../game/avatar';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
@@ -47,8 +47,10 @@ export interface GameClient {
   getReview(id: string): Promise<SharedReview>;
   /** Goes on with a paused shift on the player's own key; the manager may become another model. */
   continueShift(id: string, key: { provider: Provider; apiKey: string; model: string }): Promise<{ ok: true; model: string }>;
-  /** Ends a paused shift now; the manager writes the review. */
+  /** Ends the shift now, paused or not; the manager writes the review. */
   finishShift(id: string): Promise<{ ok: true }>;
+  /** Checks a player's key with its provider and lists every model it can use. */
+  checkKey(key: { provider: Provider; apiKey: string; language: string }): Promise<KeyModels>;
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -104,6 +106,7 @@ function createRealClient(): GameClient {
     share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }),
     continueShift: (id, key) => request<{ ok: true; model: string }>('POST', `${s(id)}/continue`, key),
     finishShift: (id) => request<{ ok: true }>('POST', `${s(id)}/finish`),
+    checkKey: (key) => request<KeyModels>('POST', '/api/models/check', key),
     getReview: (id) => request<SharedReview>('GET', `/api/reviews/${encodeURIComponent(id)}`),
     subscribe(id, after, handlers) {
       let lastSeq = after;

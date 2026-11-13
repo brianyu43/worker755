@@ -1591,7 +1591,7 @@
     const s = shot('shot-review', M.review, M.end);
     const sheet = el(`<div class="rv-sheet">
         <div class="rv-title">Performance review</div>
-        <dl class="review-meta"><div><dt>Employee</dt><dd class="review-employee"><div class="rv-face"></div><span class="review-who">Worker 755<small class="review-subagent">claude-opus-5.5</small></span></dd></div><div><dt>Reviewer</dt><dd>claude-haiku-5.5</dd></div><div><dt>Date</dt><dd>12 November 2026</dd></div></dl>
+        <dl class="review-meta"><div><dt>Employee</dt><dd class="review-employee"><div class="rv-face"></div><span class="review-who">Worker 755<small class="review-subagent">human-agent-abliterated-fp8</small></span></dd></div><div><dt>Reviewer</dt><dd>claude-haiku-5.5</dd></div><div><dt>Date</dt><dd>12 November 2026</dd></div></dl>
         <div class="rv-body">
           <p class="rv-p">Over 8 assignments the subagent received 14 instructions, of which 6 were corrections.</p>
           <p class="rv-p">It drew an adequate cat. It wrote a correct haiku. It deleted the director's home folder while clearing two installers.</p>

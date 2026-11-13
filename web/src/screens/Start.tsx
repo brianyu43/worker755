@@ -7,6 +7,7 @@ import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
 import { loadKey, saveKey } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
+import { KeyCheckRow, ModelOptions, useKeyCheck } from '../components/KeyCheck';
 import { currentLanguage, dateLocale, LANGUAGE_LABELS, LANGUAGES, setLanguage, t, type Key, type Language } from '../i18n';
 
 interface Props {
@@ -86,6 +87,15 @@ export function Start({ onStart }: Props) {
     };
   }, [access, provider, reload]);
   const keyInfo = models?.providers.find((p) => p.id === provider);
+  const keyCheck = useKeyCheck(provider, apiKey);
+  // Once the key is checked, everything it can use is on offer, not only the usual picks.
+  const offer = access === 'own' && keyCheck.models ? keyCheck.models : (models?.models ?? []);
+  // The picks always come from the list on offer, also when a checked key is changed again.
+  useEffect(() => {
+    if (!offer.length) return;
+    setModel((cur) => (offer.some((x) => x.id === cur) ? cur : (models?.default ?? offer[0].id)));
+    setDirector((cur) => (!cur || offer.some((x) => x.id === cur) ? cur : ''));
+  }, [offer, models]);
   // The button is disabled until the list arrives, and a disabled button cannot take focus.
   useEffect(() => {
     if (models) btn.current?.focus();
@@ -216,11 +226,7 @@ export function Start({ onStart }: Props) {
                 <span className="field-label">{t('start.manager')}</span>
                 {models ? (
                   <select value={model} onChange={(e) => setModel(e.target.value)} className="select">
-                    {models.models.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
+                    <ModelOptions models={offer} recommended={models.models} />
                   </select>
                 ) : (
                   <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
@@ -231,11 +237,7 @@ export function Start({ onStart }: Props) {
                 {models ? (
                   <select value={director} onChange={(e) => setDirector(e.target.value)} className="select">
                     <option value="">{t('start.director.scripted')}</option>
-                    {models.models.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
+                    <ModelOptions models={offer} recommended={models.models} />
                   </select>
                 ) : (
                   <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
@@ -313,6 +315,7 @@ export function Start({ onStart }: Props) {
                     onChange={(e) => setApiKey(e.target.value)}
                   />
                 </div>
+                <KeyCheckRow check={keyCheck} className="form-span" />
                 <p className="key-note form-span">
                   <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden>
                     <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />

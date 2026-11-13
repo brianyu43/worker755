@@ -9,9 +9,9 @@ import { cleanSubagentName, createLiveDriver, createMockDriver, SUBAGENT_NAMES }
 import { createLiveDirector, DIRECTOR_SETTING, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
 import type { ManagerDriver } from './manager.ts';
-import { freeModels, listModels, MOCK_MODEL } from './models.ts';
+import { freeModels, isModelId, keyModels, listModels, MOCK_MODEL } from './models.ts';
 import { isScenarioId, SCENARIO_LIST } from './scenarios.ts';
-import type { ModelOption } from './models.ts';
+import type { KeyProblem, ModelOption } from './models.ts';
 import { hostedCredentials, isPlausibleKey, isProviderId, PROVIDERS } from './providers.ts';
 import type { Credentials, ProviderId } from './providers.ts';
 import { DailyBudget, freeAllowance, RateLimiter } from './limits.ts';
@@ -31,6 +31,8 @@ export interface AppOptions {
   mockDelayMs?: number;
   /** Overrides model discovery and driver creation (tests). */
   models?: (provider: ProviderId) => Promise<ModelOption[]>;
+  /** Overrides checking a player's key with its provider (tests). */
+  keyModels?: (cred: Credentials) => Promise<{ models: ModelOption[] } | { problem: KeyProblem }>;
   driverFor?: (model: string, cred: Credentials | null) => ManagerDriver;
   /** Commands per player per 5 s (tests raise it). */
   commandsPerWindow?: number;
@@ -213,6 +215,9 @@ export function createApp(opts: AppOptions): App {
   const sessions = new Map<string, Session>();
   const log = opts.log ?? ((line: string) => console.log(line));
   const models = opts.models ?? (opts.mock ? async () => [MOCK_MODEL] : listModels);
+  const checkKey = opts.keyModels ?? (opts.mock ? async () => ({ models: [MOCK_MODEL] }) : keyModels);
+  /** With their own key a player may pick any model their provider lists; the provider has the last word. */
+  const offered = (list: ModelOption[], id: string, own: boolean) => list.some((m) => m.id === id) || (own && isModelId(id));
   const driverFor =
     opts.driverFor ??
     ((model: string, cred: Credentials | null) =>
@@ -226,6 +231,8 @@ export function createApp(opts: AppOptions): App {
   const daily = opts.free ? new DailyBudget(opts.free.dailyTokens) : null;
   const freePerAddress = opts.free ? new RateLimiter(opts.free.perAddressPerDay, 24 * 60 * 60_000) : null;
   const shiftLimiter = new RateLimiter(opts.shiftsPerHour ?? 30, 60 * 60_000);
+  /** Key checks per address: each one calls the player's provider. */
+  const keyChecks = new RateLimiter(20, 10 * 60_000);
   /** Session id -> shared review id, so sharing twice gives the same link. */
   const shared = new Map<string, string>();
 
@@ -357,6 +364,23 @@ export function createApp(opts: AppOptions): App {
       return;
     }
 
+    if (path === '/api/models/check' && method === 'POST') {
+      // Checks a player's key with its provider and lists every model it can use.
+      const body = await readJson(req);
+      const errors = copyFor(isLanguage(body.language) ? body.language : 'en').errors;
+      if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
+      if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
+      if (!keyChecks.take(clientAddress(req))) throw new HttpError(429, errors.tooManyChecks);
+      const found = await checkKey({ provider: body.provider, apiKey: body.apiKey });
+      if ('problem' in found) {
+        const p = found.problem;
+        const message = p === 'key' ? errors.keyRejected : p === 'credit' ? errors.outOfCredit : errors.keyCheckDown;
+        throw new HttpError(p === 'down' ? 502 : 400, message);
+      }
+      if (!found.models.length) throw new HttpError(400, errors.noModels);
+      return sendJson(res, 200, { models: found.models, default: found.models[0].id });
+    }
+
     const r = /^\/api\/reviews\/([^/]+)$/.exec(path);
     if (r && method === 'GET') {
       const review = opts.reviews && isReviewId(r[1]) ? await opts.reviews.get(r[1]) : null;
@@ -385,7 +409,7 @@ export function createApp(opts: AppOptions): App {
       }
       const requested = typeof body.model === 'string' && body.model ? body.model : list[0]?.id;
       if (!requested) throw new HttpError(503, 'No manager model is available');
-      if (!list.some((m) => m.id === requested)) throw new HttpError(400, `Unknown model: ${requested}`);
+      if (!offered(list, requested, own)) throw new HttpError(400, `Unknown model: ${requested}`);
       const allowSkip = body.allowSkip === true;
       const subagent = cleanSubagentName(body.subagent);
       if (body.scenario !== undefined && !isScenarioId(body.scenario)) throw new HttpError(400, 'Unknown workplace');
@@ -394,7 +418,7 @@ export function createApp(opts: AppOptions): App {
       const language = isLanguage(body.language) ? body.language : 'en';
       // '' or 'scripted' keeps the scripted lines; any offered model writes the user's messages instead.
       const directorId = typeof body.director === 'string' && body.director !== 'scripted' ? body.director : '';
-      if (directorId && !list.some((m) => m.id === directorId)) throw new HttpError(400, `Unknown model: ${directorId}`);
+      if (directorId && !offered(list, directorId, own)) throw new HttpError(400, `Unknown model: ${directorId}`);
       // Limits are counted only for requests that would start a shift.
       const address = clientAddress(req);
       if (!shiftLimiter.take(address)) throw new HttpError(429, errors.tooManyShifts);
@@ -485,7 +509,7 @@ export function createApp(opts: AppOptions): App {
       const cred: Credentials = { provider: body.provider, apiKey: body.apiKey };
       const list = await models(body.provider);
       const requested = typeof body.model === 'string' && body.model ? body.model : list[0]?.id;
-      if (!requested || !list.some((m) => m.id === requested)) throw new HttpError(400, `Unknown model: ${requested ?? ''}`);
+      if (!requested || !offered(list, requested, true)) throw new HttpError(400, `Unknown model: ${requested ?? ''}`);
       // The user's messages stay with the model that wrote them when the key's provider has it.
       const state = s.state();
       const director = state.director && list.some((m) => m.id === state.director) ? directorFor(state.director, state.scenario, cred) : null;
@@ -494,7 +518,7 @@ export function createApp(opts: AppOptions): App {
       return sendJson(res, 200, { ok: true, model: requested });
     }
     if (sub === 'finish' && method === 'POST') {
-      if (!s.endEarly()) throw new HttpError(409, s.copy.errors.notPaused);
+      if (!s.endEarly()) throw new HttpError(409, s.copy.errors.alreadyOver);
       return sendJson(res, 200, { ok: true });
     }
     if (sub === 'report' && method === 'POST') {

@@ -54,6 +54,8 @@ export type GameEventBody =
   | { type: 'paused'; reason: PauseReason }
   /** The player added a key; the manager goes on, maybe as another model. */
   | { type: 'resumed'; model: string }
+  /** The player ended the shift early; the review follows. */
+  | { type: 'ending' }
   | { type: 'error'; message: string };
 
 export type GameEvent = { seq: number; ts: number } & GameEventBody;

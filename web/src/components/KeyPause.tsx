@@ -4,6 +4,7 @@ import type { ModelList, PauseReason, Provider } from '../api/types';
 import { loadKey, saveKey } from '../game/apiKey';
 import { rememberLabels } from '../game/labels';
 import { t } from '../i18n';
+import { KeyCheckRow, ModelOptions, useKeyCheck } from './KeyCheck';
 
 interface Props {
   sessionId: string;
@@ -43,6 +44,17 @@ export function KeyPause({ sessionId, reason, model: current }: Props) {
     };
   }, [provider, current]);
   const keyInfo = models?.providers.find((p) => p.id === provider);
+  const keyCheck = useKeyCheck(provider, apiKey);
+  const checked = keyCheck.models;
+  // A checked key offers everything it can use; the manager so far stays picked when it is there.
+  useEffect(() => {
+    if (!checked) return;
+    setModel((cur) => [cur, current].find((id) => checked.some((x) => x.id === id)) ?? checked[0].id);
+  }, [checked, current]);
+  useEffect(() => {
+    if (checked || !models) return;
+    setModel((cur) => [cur, current].find((id) => models.models.some((x) => x.id === id)) ?? models.default);
+  }, [checked, models, current]);
 
   const fail = (err: unknown) => {
     setError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('pause.failed'));
@@ -107,11 +119,7 @@ export function KeyPause({ sessionId, reason, model: current }: Props) {
           <span className="field-label">{t('start.manager')}</span>
           {models ? (
             <select value={model} onChange={(e) => setModel(e.target.value)} className="select">
-              {models.models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
+              <ModelOptions models={checked ?? models.models} recommended={models.models} />
             </select>
           ) : (
             <span className="select select-placeholder">{t('start.assigning')}</span>
@@ -140,6 +148,7 @@ export function KeyPause({ sessionId, reason, model: current }: Props) {
             autoFocus
           />
         </div>
+        <KeyCheckRow check={keyCheck} className="pause-check" />
         <label className="check pause-remember">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
           <span>{t('start.remember')}</span>

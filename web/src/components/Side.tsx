@@ -145,7 +145,8 @@ export function standingOf(s: Stats): { key: Key; bad: boolean } {
   return { key: 'record.standing.good', bad: false };
 }
 
-export function StatsPanel({ stats }: { stats: Stats }) {
+/** `onEnd` offers ending the shift early, under the standing; left out once the shift is over. */
+export function StatsPanel({ stats, onEnd }: { stats: Stats; onEnd?: () => void }) {
   const rows = statRows(stats);
   const standing = standingOf(stats);
   return (
@@ -173,6 +174,11 @@ export function StatsPanel({ stats }: { stats: Stats }) {
         <div className="standing">
           <span className="standing-label">{t('record.standing')}</span>
           <span className={`standing-stamp${standing.bad ? ' standing-bad' : ''}`}>{t(standing.key)}</span>
+          {onEnd && (
+            <button type="button" className="btn end-now" onClick={onEnd}>
+              {t('end.button')}
+            </button>
+          )}
         </div>
       </div>
     </section>

@@ -264,7 +264,7 @@ test('on the player\'s own key, a rejected key pauses the shift instead of endin
   t.dispose();
 });
 
-test('continue and finish over HTTP: only while paused, with a real-looking key and an offered model', async () => {
+test('continue over HTTP: only while paused, with a real-looking key and a plausible model', async () => {
   const used: string[] = [];
   await withApp(
     {
@@ -295,19 +295,67 @@ test('continue and finish over HTTP: only while paused, with a real-looking key 
       await waitFor(s, (e) => e.type === 'instruction');
       const body = { provider: 'openrouter', apiKey: KEY, model: 'b/two' };
       assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, body)).status, 409, 'not paused yet');
-      assert.equal((await api('POST', `/api/sessions/${s.id}/finish`)).status, 409);
       open = false;
       s.exec('echo a > a.txt');
       s.report('Done.');
       await waitFor(s, (e) => e.type === 'paused');
       assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, apiKey: 'short' })).status, 400);
-      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, model: 'z/nope' })).status, 400);
+      assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, model: 'not a model id' })).status, 400);
       assert.equal((await api('POST', `/api/sessions/${s.id}/continue`, { ...body, provider: 'nope' })).status, 400);
       const ok = await api('POST', `/api/sessions/${s.id}/continue`, body);
       assert.equal(ok.status, 200);
       assert.deepEqual(used, ['b/two']);
       await waitFor(s, (e) => e.type === 'game_over');
       assert.equal(s.state().model, 'b/two');
+    },
+  );
+});
+
+test('finish over HTTP ends a running shift mid-instruction, and the review follows', async () => {
+  await withApp({ mock: true }, async (api, app) => {
+    let reviewed = 0;
+    const driver: ManagerDriver = {
+      model: 'test/m',
+      async step(req) {
+        if (!req.tools) {
+          reviewed += 1;
+          return assistant('Review.', []);
+        }
+        return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create a.txt' })]);
+      },
+    };
+    const s = new Session({ driver, timeoutMs: 60_000, missions: [HELLO, HELLO] });
+    app.sessions.set(s.id, s);
+    s.start();
+    await waitFor(s, (e) => e.type === 'instruction');
+    assert.equal((await api('POST', `/api/sessions/${s.id}/finish`)).status, 200);
+    assert.equal((await api('POST', `/api/sessions/${s.id}/finish`)).status, 409, 'only once');
+    const over = await waitFor(s, (e) => e.type === 'game_over');
+    assert.ok(over.type === 'game_over');
+    assert.equal(reviewed, 1);
+    assert.equal(s.state().instruction, null);
+    assert.ok(s.events.some((e) => e.type === 'ending'));
+  });
+});
+
+test('a key check lists the models a player key can use, and says why it cannot', async () => {
+  const seen: string[] = [];
+  await withApp(
+    {
+      keyModels: async (cred) => {
+        seen.push(cred.provider);
+        if (cred.apiKey.startsWith('bad')) return { problem: 'key' };
+        return { models: [{ id: 'x/one', label: 'One' }, { id: 'y/two', label: 'Two' }] };
+      },
+    },
+    async (api) => {
+      const ok = await api('POST', '/api/models/check', { provider: 'openrouter', apiKey: KEY });
+      assert.equal(ok.status, 200);
+      assert.deepEqual((ok.json.models as { id: string }[]).map((m) => m.id), ['x/one', 'y/two']);
+      assert.equal((await api('POST', '/api/models/check', { provider: 'openrouter', apiKey: `bad${KEY}` })).status, 400);
+      assert.equal((await api('POST', '/api/models/check', { provider: 'openrouter', apiKey: 'short' })).status, 400);
+      assert.equal((await api('POST', '/api/models/check', { provider: 'nope', apiKey: KEY })).status, 400);
+      assert.deepEqual(seen, ['openrouter', 'openrouter']);
     },
   );
 });

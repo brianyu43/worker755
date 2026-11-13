@@ -76,7 +76,9 @@ export type GameEventBody =
   /** The manager cannot go on until the player adds a key, or asks for the review now. */
   | { type: 'paused'; reason: PauseReason }
   /** The player added a key; the manager goes on as `model`. */
-  | { type: 'resumed'; model: string };
+  | { type: 'resumed'; model: string }
+  /** The player ended the shift early; the review follows. */
+  | { type: 'ending' };
 
 /** Why a shift waits: the free shift is used up, or the player's key was rejected or is out of credit. */
 export type PauseReason = 'allowance' | 'key' | 'credit';
@@ -119,6 +121,12 @@ export interface ModelList {
   donateUrl: string;
   sourceUrl: string;
   sharing: boolean;
+}
+
+/** What a player's own key can use, from its provider. */
+export interface KeyModels {
+  models: { id: string; label: string }[];
+  default: string;
 }
 
 export interface SharedReview {

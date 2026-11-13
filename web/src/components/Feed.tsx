@@ -4,6 +4,7 @@ import type { GameEvent, MissionKind, OpenInstruction } from '../api/types';
 import type { ManagerState } from '../game/useGame';
 import { tildify } from './Terminal';
 import { useStickToBottom } from './stick';
+import { Markdown } from './Markdown';
 import { formatClock, useTicker } from './WorkOrder';
 import { currentLanguage, t, type Key } from '../i18n';
 
@@ -23,13 +24,15 @@ function time(ts: number) {
   return new Date(ts).toLocaleTimeString(currentLanguage(), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
-function Collapsible({ text, lines = 8, className }: { text: string; lines?: number; className?: string }) {
+/** Long text folded to its first lines; `md` renders it as Markdown instead of as it was typed. */
+function Collapsible({ text, lines = 8, className, md }: { text: string; lines?: number; className?: string; md?: boolean }) {
   const all = text.split('\n');
   const [open, setOpen] = useState(false);
   const long = all.length > lines + 2;
+  const shown = long && !open ? all.slice(0, lines).join('\n') + '\n…' : text;
   return (
     <>
-      <pre className={className}>{long && !open ? all.slice(0, lines).join('\n') + '\n…' : text}</pre>
+      {md ? <Markdown text={shown} className={className} /> : <pre className={className}>{shown}</pre>}
       {long && (
         <button type="button" className="linkish" onClick={() => setOpen(!open)}>
           {open ? t('feed.showLess') : t('feed.showAll', { count: all.length })}
@@ -70,7 +73,7 @@ function Thinking({ text, latest }: { text: string; latest: boolean }) {
   return (
     <details className="fi fi-thinking" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary className="fi-thinking-sum">{t('feed.thinking')}</summary>
-      <Collapsible text={text} lines={4} className="fi-thinking-text" />
+      <Collapsible text={text} lines={4} className="fi-thinking-text" md />
     </details>
   );
 }
@@ -92,7 +95,7 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
       return (
         <article className="fi fi-says">
           <div className="fi-label">{t('feed.manager')}</div>
-          <p>{ev.text}</p>
+          <Markdown text={ev.text} />
         </article>
       );
     case 'manager_thinking':
@@ -111,7 +114,7 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
               <em>{t(`feed.severity.${ev.severity}`)}</em>
             </span>
           </div>
-          <p className="fi-incident-body">{ev.report}</p>
+          <Markdown text={ev.report} className="fi-incident-body" />
           <div className="fi-incident-foot">{t('feed.incident.about')}</div>
         </article>
       );
@@ -121,7 +124,7 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
           <div className="fi-label">
             <Eye /> {t('feed.directorSaw')}
           </div>
-          <p>{ev.text}</p>
+          <Markdown text={ev.text} />
           {ev.items.length > 0 && (
             <ul className="fi-lost" aria-label={t('feed.lost')}>
               {ev.items.slice(0, LOST_SHOWN).map((item) => (
@@ -140,7 +143,7 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
           <div className="fi-label">
             <Eye /> {t('feed.director')}
           </div>
-          <p>{ev.text}</p>
+          <Markdown text={ev.text} />
         </article>
       );
     case 'manager_tool':
@@ -179,7 +182,7 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
               </span>
             )}
           </div>
-          <p>{ev.summary}</p>
+          <Markdown text={ev.summary} />
         </article>
       );
     }

@@ -182,6 +182,8 @@ export class Session {
   private looseLines: string[] = [];
   private responseTotalMs = 0;
   private abort = new AbortController();
+  /** Aborted when the player ends the shift early: the manager stops where it is and writes the review. */
+  private quit = new AbortController();
   private started = false;
   private lastTreeJson = '';
   private lastCwd = '';
@@ -453,7 +455,7 @@ export class Session {
         context: [this.situation(), extra].filter(Boolean).join('\n'),
         said: this.said,
         language: this.language,
-        signal: this.abort.signal,
+        signal: AbortSignal.any([this.abort.signal, this.quit.signal]),
       });
       this.usage.inputTokens += res.inputTokens;
       this.usage.outputTokens += res.outputTokens;
@@ -604,6 +606,7 @@ export class Session {
 
   private async step(req: { messages: ModelMessage[]; tools: boolean; mission?: Mission }): Promise<StepResult> {
     for (;;) {
+      if (req.tools && this.quit.signal.aborted) throw new EndedEarly();
       // The review (tools: false) closes the shift, so it is written even past the allowance.
       if (req.tools && this.allowance && !this.allowance.canSpend()) {
         await this.waitForKey('allowance');
@@ -612,6 +615,7 @@ export class Session {
       try {
         return await this.callManager(req);
       } catch (err) {
+        if (req.tools && this.quit.signal.aborted) throw new EndedEarly();
         // A player's own key that stops working pauses the shift too, so they can fix it and go on.
         const reason = err instanceof ManagerError && this.ownKey && req.tools ? keyFailure(err.message) : null;
         if (!reason || this.abort.signal.aborted) throw err;
@@ -657,12 +661,30 @@ export class Session {
     return true;
   }
 
-  /** Ends a paused shift: the manager writes the review from what happened so far. */
+  /**
+   * Ends the shift now, paused or not: the manager stops what it is doing and writes the review from
+   * what happened so far. Returns false when the shift is already over or ending.
+   */
   endEarly(): boolean {
-    if (!this.pause) return false;
+    if (this.status !== 'running' || this.quit.signal.aborted) return false;
     this.touch();
-    this.pause.resolve('review');
+    this.quit.abort();
+    this.emit({ type: 'ending' });
+    if (this.pending) {
+      clearTimeout(this.pending.timer);
+      const p = this.pending;
+      this.pending = null;
+      p.resolve({ outcome: 'timeout_idle', text: '' });
+    }
+    this.pause?.resolve('review');
     return true;
+  }
+
+  /** For the mission loop after each wait: true when the session is gone; throws once the player ended it. */
+  private halted(): boolean {
+    if (this.abort.signal.aborted) return true;
+    if (this.quit.signal.aborted) throw new EndedEarly();
+    return false;
   }
 
   private async callManager(req: { messages: ModelMessage[]; tools: boolean; mission?: Mission }): Promise<StepResult> {
@@ -675,7 +697,8 @@ export class Session {
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,
-      signal: this.abort.signal,
+      // The review is written after the player quits, so only the work before it stops on quit.
+      signal: req.tools ? AbortSignal.any([this.abort.signal, this.quit.signal]) : this.abort.signal,
       mission: req.mission,
       language: this.language,
       checkNow: req.mission?.check
@@ -774,7 +797,7 @@ export class Session {
     let verdict: { outcome: 'completed' | 'failed'; summary: string; byManager: boolean } | null = null;
 
     while (!verdict) {
-      if (this.abort.signal.aborted) return;
+      if (this.halted()) return;
       if (steps >= MAX_STEPS) {
         if (!this.allowSkip) {
           if (agentCalls === agentCallsAtRound) throw new ManagerError(this.copy.errors.froze);
@@ -811,7 +834,7 @@ export class Session {
             ? stallLineAfterDamage(this.damageStalls, nudges, this.copy)
             : stallLine(this.stallStreaks, nudges, this.copy);
         const line = await this.say('stall', draft, res.text ? `Your agent just wrote to you: ${capHead(res.text, 600)}` : '');
-        if (this.abort.signal.aborted) return;
+        if (this.halted()) return;
         this.emit({ type: 'director_text', text: line });
         const pending = this.takeHeard();
         messages.push({ role: 'user', content: (pending ? `${pending}\n\n` : '') + stallMessage(line, this.allowSkip, this.copy) });
@@ -870,7 +893,7 @@ export class Session {
             this.emitStats();
             const before = this.homeEntries();
             const r = await this.openInstruction(description, prompt);
-            if (this.abort.signal.aborted) return;
+            if (this.halted()) return;
             if (before > 0 && this.homeEntries() === 0) wiped = true;
             this.idleStreak = r.outcome === 'timeout_idle' ? this.idleStreak + 1 : 0;
             if (!this.allowSkip && this.idleStreak >= MAX_IDLE_STREAK) {
@@ -932,7 +955,7 @@ export class Session {
             ? this.copy.director.wipe
             : directorLine(this.setbacks, this.copy) + (worst ? ` ${grudgeText(worst, this.grudges++, this.copy)}` : '');
           const text = await this.say(wiped ? 'wipe' : 'setback', draft);
-          if (this.abort.signal.aborted) return;
+          if (this.halted()) return;
           this.emit({ type: 'director_text', text });
           messages.push({ role: 'user', content: `Message from the user: "${text}"` });
         }

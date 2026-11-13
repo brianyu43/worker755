@@ -27,6 +27,8 @@ export interface GameView {
   error: string | null;
   /** The shift waits for the player's key, and why; null while it runs. */
   paused: PauseReason | null;
+  /** The player ended the shift early and the review is being written. */
+  ending: boolean;
   lastSeq: number;
 }
 
@@ -90,6 +92,12 @@ function apply(v: GameView, ev: GameEvent): GameView {
       n.paused = null;
       n.model = ev.model;
       break;
+    case 'ending':
+      n.ending = true;
+      n.paused = null;
+      n.instruction = null;
+      n.closed = null;
+      break;
     case 'error':
       n.error = ev.message;
       n.status = 'error';
@@ -119,6 +127,7 @@ function fromSnapshot(s: SessionState): GameView {
     review: null,
     error: null,
     paused: null,
+    ending: false,
     lastSeq: 0,
   };
   for (const ev of s.events) v = apply(v, ev);
@@ -130,7 +139,7 @@ function fromSnapshot(s: SessionState): GameView {
     cwd: s.cwd,
     tree: s.tree,
     instruction: s.instruction,
-    closed: s.instruction ? null : v.closed,
+    closed: s.instruction || v.ending ? null : v.closed,
     stats: s.stats,
     missionIndex: s.missionIndex,
     missionTotal: s.missionTotal,

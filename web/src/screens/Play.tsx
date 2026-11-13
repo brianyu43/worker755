@@ -9,6 +9,7 @@ import { modelLabel } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { Splitter, deskSizes } from '../components/Splitter';
 import { KeyPause } from '../components/KeyPause';
+import { EndShift } from '../components/EndShift';
 import { loadFace } from '../game/avatar';
 import type { GameEvent } from '../api/types';
 import type { Game, GameView } from '../game/useGame';
@@ -80,6 +81,7 @@ export function Play({ game, view, onFinish }: Props) {
   const [face] = useState(loadFace);
   const [deskStyle] = useState(deskSizes);
   const [pleased, setPleased] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [editingPath, setEditingPath] = useState<string | null>(null);
   // Phone layout: which screen is showing. Wide screens show everything and ignore it.
   const [tab, setTab] = useState<Tab>('work');
@@ -199,6 +201,8 @@ export function Play({ game, view, onFinish }: Props) {
 
   const finished = view.status === 'finished';
   const cutShort = view.status === 'error';
+  const canEnd = view.status === 'running' && !view.ending;
+  const askEnd = () => setConfirmEnd(true);
   const title = open?.description ?? view.mission?.title ?? t('play.waiting');
   const tabs: [Tab, string, number][] = [
     ['files', t('files.title'), 0],
@@ -211,7 +215,13 @@ export function Play({ game, view, onFinish }: Props) {
     <div className={`play play-tab-${tab}${view.paused ? ' play-paused' : ''}${urgency ? ` play-${urgency}` : ''}${flash ? ` play-flash-${flash}` : ''}`}>
       <header className="bar">
         <div className="bar-id">
-          <span className="bar-badge">755</span>
+          {canEnd ? (
+            <button type="button" className="bar-badge bar-badge-btn" onClick={askEnd} title={t('end.button')} aria-label={t('end.button')}>
+              755
+            </button>
+          ) : (
+            <span className="bar-badge">755</span>
+          )}
           <BotAvatar
             face={face}
             size={34}
@@ -272,7 +282,7 @@ export function Play({ game, view, onFinish }: Props) {
       <div className="desk" style={deskStyle}>
         <aside className="desk-left">
           <FileTree tree={view.tree} cwd={view.cwd} editing={editingPath} lost={view.stats.damaged ?? 0} />
-          <StatsPanel stats={view.stats} />
+          <StatsPanel stats={view.stats} onEnd={canEnd ? askEnd : undefined} />
           <Splitter kind="left" />
         </aside>
         <div className="desk-main">
@@ -289,6 +299,11 @@ export function Play({ game, view, onFinish }: Props) {
               <button type="button" className="btn btn-ink btn-big" onClick={game.leave} autoFocus>
                 {t('app.clockInAgain')}
               </button>
+            </section>
+          ) : view.ending ? (
+            <section className="order order-empty shift-over" aria-live="polite">
+              <div className="order-empty-text">{t('end.writing')}</div>
+              <div className="order-empty-dots" aria-hidden />
             </section>
           ) : view.paused ? (
             <KeyPause sessionId={view.id} reason={view.paused} model={view.model} />
@@ -377,6 +392,8 @@ export function Play({ game, view, onFinish }: Props) {
           />
         </aside>
       </div>
+
+      <EndShift sessionId={view.id} open={confirmEnd && canEnd} onClose={() => setConfirmEnd(false)} />
 
       <nav className="tabbar" aria-label={t('play.tabs')}>
         {tabs.map(([key, label, badge]) => (

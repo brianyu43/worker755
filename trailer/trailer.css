@@ -545,7 +545,7 @@ body.recording .start-gate {
   line-height: 1;
 }
 .rl-card .order-digits {
-  font-size: 128px;
+  font-size: min(128px, 45cqi);
 }
 .rl-card .order-timer-head,
 .rl-card .order-timer-foot {
@@ -672,4 +672,11 @@ body.recording .start-gate {
 .badge-photo .face {
   width: 100px;
   aspect-ratio: 1;
+}
+.shot-review .review-subagent {
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+.shot-review .review-meta {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
 }
