@@ -11,7 +11,12 @@ type Share = { state: 'idle' | 'busy' | 'error' } | { state: 'done'; url: string
 
 export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
   const btn = useRef<HTMLButtonElement>(null);
-  useEffect(() => btn.current?.focus(), []);
+  // The review reads from the top: focus the button for the keyboard without scrolling down to it,
+  // and drop whatever scroll the shift screen left behind.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    btn.current?.focus({ preventScroll: true });
+  }, []);
   const [site, setSite] = useState<ModelList | null>(null);
   useEffect(() => {
     client.getModels().then(setSite, () => {});

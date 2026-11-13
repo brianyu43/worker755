@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import type { TreeNode } from '../api/types';
-import { MOD } from '../game/keys';
+import { MOD, touchOnly } from '../game/keys';
 import { Editor } from './Editor';
 import { useStickToBottom } from './stick';
 import { Splitter } from './Splitter';
@@ -501,7 +501,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
               autoCapitalize="off"
               autoComplete="off"
               autoCorrect="off"
-              autoFocus
+              autoFocus={!touchOnly()}
               aria-label={t('term.command')}
             />
             {search && <span className="term-search-hit">{searchHit >= 0 ? history.current[searchHit] : ''}</span>}

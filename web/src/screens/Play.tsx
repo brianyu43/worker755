@@ -4,7 +4,7 @@ import { Eye, Feed, PHASE_LABEL, activityOf, managerPhase } from '../components/
 import { FileTree, StatsPanel } from '../components/Side';
 import { Terminal, type TerminalHandle } from '../components/Terminal';
 import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../components/WorkOrder';
-import { MOD } from '../game/keys';
+import { MOD, touchOnly } from '../game/keys';
 import { modelLabel } from '../game/labels';
 import { HeaderFace } from '../components/HeaderFace';
 import { Splitter, deskSizes } from '../components/Splitter';
@@ -100,7 +100,7 @@ export function Play({ game, view, onFinish }: Props) {
     if (tab === 'record') setSeenIncidents(view.stats.incidents);
   }, [tab, lastSeq, view.stats.incidents]);
   useEffect(() => {
-    if (tab === 'work') term.current?.focus();
+    if (tab === 'work' && !touchOnly()) term.current?.focus();
   }, [tab]);
   const unread = view.feed.filter((e) => e.seq > seenSeq && NOTABLE.has(e.type)).length;
   const newIncidents = Math.max(0, view.stats.incidents - seenIncidents);
@@ -165,7 +165,7 @@ export function Play({ game, view, onFinish }: Props) {
         );
       } finally {
         setReporting(false);
-        term.current?.focus();
+        if (!touchOnly()) term.current?.focus();
       }
     },
     [reporting, view.id],
@@ -196,7 +196,7 @@ export function Play({ game, view, onFinish }: Props) {
   // Coming back to the tab puts the cursor back in the terminal.
   useEffect(() => {
     const onFocus = () => {
-      if (document.activeElement === document.body) term.current?.focus();
+      if (document.activeElement === document.body && !touchOnly()) term.current?.focus();
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
