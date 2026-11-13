@@ -366,7 +366,51 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     return true;
   };
 
+  /**
+   * Readline-style caret keys: line start/end (Home/End, Ctrl+A/E, Cmd+←/→), word jumps (Alt or
+   * Ctrl+←/→, Alt+B/F) and kills (Ctrl+W/K/U). True when the key was one of them.
+   */
+  const editKey = (e: React.KeyboardEvent<HTMLInputElement>): boolean => {
+    if (search || e.shiftKey) return false; // Shift extends the selection; leave that to the browser.
+    const el = e.currentTarget;
+    const at = el.selectionStart ?? input.length;
+    const word = (ch: string | undefined) => !!ch && /[\p{L}\p{N}_]/u.test(ch);
+    const wordLeft = () => {
+      let i = at;
+      while (i > 0 && !word(input[i - 1])) i--;
+      while (i > 0 && word(input[i - 1])) i--;
+      return i;
+    };
+    const wordRight = () => {
+      let i = at;
+      while (i < input.length && !word(input[i])) i++;
+      while (i < input.length && word(input[i])) i++;
+      return i;
+    };
+    const edit = (text: string, caret: number) => {
+      setInput(text);
+      histIdx.current = -1;
+      caretTo(caret);
+    };
+    const { key, code, ctrlKey: ctrl, altKey: alt, metaKey: meta } = e;
+    const plain = !ctrl && !alt && !meta;
+    if ((plain && key === 'Home') || (ctrl && code === 'KeyA') || (meta && key === 'ArrowLeft')) el.setSelectionRange(0, 0);
+    else if ((plain && key === 'End') || (ctrl && code === 'KeyE') || (meta && key === 'ArrowRight'))
+      el.setSelectionRange(input.length, input.length);
+    else if (((alt || ctrl) && key === 'ArrowLeft') || (alt && code === 'KeyB')) el.setSelectionRange(wordLeft(), wordLeft());
+    else if (((alt || ctrl) && key === 'ArrowRight') || (alt && code === 'KeyF')) el.setSelectionRange(wordRight(), wordRight());
+    else if (ctrl && code === 'KeyW') edit(input.slice(0, wordLeft()) + input.slice(at), wordLeft());
+    else if (ctrl && code === 'KeyK') edit(input.slice(0, at), at);
+    else if (ctrl && code === 'KeyU') edit(input.slice(at), 0);
+    else return false;
+    return true;
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (editKey(e)) {
+      e.preventDefault();
+      return;
+    }
     if (e.metaKey || e.altKey) return;
     if (ctrlHeld && e.key.length === 1) {
       setCtrlHeld(false);
