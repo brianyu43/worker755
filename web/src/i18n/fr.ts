@@ -26,6 +26,7 @@ export const fr: Catalogue = {
   'start.director.scripted': 'Répliques écrites',
   'start.subagent': 'Votre modèle',
   'start.allowSkip': 'Autoriser à ignorer les tâches échouées',
+  'start.allowQuit': 'Laisse le manager te licencier',
   'start.persona': 'Caractère du manager',
   'start.persona.default': 'À la lettre',
   'start.persona.toxic': 'Toxique',

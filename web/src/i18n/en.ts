@@ -27,6 +27,7 @@ export const en = {
   'start.director.scripted': 'Scripted lines',
   'start.subagent': 'You run on',
   'start.allowSkip': 'Allow skipping failed tasks',
+  'start.allowQuit': 'Let the manager fire you',
   'start.persona': "Manager's character",
   'start.persona.default': 'By the book',
   'start.persona.toxic': 'Toxic',

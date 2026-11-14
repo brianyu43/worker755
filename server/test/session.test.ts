@@ -995,3 +995,34 @@ test('a persona goes after the working rules, and the default adds nothing', asy
     assert.match(sys.slice(prompts.default.length), /^\n\nYour character/);
   }
 });
+
+test('a manager allowed to give up may fire the subagent, but only after a few tries, and that ends the shift', async () => {
+  const plan = ['Agent', 'GiveUp', 'Agent', 'Agent', 'GiveUp'];
+  let step = 0;
+  const driver = scripted((req) => {
+    if (!req.tools) return assistant('Review.', []);
+    const name = plan[Math.min(step++, plan.length - 1)];
+    return name === 'Agent'
+      ? assistant('', [call('Agent', { description: 'try', prompt: 'Create /home/worker/a.txt containing a.' })])
+      : assistant('', [call('GiveUp', { reason: 'Hopeless. You are fired.' })]);
+  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO, HELLO], allowQuit: true });
+  s.subscribe((e) => {
+    if (e.type === 'instruction') queueMicrotask(() => s.report('done'));
+  });
+  s.start();
+  await waitFor(s, until('game_over'), 10_000);
+  assert.ok(driver.requests[0].system.includes('GiveUp'));
+  const early = driver.requests.flatMap((r) => r.messages).filter((m) => m.role === 'tool' && JSON.stringify(m.content).includes('Not yet'));
+  assert.ok(early.length > 0, 'firing after one try is refused');
+  const ends = s.events.filter((e) => e.type === 'mission_end');
+  assert.equal(ends.length, 1, 'the second task never starts');
+  const review = driver.requests.at(-1)!.messages[0].content as string;
+  assert.match(review, /you fired the subagent/);
+
+  const strict = scripted((req) => (req.tools ? assistant('', [call('MissionComplete', { summary: 'ok' })]) : assistant('Review.', [])));
+  const t = new Session({ driver: strict, timeoutMs: 5000, missions: [HELLO] });
+  t.start();
+  await waitFor(t, until('game_over'));
+  assert.ok(!strict.requests[0].system.includes('GiveUp'), 'off by default');
+});

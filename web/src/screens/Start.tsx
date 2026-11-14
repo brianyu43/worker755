@@ -57,6 +57,7 @@ export function Start({ onStart }: Props) {
   const wanted = useRef(loadPicks());
   const [model, setModel] = useState<string>(wanted.current.model ?? '');
   const [allowSkip, setAllowSkip] = useState(false);
+  const [allowQuit, setAllowQuit] = useState(false);
   const [subagent, setSubagent] = useState('');
   /** The badge gets a random knock-off model name once the list arrives, unless the player typed one. */
   const named = useRef(false);
@@ -153,6 +154,7 @@ export function Start({ onStart }: Props) {
         language,
         model: model || undefined,
         allowSkip,
+        allowQuit,
         subagent: subagent.trim(),
         scenario,
         director,
@@ -321,6 +323,10 @@ export function Start({ onStart }: Props) {
               <label className="check">
                 <input type="checkbox" checked={allowSkip} onChange={(e) => setAllowSkip(e.target.checked)} />
                 <span>{t('start.allowSkip')}</span>
+              </label>
+              <label className="check">
+                <input type="checkbox" checked={allowQuit} onChange={(e) => setAllowQuit(e.target.checked)} />
+                <span>{t('start.allowQuit')}</span>
               </label>
               {models?.stance && (
                 <details className="stance" open={stance !== null && stance !== models.stance.text}>

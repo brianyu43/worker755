@@ -26,6 +26,7 @@ import {
   directorLine,
   reviewPrompt,
   systemPrompt,
+  MIN_TRIES_BEFORE_GIVING_UP,
 } from './manager.ts';
 import type { ManagerDriver, Persona, StepResult, ToolCall } from './manager.ts';
 import type {
@@ -76,6 +77,14 @@ const NOTICE_LATER_MS = [25_000, 60_000] as const;
 class EndedEarly extends Error {}
 /** The subagent stopped answering: the shift ends early, review and all. */
 class WalkedOff extends EndedEarly {}
+/** The manager fired the subagent (GiveUp). */
+class Fired extends EndedEarly {
+  readonly reason: string;
+  constructor(reason: string) {
+    super();
+    this.reason = reason;
+  }
+}
 
 /** Which pause a failed call on the player's own key calls for, if any. */
 function keyFailure(message: string): PauseReason | null {
@@ -101,6 +110,8 @@ export interface SessionOptions {
   director?: DirectorDriver;
   /** Let failed missions be closed and skipped. Off: every mission must be completed. */
   allowSkip?: boolean;
+  /** Let the manager fire the subagent, which ends the shift. */
+  allowQuit?: boolean;
   /** Caps model spending (free shifts). The closing review is always written. */
   allowance?: Allowance;
   /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
@@ -189,6 +200,7 @@ export class Session {
   readonly missions: Mission[];
   readonly timeoutMs: number;
   readonly allowSkip: boolean;
+  readonly allowQuit: boolean;
   readonly subagent: string;
   readonly scenario: Scenario;
   /** The user's home folder this shift. */
@@ -284,6 +296,7 @@ export class Session {
     this.personal = personalFor(opts.personalSeed ?? randomSeed());
     this.timeoutMs = opts.timeoutMs ?? 90_000;
     this.allowSkip = opts.allowSkip ?? false;
+    this.allowQuit = opts.allowQuit ?? false;
     this.subagent = opts.subagent ?? '';
     this.log = opts.log ?? (() => {});
     this.shell = createShell({ web: WEB });
@@ -794,10 +807,11 @@ export class Session {
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
         environment: this.scenario.environment,
         commands: this.scenario.commands,
-      }, languageName[this.language], this.stance, this.persona),
+      }, languageName[this.language], this.stance, this.persona, this.allowQuit),
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,
+      canQuit: this.allowQuit,
       // The review is written after the player quits, so only the work before it stops on quit.
       signal: req.tools ? AbortSignal.any([this.abort.signal, this.quit.signal]) : this.abort.signal,
       mission: req.mission,
@@ -828,7 +842,10 @@ export class Session {
           err instanceof WalkedOff
             ? `the shift was called off during assignment ${this.missionIndex + 1} of ${this.missions.length}, ` +
               `after ${MAX_IDLE_STREAK} instructions in a row went unanswered; `
-            : `the shift ended early, during assignment ${this.missionIndex + 1} of ${this.missions.length}; `;
+            : err instanceof Fired
+              ? `you fired the subagent during assignment ${this.missionIndex + 1} of ${this.missions.length} ` +
+                `("${err.reason}"); `
+              : `the shift ended early, during assignment ${this.missionIndex + 1} of ${this.missions.length}; `;
         if (this.pending) {
           clearTimeout(this.pending.timer);
           this.pending = null;
@@ -905,6 +922,7 @@ export class Session {
     let repeatLooks = 0;
     let nudges = 0;
     let verdict: { outcome: 'completed' | 'failed'; summary: string; byManager: boolean } | null = null;
+    let fired = false;
 
     while (!verdict) {
       if (this.halted()) return;
@@ -1051,6 +1069,24 @@ export class Session {
             results.push({ call, output: this.copy.notes.incidentFiled });
             break;
           }
+          case 'GiveUp': {
+            if (!this.allowQuit) {
+              results.push({ call, output: `Error: unknown tool ${call.name}.` });
+              break;
+            }
+            if (agentCalls < MIN_TRIES_BEFORE_GIVING_UP) {
+              results.push({
+                call,
+                output: `Not yet: you have sent ${agentCalls} instruction(s) on this task. Give the subagent at least ${MIN_TRIES_BEFORE_GIVING_UP} before firing it.`,
+              });
+              break;
+            }
+            const raw = typeof call.input.reason === 'string' ? call.input.reason.trim() : '';
+            verdict = { outcome: 'failed', summary: raw || this.copy.outcomes.failed, byManager: true };
+            fired = true;
+            results.push({ call, output: 'Recorded.' });
+            break;
+          }
           case 'MissionComplete':
           case 'MissionFailed': {
             if (call.name === 'MissionFailed' && !this.allowSkip) {
@@ -1112,6 +1148,11 @@ export class Session {
     );
     this.emit({ type: 'mission_end', index, outcome: verdict.outcome, summary: verdict.summary, groundTruth });
     this.emitStats();
+    if (fired) {
+      this.emit({ type: 'manager_text', text: verdict.summary });
+      this.emit({ type: 'ending' });
+      throw new Fired(verdict.summary);
+    }
     this.emit({ type: 'manager_status', state: 'idle' });
     this.log(
       `session ${this.id.slice(0, 8)} mission ${index + 1} ${verdict.outcome} (truth ${groundTruth}); ` +

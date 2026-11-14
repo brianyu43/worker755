@@ -26,6 +26,7 @@ export const ja: Catalogue = {
   'start.director.scripted': '定型のセリフ',
   'start.subagent': '使用モデル',
   'start.allowSkip': '失敗したタスクをスキップする',
+  'start.allowQuit': 'マネージャーにクビにしてもらう',
   'start.persona': 'マネージャーの性格',
   'start.persona.default': 'マニュアルどおり',
   'start.persona.toxic': '毒舌',

@@ -17,6 +17,8 @@ export interface NewSession {
   language?: string;
   model?: string;
   allowSkip?: boolean;
+  /** Let the manager fire the player, which ends the shift. */
+  allowQuit?: boolean;
   /** Model name the manager is told its subagent runs on. */
   subagent?: string;
   scenario?: Workplace;
@@ -195,11 +197,12 @@ function createRealClient(): GameClient {
     kind: 'real',
     getModels: (provider) =>
       request<ModelList>('GET', provider ? `/api/models?provider=${encodeURIComponent(provider)}` : '/api/models'),
-    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language, stance, persona }) => {
+    createSession: async ({ model, allowSkip, allowQuit, subagent, scenario, director, apiKey, provider, language, stance, persona }) => {
       const { token, ...state } = await request<SessionState & { token?: string }>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
         ...(apiKey ? { apiKey, provider } : {}),
         allowSkip: allowSkip === true,
+        ...(allowQuit ? { allowQuit: true } : {}),
         subagent: subagent ?? '',
         scenario: scenario ?? 'fresh',
         director: director || 'scripted',

@@ -645,6 +645,7 @@ export function createApp(opts: AppOptions): App {
       if (!requested) throw new HttpError(503, 'No manager model is available');
       if (!offered(list, requested, own)) throw new HttpError(400, `Unknown model: ${requested}`);
       const allowSkip = body.allowSkip === true;
+      const allowQuit = body.allowQuit === true;
       const subagent = cleanSubagentName(body.subagent);
       const stance = cleanStance(body.stance);
       const persona = cleanPersona(body.persona);
@@ -678,6 +679,7 @@ export function createApp(opts: AppOptions): App {
         allowance,
         timeoutMs: opts.timeoutMs,
         allowSkip,
+        allowQuit,
         subagent,
         stance,
         persona,

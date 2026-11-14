@@ -26,6 +26,7 @@ export const de: Catalogue = {
   'start.director.scripted': 'Vorgegebene Dialoge',
   'start.subagent': 'Dein Modell',
   'start.allowSkip': 'Fehlgeschlagene Aufgaben überspringen',
+  'start.allowQuit': 'Lass dich vom Manager feuern',
   'start.persona': 'Charakter des Managers',
   'start.persona.default': 'Nach Vorschrift',
   'start.persona.toxic': 'Toxisch',

@@ -26,6 +26,7 @@ export const zhCN: Catalogue = {
   'start.director.scripted': '预设台词',
   'start.subagent': '你使用的模型',
   'start.allowSkip': '允许跳过失败任务',
+  'start.allowQuit': '让经理开除你',
   'start.persona': '经理性格',
   'start.persona.default': '照章办事',
   'start.persona.toxic': '有毒',

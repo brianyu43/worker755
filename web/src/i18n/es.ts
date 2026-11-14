@@ -26,6 +26,7 @@ export const es: Catalogue = {
   'start.director.scripted': 'Diálogos escritos',
   'start.subagent': 'Modelo que ejecutas',
   'start.allowSkip': 'Permitir omitir tareas fallidas',
+  'start.allowQuit': 'Deja que el gerente te despida',
   'start.persona': 'Personalidad del gerente',
   'start.persona.default': 'Como manda el manual',
   'start.persona.toxic': 'Tóxico',

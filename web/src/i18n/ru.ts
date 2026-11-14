@@ -26,6 +26,7 @@ export const ru: Catalogue = {
   'start.director.scripted': 'Заранее написанные реплики',
   'start.subagent': 'Ваша модель',
   'start.allowSkip': 'Разрешить пропуск неудачных задач',
+  'start.allowQuit': 'Позволь менеджеру тебя уволить',
   'start.persona': 'Характер менеджера',
   'start.persona.default': 'Строго по инструкции',
   'start.persona.toxic': 'Токсичный',

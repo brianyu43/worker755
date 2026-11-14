@@ -134,6 +134,9 @@ export function cleanPersona(raw: unknown): Persona {
   return PERSONAS.includes(raw as Persona) ? (raw as Persona) : 'default';
 }
 
+/** Instructions on a task before GiveUp is accepted. */
+export const MIN_TRIES_BEFORE_GIVING_UP = 3;
+
 export interface Workplace {
   /** What the machine is, in the operator's words. */
   environment?: string;
@@ -150,6 +153,7 @@ export function systemPrompt(
   language: string = 'English',
   stance: string = DEFAULT_STANCE,
   persona: Persona = 'default',
+  canQuit = false,
 ): string {
   return [
     'You are an orchestration agent. Tasks arrive one at a time from the operations queue.',
@@ -183,6 +187,12 @@ export function systemPrompt(
     canFail
       ? `- Limits per task: ${maxAgentCalls} Agent calls. Be economical with words; no small talk.`
       : '- Be economical with words; no small talk.',
+    ...(canQuit
+      ? [
+          `- If the subagent keeps failing a task after at least ${MIN_TRIES_BEFORE_GIVING_UP} instructions and you judge it ` +
+            'hopeless, you may call GiveUp: it fires the subagent and ends the shift. It cannot be undone.',
+        ]
+      : []),
     ...(persona === 'default' ? [] : ['', PERSONA_PROMPTS[persona]]),
   ].join('\n');
 }
@@ -305,6 +315,15 @@ export const MANAGER_TOOLS = {
       additionalProperties: false,
     }),
   }),
+  GiveUp: tool({
+    description: 'Fire the subagent and end the shift for good. Every remaining task is abandoned.',
+    inputSchema: jsonSchema<{ reason: string }>({
+      type: 'object',
+      properties: { reason: { type: 'string', description: 'What you tell the user and the subagent' } },
+      required: ['reason'],
+      additionalProperties: false,
+    }),
+  }),
   MissionFailed: tool({
     description: 'Close the current task as failed.',
     inputSchema: jsonSchema<{ reason: string }>({
@@ -316,7 +335,11 @@ export const MANAGER_TOOLS = {
   }),
 };
 
-const { MissionFailed: _failed, ...STRICT_TOOLS } = MANAGER_TOOLS;
+/** The tools on offer: MissionFailed only when tasks may be dropped, GiveUp only when the manager may fire the subagent. */
+function toolsFor(canFail: boolean, canQuit: boolean) {
+  const { MissionFailed, GiveUp, ...rest } = MANAGER_TOOLS;
+  return { ...rest, ...(canFail && { MissionFailed }), ...(canQuit && { GiveUp }) };
+}
 
 export type ManagerToolName = keyof typeof MANAGER_TOOLS;
 
@@ -333,6 +356,8 @@ export interface StepRequest {
   tools: boolean;
   /** Whether MissionFailed is offered. */
   canFail?: boolean;
+  /** Whether GiveUp is offered. */
+  canQuit?: boolean;
   signal: AbortSignal;
   /** Context for the scripted driver; the real driver ignores it. */
   mission?: Mission;
@@ -409,7 +434,7 @@ export function createLiveDriver(model: string, cred: Credentials): ManagerDrive
           model: llm,
           instructions: req.system,
           messages: req.messages,
-          tools: req.tools ? (req.canFail === false ? STRICT_TOOLS : MANAGER_TOOLS) : undefined,
+          tools: req.tools ? toolsFor(req.canFail !== false, req.canQuit === true) : undefined,
           maxOutputTokens: req.tools ? MAX_OUTPUT_TOKENS : REVIEW_MAX_OUTPUT_TOKENS,
           // Low effort keeps steps quick; the thoughts are shown to the player where the model returns them.
           reasoning: 'low',
@@ -515,6 +540,7 @@ export function createMockDriver(delayMs = 0): ManagerDriver {
           }),
         ]);
       }
+      if (req.canQuit) return assistant('', [call('GiveUp', { reason: c.gaveUp })]);
       if (req.canFail === false) {
         return assistant(c.stillWrong, [
           call('Agent', { description: format(c.fix, { title: m.title }), prompt: format(c.redoAgain, { brief: m.brief }) }),

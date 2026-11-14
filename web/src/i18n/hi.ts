@@ -26,6 +26,7 @@ export const hi: Catalogue = {
   'start.director.scripted': 'लिखे हुए संवाद',
   'start.subagent': 'आपका मॉडल',
   'start.allowSkip': 'विफल कार्य छोड़ने दें',
+  'start.allowQuit': 'मैनेजर को तुम्हें नौकरी से निकालने दो',
   'start.persona': 'मैनेजर का स्वभाव',
   'start.persona.default': 'नियम-कायदे से चलने वाला',
   'start.persona.toxic': 'ज़हरीला',
