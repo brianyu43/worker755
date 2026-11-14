@@ -118,6 +118,8 @@ export const hi: Catalogue = {
   'order.number': 'निर्देश {number}',
   'order.timeLeft': 'शेष समय',
   'order.brief': 'ब्रीफ़',
+  'order.fromManager': 'तुम्हारे मैनेजर की ओर से',
+  'order.fromManagerFor': 'तुम्हारे मैनेजर की ओर से, काम {number}/{total} के लिए',
   'order.of': '{time} में से',
   'order.redAt': '<strong>{time}</strong> पर लाल होगा',
   'order.reportKeys': '{keys} रिपोर्ट',

@@ -118,6 +118,8 @@ export const ja: Catalogue = {
   'order.number': '指示 {number}',
   'order.timeLeft': '残り時間',
   'order.brief': '概要',
+  'order.fromManager': 'マネージャーから',
+  'order.fromManagerFor': 'マネージャーから、全{total}件中{number}件目の任務',
   'order.of': '{time}のうち',
   'order.redAt': '<strong>{time}</strong>に赤になります',
   'order.reportKeys': '{keys}件の報告',

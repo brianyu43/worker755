@@ -118,6 +118,8 @@ export const de: Catalogue = {
   'order.number': 'Anweisung {number}',
   'order.timeLeft': 'Verbleibende Zeit',
   'order.brief': 'Briefing',
+  'order.fromManager': 'Von deinem Manager',
+  'order.fromManagerFor': 'Von deinem Manager, für Aufgabe {number} von {total}',
   'order.of': 'von {time}',
   'order.redAt': 'Wird rot um <strong>{time}</strong>',
   'order.reportKeys': '{keys} Berichte',

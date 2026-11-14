@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import { Eye, Feed, PHASE_LABEL, activityOf, managerPhase } from '../components/Feed';
+import { Eye, Feed, activityOf, managerPhase } from '../components/Feed';
 import { FileTree, StatsPanel } from '../components/Side';
 import { Terminal, type TerminalHandle } from '../components/Terminal';
 import { WorkOrder, formatClock, remainingOf, urgencyOf, useTicker } from '../components/WorkOrder';
@@ -107,8 +107,10 @@ export function Play({ game, view, onFinish }: Props) {
   }, [tab]);
   const unread = view.feed.filter((e) => e.seq > seenSeq && NOTABLE.has(e.type)).length;
   const newIncidents = Math.max(0, view.stats.incidents - seenIncidents);
-  const phase = managerPhase(view.feed, view.manager);
-  const lastWord = [...view.feed].reverse().find((e) => e.type === 'manager_text' || e.type === 'director_text');
+  const lastWord = [...view.feed].reverse().find(
+    (e): e is Extract<GameEvent, { type: 'manager_text' | 'director_text' }> => e.type === 'manager_text' || e.type === 'director_text',
+  );
+  const fresh = lastWord && lastWord.seq > seenSeq ? lastWord : null;
   const shiftStart = view.feed[0]?.ts;
   const remaining = open ? remainingOf(open, game.serverNow()) : 0;
   const urgency = open ? urgencyOf(remaining, open.durationMs) : null;
@@ -334,29 +336,17 @@ export function Play({ game, view, onFinish }: Props) {
             />
           )}
           <Splitter kind="order" />
-          <button type="button" className={`peek peek-${phase}`} onClick={() => setTab('manager')}>
-            <span className="peek-text">
-              <span className="peek-who">
-                {t('feed.manager')}
-                {phase !== 'idle' && (
-                  <span className="peek-state">
-                    <i aria-hidden />
-                    {t(PHASE_LABEL[phase])}
-                  </span>
-                )}
+          {/* On a phone: the newest unread word from the manager or the director, one line, until it is read. */}
+          {fresh && (
+            <button type="button" className={`peek${fresh.type === 'director_text' ? ' peek-director' : ''}`} onClick={() => setTab('manager')}>
+              {fresh.type === 'director_text' ? <Eye size={13} /> : <span className="peek-who">{t('feed.manager')}</span>}
+              <span className="peek-line">{fresh.text}</span>
+              {unread > 1 && <span className="peek-count">{unread}</span>}
+              <span className="peek-chevron" aria-hidden>
+                ›
               </span>
-              {/* Once read on the Manager tab, the line goes until there is a new one. */}
-              {lastWord && lastWord.seq > seenSeq && (
-                <span className={`peek-line${lastWord.type === 'director_text' ? ' peek-director' : ''}`}>
-                  {lastWord.type === 'director_text' && <Eye size={13} />} {'text' in lastWord ? lastWord.text : ''}
-                </span>
-              )}
-            </span>
-            {unread > 0 && <span className="peek-count">{unread}</span>}
-            <span className="peek-chevron" aria-hidden>
-              ›
-            </span>
-          </button>
+            </button>
+          )}
           <Terminal
             ref={term}
             sessionId={view.id}

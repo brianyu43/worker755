@@ -118,6 +118,8 @@ export const es: Catalogue = {
   'order.number': 'Instrucción {number}',
   'order.timeLeft': 'Tiempo restante',
   'order.brief': 'Resumen',
+  'order.fromManager': 'De tu manager',
+  'order.fromManagerFor': 'De tu manager, para la tarea {number} de {total}',
   'order.of': 'de {time}',
   'order.redAt': 'Se pone rojo a las <strong>{time}</strong>',
   'order.reportKeys': '{keys} informes',

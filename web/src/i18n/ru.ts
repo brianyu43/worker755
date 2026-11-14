@@ -118,6 +118,8 @@ export const ru: Catalogue = {
   'order.number': 'Инструкция {number}',
   'order.timeLeft': 'Осталось времени',
   'order.brief': 'Кратко',
+  'order.fromManager': 'От менеджера',
+  'order.fromManagerFor': 'От менеджера, к заданию {number} из {total}',
   'order.of': 'из {time}',
   'order.redAt': 'Загорится красным в <strong>{time}</strong>',
   'order.reportKeys': 'отчётов: {keys}',

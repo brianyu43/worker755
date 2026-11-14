@@ -2737,8 +2737,8 @@ kbd {
     flex: none;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 7px 10px;
+    gap: 8px;
+    padding: 6px 10px;
     border: 1px solid var(--rule-soft);
     border-left: 3px solid var(--ink-faint);
     border-radius: 3px;
@@ -2747,46 +2747,14 @@ kbd {
     text-align: left;
     cursor: pointer;
   }
-  .peek-waiting {
-    border-left-color: var(--stamp);
-  }
-  .peek-text {
-    flex: 1;
-    min-width: 0;
-    line-height: 1.25;
-  }
   .peek-who {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    flex: none;
     font-size: 12px;
     font-weight: 700;
   }
-  .peek-state {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--ink-soft);
-  }
-  .peek-state i {
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-  .peek-waiting .peek-state {
-    color: var(--stamp);
-  }
-  .peek-waiting .peek-state i {
-    animation: pulse 1.6s infinite;
-  }
   .peek-line {
-    display: block;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2795,7 +2763,11 @@ kbd {
     color: var(--ink-soft);
   }
   .peek-director {
+    border-left-color: var(--stamp);
     color: var(--stamp);
+  }
+  .peek-director .peek-line {
+    color: inherit;
     font-style: normal;
     font-weight: 600;
   }

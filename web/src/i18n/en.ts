@@ -119,6 +119,8 @@ export const en = {
   'order.number': 'Instruction {number}',
   'order.timeLeft': 'Time left',
   'order.brief': 'Brief',
+  'order.fromManager': 'From your manager',
+  'order.fromManagerFor': 'From your manager, for assignment {number} of {total}',
   'order.of': 'of {time}',
   'order.redAt': 'Goes red at <strong>{time}</strong>',
   'order.reportKeys': '{keys} reports',

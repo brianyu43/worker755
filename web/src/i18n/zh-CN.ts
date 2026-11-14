@@ -118,6 +118,8 @@ export const zhCN: Catalogue = {
   'order.number': '指示 {number}',
   'order.timeLeft': '剩余时间',
   'order.brief': '任务简报',
+  'order.fromManager': '来自你的经理',
+  'order.fromManagerFor': '来自你的经理，用于第 {number} 项任务（共 {total} 项）',
   'order.of': '共 {time}',
   'order.redAt': '将在 <strong>{time}</strong> 变红',
   'order.reportKeys': '{keys} 份报告',

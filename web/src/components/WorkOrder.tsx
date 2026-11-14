@@ -103,7 +103,8 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count, miss
   const warnAt = warnAtOf(inst.durationMs);
   const outcome = !open && closed ? closed.outcome : null;
   const secondKey = Math.ceil(remaining / 1000);
-  const from = mission ? t('feed.assignment', { number: mission.index + 1, total: mission.total }) : null;
+  // The director set the assignment; the instruction, its wording and its details, are the manager's.
+  const from = mission ? t('order.fromManagerFor', { number: mission.index + 1, total: mission.total }) : t('order.fromManager');
   const risky = mission?.kind ? RISKY[mission.kind] : undefined;
 
   return (
@@ -115,11 +116,11 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count, miss
       <div className="order-main">
         <div className="order-meta">
           <span className="order-no">{t('order.number', { number: count })}</span>
-          {from && <span className="order-from">{from}</span>}
+          <span className="order-from">{from}</span>
         </div>
         <button type="button" className="order-toggle" aria-expanded={briefOpen} onClick={() => setBriefOpen(!briefOpen)}>
           <span className="order-no">{t('order.brief')}</span>
-          <span className="order-from">{from ?? t('order.number', { number: count })}</span>
+          <span className="order-from">{t('order.fromManager')}</span>
           <span className="order-chevron" aria-hidden>
             ▾
           </span>
