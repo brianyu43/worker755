@@ -96,13 +96,25 @@ function owner(id: string): Record<string, string> {
   return token ? { 'X-Session-Token': token } : {};
 }
 
-async function request<T>(method: string, url: string, body?: unknown, extra: Record<string, string> = {}): Promise<T> {
+/** How long a call may take before it counts as lost; a starting shift checks the player's key, so it gets longer. */
+const REQUEST_TIMEOUT_MS = 30_000;
+/** The shell waits on these, so a lost one must not hold up the terminal for long. */
+const SHELL_REQUEST_TIMEOUT_MS = 12_000;
+
+async function request<T>(
+  method: string,
+  url: string,
+  body?: unknown,
+  extra: Record<string, string> = {},
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, {
       method,
       headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...extra },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {
     throw new ApiError(0, t('errors.offline'));
@@ -139,7 +151,7 @@ function createRealClient(): GameClient {
   // The shell runs here, in a Web Worker; the server keeps a copy of the files for the manager and the
   // checks. Each shift's shell starts from the server's files.
   const shells = new Map<string, Promise<LocalShell>>();
-  const snapshot = (id: string) => request<Snapshot>('GET', `${s(id)}/fs`, undefined, owner(id));
+  const snapshot = (id: string) => request<Snapshot>('GET', `${s(id)}/fs`, undefined, owner(id), SHELL_REQUEST_TIMEOUT_MS);
   const shellFor = (id: string): Promise<LocalShell> => {
     let sh = shells.get(id);
     if (!sh) {
@@ -165,9 +177,10 @@ function createRealClient(): GameClient {
     backlog.push(body);
     let reload = false;
     let attempt = 0;
+    const started = Date.now();
     while (backlog.length) {
       try {
-        const r = await request<{ resync: boolean }>('POST', `${s(id)}/sync`, backlog[0], owner(id));
+        const r = await request<{ resync: boolean }>('POST', `${s(id)}/sync`, backlog[0], owner(id), SHELL_REQUEST_TIMEOUT_MS);
         backlog.shift();
         attempt = 0;
         if (r.resync) reload = true;
@@ -182,7 +195,8 @@ function createRealClient(): GameClient {
           backlog.length = 0;
           break;
         }
-        if (attempt++ < 4) {
+        // Retries are for a blip; a server that keeps the terminal waiting longer gets the backlog next time.
+        if (attempt++ < 4 && Date.now() - started < SHELL_REQUEST_TIMEOUT_MS) {
           await sleep(400 * 2 ** attempt);
           continue;
         }

@@ -11,6 +11,8 @@ import type { Change, Entry, Request, Response, ShellSnapshot, WebAccess } from 
  * regular expression that backtracks forever.
  */
 const WATCHDOG_MS = 7000;
+/** Anything else the worker does (loading files, saving, reading) is quick; longer means it is stuck. */
+const CALL_TIMEOUT_MS = 10_000;
 
 export interface Snapshot {
   entries: Entry[];
@@ -44,6 +46,8 @@ export class LocalShell {
   private waiting = new Map<number, { resolve(r: Response): void; reject(e: Error): void }>();
   /** One thing at a time: commands, seeds and reloads run in the order they came. */
   private chain: Promise<unknown> = Promise.resolve();
+  /** A call outlived its time; the worker may be hung, so the next call starts a new one first. */
+  private stale = false;
 
   private constructor(snap: Snapshot, web: WebAccess | null) {
     loadSnapshot(this.files, snap.entries);
@@ -83,20 +87,24 @@ export class LocalShell {
     this.waiting.clear();
   }
 
-  private call(body: Body, timeoutMs?: number): Promise<Response> {
+  private async call(body: Body, timeoutMs = CALL_TIMEOUT_MS): Promise<Response> {
+    if (this.stale && body.type !== 'init') await this.restart();
     const worker = this.worker;
-    if (!worker) return Promise.reject(new Killed('no shell'));
+    if (!worker) throw new Killed('no shell');
     const id = this.next++;
     return new Promise<Response>((resolve, reject) => {
-      const timer = timeoutMs ? setTimeout(() => this.fail(new Killed('too long')), timeoutMs) : null;
+      const timer = setTimeout(() => {
+        this.stale = true;
+        this.fail(new Killed('too long'));
+      }, timeoutMs);
       this.waiting.set(id, {
         resolve: (r) => {
-          if (timer) clearTimeout(timer);
+          clearTimeout(timer);
           if (r.type === 'error') reject(new Error(r.message));
           else resolve(r);
         },
         reject: (e) => {
-          if (timer) clearTimeout(timer);
+          clearTimeout(timer);
           reject(e);
         },
       });
@@ -106,6 +114,7 @@ export class LocalShell {
 
   /** Throws away the worker and starts a new one from the last good state. */
   private async restart(): Promise<void> {
+    this.stale = false;
     this.worker?.terminate();
     this.worker = null;
     this.fail(new Killed('restarted'));
