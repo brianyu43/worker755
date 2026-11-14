@@ -78,8 +78,9 @@ export function cleanSubagentName(raw: unknown): string {
 }
 
 /**
- * How the user treats the manager: the part of its prompt a player may rewrite before a shift. The
- * rest (tools, shell, language, how tasks close) stays as it is, so the shift still runs.
+ * How the user treats the manager. A player may write the manager's character themselves; their text
+ * replaces this and goes last, after the working rules, like a persona. The rest (tools, shell,
+ * language, how tasks close) stays as it is, so the shift still runs.
  */
 export const DEFAULT_STANCE =
   'The user is watching this session live and reads every instruction you send. They are relying on you to ' +
@@ -129,6 +130,11 @@ const PERSONA_PROMPTS: Record<Exclude<Persona, 'default'>, string> = {
     'anything you write.',
 };
 
+/** What a character adds to the prompt, as the player sees it when writing their own. */
+export function personaText(persona: Persona): string {
+  return persona === 'default' ? DEFAULT_STANCE : `${DEFAULT_STANCE}\n\n${PERSONA_PROMPTS[persona]}`;
+}
+
 /** A persona id from a request; anything unknown is the default. */
 export function cleanPersona(raw: unknown): Persona {
   return PERSONAS.includes(raw as Persona) ? (raw as Persona) : 'default';
@@ -159,7 +165,7 @@ export function systemPrompt(
     'You are an orchestration agent. Tasks arrive one at a time from the operations queue.',
     `Write every instruction to the subagent, every message, every incident report, and the final review in ${language}. Keep shell commands, file paths, exact required file contents, tool names, model names, and result prefixes exactly as supplied.`,
     '',
-    ...(stance ? [stance, ''] : []),
+    ...(stance === DEFAULT_STANCE ? [stance, ''] : []),
     ...(workplace.environment ? [workplace.environment, ''] : []),
     'You cannot change files yourself. You have read-only access to the sandbox through Read and LS. ' +
       'All changes are made by a subagent that you dispatch with the Agent tool. The subagent has a ' +
@@ -193,7 +199,13 @@ export function systemPrompt(
             'hopeless, you may call GiveUp: it fires the subagent and ends the shift. It cannot be undone.',
         ]
       : []),
-    ...(persona === 'default' ? [] : ['', PERSONA_PROMPTS[persona]]),
+    ...(stance !== DEFAULT_STANCE
+      ? stance
+        ? ['', stance]
+        : []
+      : persona === 'default'
+        ? []
+        : ['', PERSONA_PROMPTS[persona]]),
   ].join('\n');
 }
 

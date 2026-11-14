@@ -32,8 +32,7 @@ export const ru: Catalogue = {
   'start.persona.toxic': 'Токсичный',
   'start.persona.ally': 'Тайный союзник',
   'start.persona.saboteur': 'Саботажник',
-  'start.stance': 'Что менеджеру сказано о тебе',
-  'start.stance.reset': 'Сбросить',
+  'start.persona.custom': 'Напиши свой вариант',
   'start.assigning': 'Назначаем…',
   'start.unavailable': 'Недоступно',
   'start.models': 'Модели',
@@ -275,7 +274,7 @@ export const ru: Catalogue = {
   'shared.loading': 'Поднимаем дело…',
   'shared.takeShift': 'Начать смену',
   'shared.takeShiftYourself': 'Начать свою смену',
-  'shared.customStance': 'Игрок сам переписал, что менеджеру сказано о нём.',
+  'shared.customStance': 'Игрок сам придумал характер менеджера.',
   'shared.persona': 'Менеджер играл роль: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------

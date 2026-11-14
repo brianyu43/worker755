@@ -32,8 +32,7 @@ export const hi: Catalogue = {
   'start.persona.toxic': 'ज़हरीला',
   'start.persona.ally': 'गुप्त साथी',
   'start.persona.saboteur': 'तोड़फोड़ करने वाला',
-  'start.stance': 'मैनेजर को तुम्हारे बारे में क्या बताया गया है',
-  'start.stance.reset': 'रीसेट',
+  'start.persona.custom': 'अपना खुद लिखो',
   'start.assigning': 'काम बाँटा जा रहा है…',
   'start.unavailable': 'उपलब्ध नहीं',
   'start.models': 'मॉडल',
@@ -275,7 +274,7 @@ export const hi: Catalogue = {
   'shared.loading': 'रिकॉर्ड निकाला जा रहा है…',
   'shared.takeShift': 'शिफ़्ट लें',
   'shared.takeShiftYourself': 'अपनी शिफ़्ट लें',
-  'shared.customStance': 'खिलाड़ी ने मैनेजर को अपने बारे में बताई गई बात फिर से लिख दी।',
+  'shared.customStance': 'मैनेजर का किरदार खिलाड़ी ने लिखा है।',
   'shared.persona': 'मैनेजर ने {persona} का किरदार निभाया।',
 
   // ---- about page -----------------------------------------------------------------------------

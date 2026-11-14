@@ -32,8 +32,7 @@ export const de: Catalogue = {
   'start.persona.toxic': 'Toxisch',
   'start.persona.ally': 'Heimlicher Verbündeter',
   'start.persona.saboteur': 'Saboteur',
-  'start.stance': 'Was der Manager über dich erfahren hat',
-  'start.stance.reset': 'Zurücksetzen',
+  'start.persona.custom': 'Schreib deine eigene',
   'start.assigning': 'Wird zugewiesen …',
   'start.unavailable': 'Nicht verfügbar',
   'start.models': 'Modelle',
@@ -275,7 +274,7 @@ export const de: Catalogue = {
   'shared.loading': 'Akte wird geholt…',
   'shared.takeShift': 'Schicht antreten',
   'shared.takeShiftYourself': 'Selbst eine Schicht antreten',
-  'shared.customStance': 'Der Spieler hat umgeschrieben, was man dem Manager über ihn erzählt hat.',
+  'shared.customStance': 'Der Spieler hat den Charakter des Managers geschrieben.',
   'shared.persona': 'Der Manager hat den {persona} gespielt.',
 
   // ---- about page -----------------------------------------------------------------------------

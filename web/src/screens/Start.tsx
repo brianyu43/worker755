@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import type { NewSession } from '../api/client';
-import type { ModelList, Persona, Provider, Workplace } from '../api/types';
+import type { Character, ModelList, Provider, Workplace } from '../api/types';
 import { rememberLabels } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
@@ -16,11 +16,12 @@ interface Props {
 
 const WORKPLACES: Workplace[] = ['fresh', 'legacy'];
 
-const PERSONA_LABEL: Record<Persona, Key> = {
+const PERSONA_LABEL: Record<Character, Key> = {
   default: 'start.persona.default',
   toxic: 'start.persona.toxic',
   ally: 'start.persona.ally',
   saboteur: 'start.persona.saboteur',
+  custom: 'start.persona.custom',
 };
 const PERSONA_IDS = Object.keys(PERSONA_LABEL);
 
@@ -63,15 +64,28 @@ export function Start({ onStart }: Props) {
   const named = useRef(false);
   const [scenario, setScenario] = useState<Workplace>('fresh');
   const [director, setDirector] = useState(wanted.current.director ?? '');
-  /** The player's rewrite of what the manager is told about them; null shows the default. */
-  const [stance, setStance] = useState<string | null>(wanted.current.stance ?? null);
-  const writeStance = (text: string | null) => {
+  /** The character the player wrote, kept while they try the ones on offer. */
+  const [stance, setStance] = useState<string>(wanted.current.stance ?? '');
+  const writeStance = (text: string) => {
     setStance(text);
-    wanted.current = { ...wanted.current, stance: text ?? undefined };
+    wanted.current = { ...wanted.current, stance: text };
     savePicks(wanted.current);
   };
-  const [persona, setPersona] = useState<Persona>((PERSONA_IDS as readonly string[]).includes(wanted.current.persona ?? '') ? (wanted.current.persona as Persona) : 'default');
-  const pick = (next: { model?: string; director?: string; persona?: Persona }) => {
+  const [persona, setPersona] = useState<Character>(
+    PERSONA_IDS.includes(wanted.current.persona ?? '')
+      ? (wanted.current.persona as Character)
+      : wanted.current.stance
+        ? 'custom'
+        : 'default',
+  );
+  const choose = (next: Character) => {
+    // Writing your own starts from the character picked so far.
+    if (next === 'custom' && !stance.trim()) {
+      writeStance(models?.characters?.find((c) => c.id === persona)?.text ?? models?.stance?.text ?? '');
+    }
+    pick({ persona: next });
+  };
+  const pick = (next: { model?: string; director?: string; persona?: Character }) => {
     wanted.current = { ...wanted.current, ...next };
     savePicks(wanted.current);
     if (next.model !== undefined) setModel(next.model);
@@ -158,8 +172,11 @@ export function Start({ onStart }: Props) {
         subagent: subagent.trim(),
         scenario,
         director,
-        ...(stance !== null && stance !== models?.stance?.text ? { stance } : {}),
-        ...(persona !== 'default' && models?.personas?.includes(persona) ? { persona } : {}),
+        ...(persona === 'custom'
+          ? { stance }
+          : persona !== 'default' && models?.characters?.some((c) => c.id === persona)
+            ? { persona }
+            : {}),
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
@@ -281,11 +298,11 @@ export function Start({ onStart }: Props) {
                   <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
                 )}
               </label>
-              {models?.personas && (
+              {models?.characters && (
                 <label className="field">
                   <span className="field-label">{t('start.persona')}</span>
-                  <select value={persona} onChange={(e) => pick({ persona: e.target.value as Persona })} className="select">
-                    {models.personas.map((p) => (
+                  <select value={persona} onChange={(e) => choose(e.target.value as Character)} className="select">
+                    {[...models.characters.map((c) => c.id), 'custom' as const].map((p) => (
                       <option key={p} value={p}>
                         {t(PERSONA_LABEL[p])}
                       </option>
@@ -328,24 +345,16 @@ export function Start({ onStart }: Props) {
                 <input type="checkbox" checked={allowQuit} onChange={(e) => setAllowQuit(e.target.checked)} />
                 <span>{t('start.allowQuit')}</span>
               </label>
-              {models?.stance && (
-                <details className="stance" open={stance !== null && stance !== models.stance.text}>
-                  <summary>{t('start.stance')}</summary>
-                  <textarea
-                    className="stance-text"
-                    value={stance ?? models.stance.text}
-                    maxLength={models.stance.max}
-                    rows={5}
-                    spellCheck={false}
-                    aria-label={t('start.stance')}
-                    onChange={(e) => writeStance(e.target.value)}
-                  />
-                  {stance !== null && stance !== models.stance.text && (
-                    <button type="button" className="btn btn-small" onClick={() => writeStance(null)}>
-                      {t('start.stance.reset')}
-                    </button>
-                  )}
-                </details>
+              {persona === 'custom' && models?.characters && (
+                <textarea
+                  className="stance stance-text"
+                  value={stance}
+                  maxLength={models.stance?.max}
+                  rows={6}
+                  spellCheck={false}
+                  aria-label={t('start.persona')}
+                  onChange={(e) => writeStance(e.target.value)}
+                />
               )}
             </div>
           </section>

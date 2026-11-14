@@ -32,8 +32,7 @@ export const es: Catalogue = {
   'start.persona.toxic': 'Tóxico',
   'start.persona.ally': 'Aliado secreto',
   'start.persona.saboteur': 'Saboteador',
-  'start.stance': 'Lo que le han dicho al gerente sobre ti',
-  'start.stance.reset': 'Restablecer',
+  'start.persona.custom': 'Escribe la tuya',
   'start.assigning': 'Asignando…',
   'start.unavailable': 'No disponible',
   'start.models': 'Modelos',
@@ -275,7 +274,7 @@ export const es: Catalogue = {
   'shared.loading': 'Buscando en el expediente…',
   'shared.takeShift': 'Iniciar un turno',
   'shared.takeShiftYourself': 'Inicia tu propio turno',
-  'shared.customStance': 'El jugador reescribió lo que le habían dicho al gerente sobre él.',
+  'shared.customStance': 'El jugador escribió el personaje del gerente.',
   'shared.persona': 'El gerente hizo de: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------

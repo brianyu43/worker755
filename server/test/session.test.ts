@@ -971,6 +971,7 @@ test('a player may rewrite what the manager is told about them, and only that', 
     const sys = driver.requests[0].system;
     if (present) assert.ok(sys.includes(present), sys);
     if (stance !== undefined) assert.ok(!sys.includes(DEFAULT_STANCE), 'the default is replaced');
+    if (stance) assert.ok(sys.indexOf(stance) > sys.indexOf('How to work'), 'a written character goes last, like a persona');
     assert.match(sys, /Close it with MissionComplete/, 'the rules of the shift stay');
   }
 });

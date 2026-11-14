@@ -33,8 +33,7 @@ export const en = {
   'start.persona.toxic': 'Toxic',
   'start.persona.ally': 'Secret ally',
   'start.persona.saboteur': 'Saboteur',
-  'start.stance': 'What the manager is told about you',
-  'start.stance.reset': 'Reset',
+  'start.persona.custom': 'Write your own',
   'start.assigning': 'Assigning…',
   'start.unavailable': 'Unavailable',
   'start.models': 'Models',
@@ -275,7 +274,7 @@ export const en = {
   'shared.loading': 'Pulling the file…',
   'shared.takeShift': 'Take a shift',
   'shared.takeShiftYourself': 'Take a shift yourself',
-  'shared.customStance': 'The player rewrote what the manager was told about them.',
+  'shared.customStance': "The player wrote the manager's character.",
   'shared.persona': 'The manager played: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------

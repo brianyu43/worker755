@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { NOTICE_CHANCE, Session } from './session.ts';
-import { cleanPersona, cleanStance, cleanSubagentName, createLiveDriver, createMockDriver, DEFAULT_STANCE, PERSONAS, STANCE_MAX, SUBAGENT_NAMES } from './manager.ts';
+import { cleanPersona, cleanStance, cleanSubagentName, createLiveDriver, createMockDriver, DEFAULT_STANCE, PERSONAS, personaText, STANCE_MAX, SUBAGENT_NAMES } from './manager.ts';
 import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
 import type { ManagerDriver } from './manager.ts';
@@ -588,7 +588,7 @@ export function createApp(opts: AppOptions): App {
         providers: PROVIDERS,
         subagents: SUBAGENT_NAMES,
         stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
-        personas: PERSONAS,
+        characters: PERSONAS.map((id) => ({ id, text: personaText(id) })),
         scenarios: SCENARIO_LIST,
         donateUrl: opts.donateUrl ?? '',
         sourceUrl: opts.sourceUrl ?? '',
@@ -648,7 +648,8 @@ export function createApp(opts: AppOptions): App {
       const allowQuit = body.allowQuit === true;
       const subagent = cleanSubagentName(body.subagent);
       const stance = cleanStance(body.stance);
-      const persona = cleanPersona(body.persona);
+      // A character the player wrote replaces the chosen one.
+      const persona = stance === undefined ? cleanPersona(body.persona) : 'default';
       if (body.scenario !== undefined && !isScenarioId(body.scenario)) throw new HttpError(400, 'Unknown workplace');
       const scenario = isScenarioId(body.scenario) ? body.scenario : 'fresh';
       if (body.language !== undefined && !isLanguage(body.language)) throw new HttpError(400, 'Unsupported language');

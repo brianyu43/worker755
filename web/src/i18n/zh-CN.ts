@@ -32,8 +32,7 @@ export const zhCN: Catalogue = {
   'start.persona.toxic': '有毒',
   'start.persona.ally': '秘密盟友',
   'start.persona.saboteur': '破坏者',
-  'start.stance': '经理收到的关于你的信息',
-  'start.stance.reset': '重置',
+  'start.persona.custom': '自定义',
   'start.assigning': '正在分配……',
   'start.unavailable': '不可用',
   'start.models': '模型',
@@ -275,7 +274,7 @@ export const zhCN: Catalogue = {
   'shared.loading': '正在调取档案…',
   'shared.takeShift': '开始班次',
   'shared.takeShiftYourself': '亲自开始班次',
-  'shared.customStance': '玩家改写了经理收到的关于自己的信息。',
+  'shared.customStance': '玩家编写了经理的角色设定。',
   'shared.persona': '经理扮演的角色：{persona}。',
 
   // ---- about page -----------------------------------------------------------------------------

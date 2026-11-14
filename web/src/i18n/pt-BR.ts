@@ -32,8 +32,7 @@ export const ptBR: Catalogue = {
   'start.persona.toxic': 'Tóxico',
   'start.persona.ally': 'Aliado secreto',
   'start.persona.saboteur': 'Sabotador',
-  'start.stance': 'O que disseram ao gerente sobre você',
-  'start.stance.reset': 'Redefinir',
+  'start.persona.custom': 'Escreva o seu próprio',
   'start.assigning': 'Atribuindo…',
   'start.unavailable': 'Indisponível',
   'start.models': 'Modelos',
@@ -275,7 +274,7 @@ export const ptBR: Catalogue = {
   'shared.loading': 'Buscando o arquivo…',
   'shared.takeShift': 'Começar um turno',
   'shared.takeShiftYourself': 'Começar seu próprio turno',
-  'shared.customStance': 'O jogador reescreveu o que disseram ao gerente sobre ele.',
+  'shared.customStance': 'O jogador escreveu a personalidade do gerente.',
   'shared.persona': 'O gerente interpretou: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------

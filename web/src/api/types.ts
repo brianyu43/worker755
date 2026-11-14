@@ -113,6 +113,8 @@ export interface SessionState {
 }
 
 export type Persona = 'default' | 'toxic' | 'ally' | 'saboteur';
+/** A character on offer, or one the player writes. */
+export type Character = Persona | 'custom';
 
 export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deepseek';
 
@@ -121,8 +123,8 @@ export interface ModelList {
   subagents: string[];
   /** What the manager is told about the user by default, which a player may rewrite. */
   stance?: { text: string; max: number };
-  /** Characters the manager can play; older servers leave it out. */
-  personas?: Persona[];
+  /** Characters the manager can play, with what each adds to its prompt; older servers leave it out. */
+  characters?: { id: Persona; text: string }[];
   scenarios: { id: Workplace; label: string }[];
   default: string;
   mock: boolean;

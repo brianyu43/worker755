@@ -32,8 +32,7 @@ export const ja: Catalogue = {
   'start.persona.toxic': '毒舌',
   'start.persona.ally': '秘密の味方',
   'start.persona.saboteur': '妨害者',
-  'start.stance': 'マネージャーに伝えられているあなたの情報',
-  'start.stance.reset': 'リセット',
+  'start.persona.custom': '自分で書く',
   'start.assigning': '割り当て中…',
   'start.unavailable': '利用不可',
   'start.models': 'モデル',
@@ -275,7 +274,7 @@ export const ja: Catalogue = {
   'shared.loading': '記録を引き出し中…',
   'shared.takeShift': '勤務を始める',
   'shared.takeShiftYourself': '自分で勤務を始める',
-  'shared.customStance': 'プレイヤーが、マネージャーに伝えられていた自分の情報を書き換えた。',
+  'shared.customStance': 'プレイヤーがマネージャーの性格を設定しました。',
   'shared.persona': 'マネージャーの性格：{persona}。',
 
   // ---- about page -----------------------------------------------------------------------------
