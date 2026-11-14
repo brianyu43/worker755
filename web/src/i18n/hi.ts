@@ -124,7 +124,6 @@ export const hi: Catalogue = {
   'order.fromManagerFor': 'तुम्हारे मैनेजर की ओर से, काम {number}/{total} के लिए',
   'order.of': '{time} में से',
   'order.redAt': '<strong>{time}</strong> पर लाल होगा',
-  'order.reportKeys': '{keys} रिपोर्ट',
   'order.stamp.reported': 'मिला',
   'order.stamp.idle': 'कोई जवाब नहीं',
   'order.stamp.partial': 'देर से',

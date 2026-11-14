@@ -124,7 +124,6 @@ export const de: Catalogue = {
   'order.fromManagerFor': 'Von deinem Manager, für Aufgabe {number} von {total}',
   'order.of': 'von {time}',
   'order.redAt': 'Wird rot um <strong>{time}</strong>',
-  'order.reportKeys': '{keys} Berichte',
   'order.stamp.reported': 'Eingegangen',
   'order.stamp.idle': 'Keine Antwort',
   'order.stamp.partial': 'Zu spät',

@@ -125,7 +125,6 @@ export const en = {
   'order.fromManagerFor': 'From your manager, for assignment {number} of {total}',
   'order.of': 'of {time}',
   'order.redAt': 'Goes red at <strong>{time}</strong>',
-  'order.reportKeys': '{keys} reports',
   'order.stamp.reported': 'Received',
   'order.stamp.idle': 'No response',
   'order.stamp.partial': 'Late',

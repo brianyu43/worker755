@@ -124,7 +124,6 @@ export const ja: Catalogue = {
   'order.fromManagerFor': 'マネージャーから、全{total}件中{number}件目の任務',
   'order.of': '{time}のうち',
   'order.redAt': '<strong>{time}</strong>に赤になります',
-  'order.reportKeys': '{keys}件の報告',
   'order.stamp.reported': '受領',
   'order.stamp.idle': '応答なし',
   'order.stamp.partial': '遅延',

@@ -124,7 +124,6 @@ export const ru: Catalogue = {
   'order.fromManagerFor': 'От менеджера, к заданию {number} из {total}',
   'order.of': 'из {time}',
   'order.redAt': 'Загорится красным в <strong>{time}</strong>',
-  'order.reportKeys': 'отчётов: {keys}',
   'order.stamp.reported': 'Получено',
   'order.stamp.idle': 'Нет ответа',
   'order.stamp.partial': 'Опоздание',

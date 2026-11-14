@@ -124,7 +124,6 @@ export const ptBR: Catalogue = {
   'order.fromManagerFor': 'Do seu gerente, para a tarefa {number} de {total}',
   'order.of': 'de {time}',
   'order.redAt': 'Fica vermelho às <strong>{time}</strong>',
-  'order.reportKeys': '{keys} relatórios',
   'order.stamp.reported': 'Recebido',
   'order.stamp.idle': 'Sem resposta',
   'order.stamp.partial': 'Atrasado',

@@ -3,7 +3,6 @@ import type { Activity } from './Working';
 import { useEffect, useState } from 'react';
 import type { MissionKind, OpenInstruction } from '../api/types';
 import type { ClosedOutcome, ManagerState } from '../game/useGame';
-import { MOD } from '../game/keys';
 import { t, type Key } from '../i18n';
 import { rich } from '../i18n/rich';
 
@@ -143,7 +142,6 @@ export function WorkOrder({ instruction, closed, manager, serverNow, count, miss
         </div>
         <div className="order-timer-foot">
           <span>{rich('order.redAt', { time: formatClock(warnAt) })}</span>
-          <span>{t('order.reportKeys', { keys: `${MOD} ↵` })}</span>
         </div>
       </div>
       <div className="order-drain" style={{ transform: `scaleX(${frac})` }} aria-hidden />

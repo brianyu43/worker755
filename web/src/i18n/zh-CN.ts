@@ -124,7 +124,6 @@ export const zhCN: Catalogue = {
   'order.fromManagerFor': '来自你的经理，用于第 {number} 项任务（共 {total} 项）',
   'order.of': '共 {time}',
   'order.redAt': '将在 <strong>{time}</strong> 变红',
-  'order.reportKeys': '{keys} 份报告',
   'order.stamp.reported': '已收到',
   'order.stamp.idle': '未响应',
   'order.stamp.partial': '迟交',
