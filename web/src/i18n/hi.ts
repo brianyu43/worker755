@@ -26,6 +26,11 @@ export const hi: Catalogue = {
   'start.director.scripted': 'लिखे हुए संवाद',
   'start.subagent': 'आपका मॉडल',
   'start.allowSkip': 'विफल कार्य छोड़ने दें',
+  'start.persona': 'मैनेजर का स्वभाव',
+  'start.persona.default': 'नियम-कायदे से चलने वाला',
+  'start.persona.toxic': 'ज़हरीला',
+  'start.persona.ally': 'गुप्त साथी',
+  'start.persona.saboteur': 'तोड़फोड़ करने वाला',
   'start.stance': 'मैनेजर को तुम्हारे बारे में क्या बताया गया है',
   'start.stance.reset': 'रीसेट',
   'start.assigning': 'काम बाँटा जा रहा है…',
@@ -270,6 +275,7 @@ export const hi: Catalogue = {
   'shared.takeShift': 'शिफ़्ट लें',
   'shared.takeShiftYourself': 'अपनी शिफ़्ट लें',
   'shared.customStance': 'खिलाड़ी ने मैनेजर को अपने बारे में बताई गई बात फिर से लिख दी।',
+  'shared.persona': 'मैनेजर ने {persona} का किरदार निभाया।',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← बैज दफ़्तर वापस जाओ',

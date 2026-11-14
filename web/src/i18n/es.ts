@@ -26,6 +26,11 @@ export const es: Catalogue = {
   'start.director.scripted': 'Diálogos escritos',
   'start.subagent': 'Modelo que ejecutas',
   'start.allowSkip': 'Permitir omitir tareas fallidas',
+  'start.persona': 'Personalidad del gerente',
+  'start.persona.default': 'Como manda el manual',
+  'start.persona.toxic': 'Tóxico',
+  'start.persona.ally': 'Aliado secreto',
+  'start.persona.saboteur': 'Saboteador',
   'start.stance': 'Lo que le han dicho al gerente sobre ti',
   'start.stance.reset': 'Restablecer',
   'start.assigning': 'Asignando…',
@@ -270,6 +275,7 @@ export const es: Catalogue = {
   'shared.takeShift': 'Iniciar un turno',
   'shared.takeShiftYourself': 'Inicia tu propio turno',
   'shared.customStance': 'El jugador reescribió lo que le habían dicho al gerente sobre él.',
+  'shared.persona': 'El gerente hizo de: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Volver a la oficina de acreditaciones',

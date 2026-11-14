@@ -37,6 +37,8 @@ export interface SharedReview {
   face?: Face;
   /** The player rewrote how the user treats the manager, so the review is partly theirs. */
   customStance?: boolean;
+  /** Who the manager secretly was, when not the default. */
+  persona?: string;
 }
 
 const ID_RE = /^[A-Za-z0-9]{10}$/;

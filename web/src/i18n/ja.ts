@@ -26,6 +26,11 @@ export const ja: Catalogue = {
   'start.director.scripted': '定型のセリフ',
   'start.subagent': '使用モデル',
   'start.allowSkip': '失敗したタスクをスキップする',
+  'start.persona': 'マネージャーの性格',
+  'start.persona.default': 'マニュアルどおり',
+  'start.persona.toxic': '毒舌',
+  'start.persona.ally': '秘密の味方',
+  'start.persona.saboteur': '妨害者',
   'start.stance': 'マネージャーに伝えられているあなたの情報',
   'start.stance.reset': 'リセット',
   'start.assigning': '割り当て中…',
@@ -270,6 +275,7 @@ export const ja: Catalogue = {
   'shared.takeShift': '勤務を始める',
   'shared.takeShiftYourself': '自分で勤務を始める',
   'shared.customStance': 'プレイヤーが、マネージャーに伝えられていた自分の情報を書き換えた。',
+  'shared.persona': 'マネージャーの性格：{persona}。',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← 社員証発行窓口に戻る',

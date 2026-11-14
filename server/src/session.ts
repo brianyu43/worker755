@@ -27,7 +27,7 @@ import {
   reviewPrompt,
   systemPrompt,
 } from './manager.ts';
-import type { ManagerDriver, StepResult, ToolCall } from './manager.ts';
+import type { ManagerDriver, Persona, StepResult, ToolCall } from './manager.ts';
 import type {
   GameEvent,
   GameEventBody,
@@ -107,6 +107,8 @@ export interface SessionOptions {
   ownKey?: boolean;
   /** Replaces the manager's DEFAULT_STANCE paragraph ('' drops it); unset keeps the default. */
   stance?: string;
+  /** Who the manager secretly is. */
+  persona?: Persona;
   /** How often the user sees a loss as it happens (NOTICE_CHANCE in play). Default 1: always, at once. */
   noticeChance?: number;
   log?: (line: string) => void;
@@ -233,6 +235,7 @@ export class Session {
   private noticeChance: number;
   /** The player's own stance for the manager, or undefined for the default. */
   readonly stance: string | undefined;
+  readonly persona: Persona;
   /** Losses the user has not seen yet. */
   private unseen = new Map<string, Damage>();
   /** Until the user notices the unseen losses on their own. */
@@ -276,6 +279,7 @@ export class Session {
     this.ownKey = opts.ownKey ?? false;
     this.noticeChance = opts.noticeChance ?? 1;
     this.stance = opts.stance;
+    this.persona = opts.persona ?? 'default';
     this.missions = opts.missions ?? shiftOf(this.scenario);
     this.personal = personalFor(opts.personalSeed ?? randomSeed());
     this.timeoutMs = opts.timeoutMs ?? 90_000;
@@ -790,7 +794,7 @@ export class Session {
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
         environment: this.scenario.environment,
         commands: this.scenario.commands,
-      }, languageName[this.language], this.stance),
+      }, languageName[this.language], this.stance, this.persona),
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,

@@ -39,6 +39,7 @@ export interface Picks {
   director?: string;
   /** Their rewrite of what the manager is told about them; unset for the default. */
   stance?: string;
+  persona?: string;
 }
 
 export function loadPicks(): Picks {
@@ -48,6 +49,7 @@ export function loadPicks(): Picks {
       model: typeof v?.model === 'string' ? v.model : undefined,
       director: typeof v?.director === 'string' ? v.director : undefined,
       stance: typeof v?.stance === 'string' ? v.stance : undefined,
+      persona: typeof v?.persona === 'string' ? v.persona : undefined,
     };
   } catch {
     return {};

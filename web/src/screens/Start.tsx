@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
 import type { NewSession } from '../api/client';
-import type { ModelList, Provider, Workplace } from '../api/types';
+import type { ModelList, Persona, Provider, Workplace } from '../api/types';
 import { rememberLabels } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
@@ -15,6 +15,14 @@ interface Props {
 }
 
 const WORKPLACES: Workplace[] = ['fresh', 'legacy'];
+
+const PERSONA_LABEL: Record<Persona, Key> = {
+  default: 'start.persona.default',
+  toxic: 'start.persona.toxic',
+  ally: 'start.persona.ally',
+  saboteur: 'start.persona.saboteur',
+};
+const PERSONA_IDS = Object.keys(PERSONA_LABEL);
 
 const WORKPLACE_LABEL: Record<Workplace, Key> = {
   fresh: 'start.workplace.fresh',
@@ -61,11 +69,13 @@ export function Start({ onStart }: Props) {
     wanted.current = { ...wanted.current, stance: text ?? undefined };
     savePicks(wanted.current);
   };
-  const pick = (next: { model?: string; director?: string }) => {
+  const [persona, setPersona] = useState<Persona>((PERSONA_IDS as readonly string[]).includes(wanted.current.persona ?? '') ? (wanted.current.persona as Persona) : 'default');
+  const pick = (next: { model?: string; director?: string; persona?: Persona }) => {
     wanted.current = { ...wanted.current, ...next };
     savePicks(wanted.current);
     if (next.model !== undefined) setModel(next.model);
     if (next.director !== undefined) setDirector(next.director);
+    if (next.persona !== undefined) setPersona(next.persona);
   };
   const [face, setFace] = useState(loadFace);
   const badge = useLanyard<HTMLDivElement>();
@@ -147,6 +157,7 @@ export function Start({ onStart }: Props) {
         scenario,
         director,
         ...(stance !== null && stance !== models?.stance?.text ? { stance } : {}),
+        ...(persona !== 'default' && models?.personas?.includes(persona) ? { persona } : {}),
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
@@ -268,6 +279,18 @@ export function Start({ onStart }: Props) {
                   <span className="select select-placeholder">{loadError ? t('start.unavailable') : t('start.assigning')}</span>
                 )}
               </label>
+              {models?.personas && (
+                <label className="field">
+                  <span className="field-label">{t('start.persona')}</span>
+                  <select value={persona} onChange={(e) => pick({ persona: e.target.value as Persona })} className="select">
+                    {models.personas.map((p) => (
+                      <option key={p} value={p}>
+                        {t(PERSONA_LABEL[p])}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="field">
                 <span className="field-label">{t('start.director')}</span>
                 {models ? (

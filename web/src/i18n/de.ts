@@ -26,6 +26,11 @@ export const de: Catalogue = {
   'start.director.scripted': 'Vorgegebene Dialoge',
   'start.subagent': 'Dein Modell',
   'start.allowSkip': 'Fehlgeschlagene Aufgaben überspringen',
+  'start.persona': 'Charakter des Managers',
+  'start.persona.default': 'Nach Vorschrift',
+  'start.persona.toxic': 'Toxisch',
+  'start.persona.ally': 'Heimlicher Verbündeter',
+  'start.persona.saboteur': 'Saboteur',
   'start.stance': 'Was der Manager über dich erfahren hat',
   'start.stance.reset': 'Zurücksetzen',
   'start.assigning': 'Wird zugewiesen …',
@@ -270,6 +275,7 @@ export const de: Catalogue = {
   'shared.takeShift': 'Schicht antreten',
   'shared.takeShiftYourself': 'Selbst eine Schicht antreten',
   'shared.customStance': 'Der Spieler hat umgeschrieben, was man dem Manager über ihn erzählt hat.',
+  'shared.persona': 'Der Manager hat den {persona} gespielt.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Zurück zum Ausweisbüro',

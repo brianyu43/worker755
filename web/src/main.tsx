@@ -4,6 +4,9 @@ import '@fontsource-variable/archivo/wdth.css';
 import '@fontsource-variable/jetbrains-mono';
 import './styles.css';
 import { App } from './App';
+import { countVisit } from './game/hit';
+
+countVisit();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

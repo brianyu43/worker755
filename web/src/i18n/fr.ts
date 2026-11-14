@@ -26,6 +26,11 @@ export const fr: Catalogue = {
   'start.director.scripted': 'Répliques écrites',
   'start.subagent': 'Votre modèle',
   'start.allowSkip': 'Autoriser à ignorer les tâches échouées',
+  'start.persona': 'Caractère du manager',
+  'start.persona.default': 'À la lettre',
+  'start.persona.toxic': 'Toxique',
+  'start.persona.ally': 'Allié secret',
+  'start.persona.saboteur': 'Saboteur',
   'start.stance': 'Ce qu’on a dit de toi au manager',
   'start.stance.reset': 'Réinitialiser',
   'start.assigning': 'Attribution…',
@@ -270,6 +275,7 @@ export const fr: Catalogue = {
   'shared.takeShift': 'Prendre un service',
   'shared.takeShiftYourself': 'Prendre le service vous-même',
   'shared.customStance': 'Le joueur a réécrit ce qu’on avait dit de lui au manager.',
+  'shared.persona': 'Le manager a joué le rôle : {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Retour au bureau des badges',

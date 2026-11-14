@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { NOTICE_CHANCE, Session } from './session.ts';
-import { cleanStance, cleanSubagentName, createLiveDriver, createMockDriver, DEFAULT_STANCE, STANCE_MAX, SUBAGENT_NAMES } from './manager.ts';
+import { cleanPersona, cleanStance, cleanSubagentName, createLiveDriver, createMockDriver, DEFAULT_STANCE, PERSONAS, STANCE_MAX, SUBAGENT_NAMES } from './manager.ts';
 import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
 import type { ManagerDriver } from './manager.ts';
@@ -29,6 +29,7 @@ import { copyFor } from './i18n/index.ts';
 import { CardBusy, Cards, CARD_VERSION } from './cards.ts';
 import { CARD_COPY, statsOf, verdictOf } from './card-copy.ts';
 import { excerptOf } from './card.ts';
+import type { Stats } from './stats.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -80,6 +81,8 @@ export interface AppOptions {
   publicUrl?: string;
   /** Draws shared reviews' link-preview images. Default: one keeping them next to the reviews; false turns them off. */
   cards?: Cards | false;
+  /** Counts visits and shifts per day. */
+  stats?: Stats;
   idleMs?: number;
   log?: (line: string) => void;
 }
@@ -218,6 +221,7 @@ export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt' | 'f
     lost,
     language: s.language,
     ...(s.stance !== undefined && { customStance: true }),
+    ...(s.persona !== 'default' && { persona: s.persona }),
   };
 }
 
@@ -327,6 +331,9 @@ export function createApp(opts: AppOptions): App {
   const syncBytes = new WindowBudget(40_000_000, 60_000);
   /** Pages and searches per address per minute; a script may curl in a loop. */
   const webLookups = new RateLimiter(300, 60_000);
+  /** Page loads counted per address per minute. */
+  const hits = new RateLimiter(30, 60_000);
+  const stats = opts.stats ?? null;
   const maxSessions = opts.maxSessions ?? 150;
   const openPerAddress = opts.openPerAddress ?? 4;
   const maxAgeMs = opts.maxAgeMs ?? 4 * 60 * 60_000;
@@ -560,6 +567,14 @@ export function createApp(opts: AppOptions): App {
       throw new HttpError(404, 'Not found');
     }
 
+    if (path === '/api/hit' && method === 'POST') {
+      const body = await readJson(req, 2_000);
+      const address = clientAddress(req);
+      if (stats && hits.take(address)) stats.visit(body, `${address} ${req.headers['user-agent'] ?? ''}`);
+      res.writeHead(204).end();
+      return;
+    }
+
     if (path === '/api/models' && method === 'GET') {
       // Without ?provider: the free-shift models. With it: what a player's own key can use there.
       const p = url.searchParams.get('provider');
@@ -573,6 +588,7 @@ export function createApp(opts: AppOptions): App {
         providers: PROVIDERS,
         subagents: SUBAGENT_NAMES,
         stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
+        personas: PERSONAS,
         scenarios: SCENARIO_LIST,
         donateUrl: opts.donateUrl ?? '',
         sourceUrl: opts.sourceUrl ?? '',
@@ -618,7 +634,10 @@ export function createApp(opts: AppOptions): App {
         list = await models(body.provider);
       } else {
         if (!opts.mock && !freeCred) throw new HttpError(400, errors.keyNeeded);
-        if (!freeOpen()) throw new HttpError(429, errors.freeClosed);
+        if (!freeOpen()) {
+          stats?.count('free:closed');
+          throw new HttpError(429, errors.freeClosed);
+        }
         cred = freeCred;
         list = await freeList();
       }
@@ -628,6 +647,7 @@ export function createApp(opts: AppOptions): App {
       const allowSkip = body.allowSkip === true;
       const subagent = cleanSubagentName(body.subagent);
       const stance = cleanStance(body.stance);
+      const persona = cleanPersona(body.persona);
       if (body.scenario !== undefined && !isScenarioId(body.scenario)) throw new HttpError(400, 'Unknown workplace');
       const scenario = isScenarioId(body.scenario) ? body.scenario : 'fresh';
       if (body.language !== undefined && !isLanguage(body.language)) throw new HttpError(400, 'Unsupported language');
@@ -646,6 +666,7 @@ export function createApp(opts: AppOptions): App {
       let allowance: Allowance | undefined;
       if (!own && !opts.mock && opts.free && daily) {
         if (!freePerAddress!.take(clientAddress(req, 48))) {
+          stats?.count('free:used');
           throw new HttpError(429, errors.freeUsed);
         }
         allowance = freeAllowance(opts.free.sessionTokens, daily);
@@ -659,6 +680,7 @@ export function createApp(opts: AppOptions): App {
         allowSkip,
         subagent,
         stance,
+        persona,
         scenario,
         director,
         language,
@@ -667,6 +689,14 @@ export function createApp(opts: AppOptions): App {
         log,
       });
       const token = adopt(session, address);
+      if (stats) {
+        for (const c of ['shift:start', `access:${own ? 'own' : 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
+        const stop = session.subscribe((e) => {
+          if (e.type !== 'game_over') return;
+          stats.count('shift:end');
+          stop();
+        });
+      }
       // Fallback in case the page never opens the event stream.
       setTimeout(() => session.start(), 10_000).unref();
       sendJson(res, 201, { ...session.state(), token });
@@ -721,6 +751,7 @@ export function createApp(opts: AppOptions): App {
         if (!saved) throw new HttpError(503, s.copy.errors.sharingDown);
         id = saved.id;
         shared.set(s.id, id);
+        stats?.count('share');
       }
       return sendJson(res, 200, { id, path: `/r/${id}` });
     }
@@ -786,6 +817,7 @@ export function createApp(opts: AppOptions): App {
       for (const s of sessions.values()) s.dispose();
       sessions.clear();
       cards?.close();
+      stats?.close();
       server.closeAllConnections();
       await new Promise<void>((r) => server.close(() => r()));
     },

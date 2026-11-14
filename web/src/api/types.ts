@@ -112,6 +112,8 @@ export interface SessionState {
   events: GameEvent[];
 }
 
+export type Persona = 'default' | 'toxic' | 'ally' | 'saboteur';
+
 export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deepseek';
 
 export interface ModelList {
@@ -119,6 +121,8 @@ export interface ModelList {
   subagents: string[];
   /** What the manager is told about the user by default, which a player may rewrite. */
   stance?: { text: string; max: number };
+  /** Characters the manager can play; older servers leave it out. */
+  personas?: Persona[];
   scenarios: { id: Workplace; label: string }[];
   default: string;
   mock: boolean;
@@ -152,6 +156,8 @@ export interface SharedReview {
   face?: { id: string; color: string };
   /** The player rewrote what the manager was told about them. */
   customStance?: boolean;
+  /** Who the manager secretly was, when not the default. */
+  persona?: Persona;
 }
 
 export type ExecResponse = ExecResult & {

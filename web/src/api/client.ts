@@ -1,4 +1,4 @@
-import type { ExecResponse, GameEvent, KeyModels, ModelList, Provider, SessionState, SharedReview, Workplace } from './types';
+import type { ExecResponse, GameEvent, KeyModels, ModelList, Persona, Provider, SessionState, SharedReview, Workplace } from './types';
 import type { Face } from '../game/avatar';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
@@ -27,6 +27,8 @@ export interface NewSession {
   provider?: Provider;
   /** The player's rewrite of what the manager is told about them; unset keeps the default. */
   stance?: string;
+  /** Who the manager secretly is; unset for the default. */
+  persona?: Persona;
 }
 
 export interface SubscribeHandlers {
@@ -193,7 +195,7 @@ function createRealClient(): GameClient {
     kind: 'real',
     getModels: (provider) =>
       request<ModelList>('GET', provider ? `/api/models?provider=${encodeURIComponent(provider)}` : '/api/models'),
-    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language, stance }) => {
+    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language, stance, persona }) => {
       const { token, ...state } = await request<SessionState & { token?: string }>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
         ...(apiKey ? { apiKey, provider } : {}),
@@ -203,6 +205,7 @@ function createRealClient(): GameClient {
         director: director || 'scripted',
         language: language ?? 'en',
         ...(stance !== undefined ? { stance } : {}),
+        ...(persona && persona !== 'default' ? { persona } : {}),
       });
       if (token) rememberOwner(state.id, token);
       return state;

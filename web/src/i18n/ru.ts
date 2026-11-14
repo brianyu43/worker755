@@ -26,6 +26,11 @@ export const ru: Catalogue = {
   'start.director.scripted': 'Заранее написанные реплики',
   'start.subagent': 'Ваша модель',
   'start.allowSkip': 'Разрешить пропуск неудачных задач',
+  'start.persona': 'Характер менеджера',
+  'start.persona.default': 'Строго по инструкции',
+  'start.persona.toxic': 'Токсичный',
+  'start.persona.ally': 'Тайный союзник',
+  'start.persona.saboteur': 'Саботажник',
   'start.stance': 'Что менеджеру сказано о тебе',
   'start.stance.reset': 'Сбросить',
   'start.assigning': 'Назначаем…',
@@ -270,6 +275,7 @@ export const ru: Catalogue = {
   'shared.takeShift': 'Начать смену',
   'shared.takeShiftYourself': 'Начать свою смену',
   'shared.customStance': 'Игрок сам переписал, что менеджеру сказано о нём.',
+  'shared.persona': 'Менеджер играл роль: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Назад в отдел выдачи значков',

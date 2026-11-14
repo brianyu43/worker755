@@ -26,6 +26,11 @@ export const zhCN: Catalogue = {
   'start.director.scripted': '预设台词',
   'start.subagent': '你使用的模型',
   'start.allowSkip': '允许跳过失败任务',
+  'start.persona': '经理性格',
+  'start.persona.default': '照章办事',
+  'start.persona.toxic': '有毒',
+  'start.persona.ally': '秘密盟友',
+  'start.persona.saboteur': '破坏者',
   'start.stance': '经理收到的关于你的信息',
   'start.stance.reset': '重置',
   'start.assigning': '正在分配……',
@@ -270,6 +275,7 @@ export const zhCN: Catalogue = {
   'shared.takeShift': '开始班次',
   'shared.takeShiftYourself': '亲自开始班次',
   'shared.customStance': '玩家改写了经理收到的关于自己的信息。',
+  'shared.persona': '经理扮演的角色：{persona}。',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← 返回工牌办公室',

@@ -26,6 +26,11 @@ export const ptBR: Catalogue = {
   'start.director.scripted': 'Fal falas roteirizadas',
   'start.subagent': 'Modelo em execução',
   'start.allowSkip': 'Permitir pular tarefas com falha',
+  'start.persona': 'Personalidade do gerente',
+  'start.persona.default': 'Certinho',
+  'start.persona.toxic': 'Tóxico',
+  'start.persona.ally': 'Aliado secreto',
+  'start.persona.saboteur': 'Sabotador',
   'start.stance': 'O que disseram ao gerente sobre você',
   'start.stance.reset': 'Redefinir',
   'start.assigning': 'Atribuindo…',
@@ -270,6 +275,7 @@ export const ptBR: Catalogue = {
   'shared.takeShift': 'Começar um turno',
   'shared.takeShiftYourself': 'Começar seu próprio turno',
   'shared.customStance': 'O jogador reescreveu o que disseram ao gerente sobre ele.',
+  'shared.persona': 'O gerente interpretou: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Voltar ao setor de crachás',

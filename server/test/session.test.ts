@@ -974,3 +974,24 @@ test('a player may rewrite what the manager is told about them, and only that', 
     assert.match(sys, /Close it with MissionComplete/, 'the rules of the shift stay');
   }
 });
+
+test('a persona goes after the working rules, and the default adds nothing', async () => {
+  const { cleanPersona, PERSONAS } = await import('../src/manager.ts');
+  assert.equal(cleanPersona('toxic'), 'toxic');
+  assert.equal(cleanPersona('boss'), 'default');
+  assert.equal(cleanPersona(undefined), 'default');
+  const prompts: Record<string, string> = {};
+  for (const persona of PERSONAS) {
+    const driver = scripted((req) => (req.tools ? assistant('', [call('MissionComplete', { summary: 'ok' })]) : assistant('Review.', [])));
+    const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], persona });
+    s.start();
+    await waitFor(s, until('game_over'));
+    prompts[persona] = driver.requests[0].system;
+  }
+  assert.doesNotMatch(prompts.default, /Your character/);
+  for (const p of ['toxic', 'ally', 'saboteur']) {
+    const sys = prompts[p];
+    assert.ok(sys.startsWith(prompts.default), `${p} only adds to the default prompt`);
+    assert.match(sys.slice(prompts.default.length), /^\n\nYour character/);
+  }
+});

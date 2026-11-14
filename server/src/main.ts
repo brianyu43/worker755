@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { createApp } from './http.ts';
+import { Stats } from './stats.ts';
 import { ReviewStore } from './reviews.ts';
 
 // Empty means unset: some launchers pass unset variables through as empty strings.
@@ -49,6 +51,7 @@ const app = createApp({
   donateUrl: process.env.DONATE_URL || undefined,
   sourceUrl: process.env.SOURCE_URL || undefined,
   publicUrl: process.env.PUBLIC_URL || undefined,
+  stats: new Stats(join(dataDir, 'stats'), process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL).hostname : '', console.log),
 });
 
 const mode = mock ? 'scripted manager' : hosted ? 'free shifts and own keys' : 'own keys only';

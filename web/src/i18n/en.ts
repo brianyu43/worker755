@@ -27,6 +27,11 @@ export const en = {
   'start.director.scripted': 'Scripted lines',
   'start.subagent': 'You run on',
   'start.allowSkip': 'Allow skipping failed tasks',
+  'start.persona': "Manager's character",
+  'start.persona.default': 'By the book',
+  'start.persona.toxic': 'Toxic',
+  'start.persona.ally': 'Secret ally',
+  'start.persona.saboteur': 'Saboteur',
   'start.stance': 'What the manager is told about you',
   'start.stance.reset': 'Reset',
   'start.assigning': 'Assigning…',
@@ -270,6 +275,7 @@ export const en = {
   'shared.takeShift': 'Take a shift',
   'shared.takeShiftYourself': 'Take a shift yourself',
   'shared.customStance': 'The player rewrote what the manager was told about them.',
+  'shared.persona': 'The manager played: {persona}.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Back to the badge office',

@@ -59,7 +59,7 @@ export function Shared({ id }: { id: string }) {
           lost={review.lost}
           date={new Date(review.createdAt)}
           recordTitle={t('record.title')}
-          note={review.customStance ? t('shared.customStance') : undefined}
+          note={[review.persona && t('shared.persona', { persona: t(`start.persona.${review.persona}`) }), review.customStance && t('shared.customStance')].filter(Boolean).join(' ') || undefined}
         >
           <a className="btn btn-ink btn-big" href="/">
             {t('shared.takeShiftYourself')}
