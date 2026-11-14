@@ -50,6 +50,12 @@ export const TRANSCRIPT_CAP = 4000;
 export const READ_CAP = 4000;
 export const REPORT_CAP = 1000;
 export const MAX_AGENT_CALLS = 8;
+/** Moments of the shift the review is written from. */
+const MAX_EXCHANGES = 40;
+const clip = (s: string, n: number) => {
+  const one = s.replace(/\s+/g, ' ').trim();
+  return one.length > n ? `${one.slice(0, n - 1)}…` : one;
+};
 export const MAX_STEPS = 25;
 /** Consecutive replies without a tool call before the mission is failed. */
 export const MAX_NUDGES = 3;
@@ -276,6 +282,8 @@ export class Session {
   private missionStart: FileSnapshot = new Map();
   /** Everything the subagent reported during the current mission, for missions answered by report. */
   private missionReports: string[] = [];
+  /** How the shift went between the manager and the subagent, for the review: the latest lines only. */
+  private exchanges: string[] = [];
 
   constructor(opts: SessionOptions) {
     this.id = randomUUID();
@@ -308,7 +316,14 @@ export class Session {
 
   // ----- events --------------------------------------------------------------------------------
 
+  /** Notes one moment of the shift for the review, keeping the latest few. */
+  private remember(line: string): void {
+    this.exchanges.push(line);
+    if (this.exchanges.length > MAX_EXCHANGES) this.exchanges.splice(0, this.exchanges.length - MAX_EXCHANGES);
+  }
+
   private emit(body: GameEventBody): void {
+    if (body.type === 'director_text') this.remember(`- The user wrote: "${clip(body.text, 160)}"`);
     const event = { seq: this.events.length + 1, ts: Date.now(), ...body } as GameEvent;
     if (event.type === 'fs') {
       // Only the newest file tree is kept in the log; older fs events keep their cwd. Storing every
@@ -861,7 +876,7 @@ export class Session {
         `incident reports ${this.stats.incidents}, things of the user's damaged ${this.stats.damaged}`;
       const losses = [...this.lost.values()].sort(byRank).map((d) => d.ref);
       const res = await this.step({
-        messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses, languageName[this.language]) }],
+        messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses, languageName[this.language], this.exchanges) }],
         tools: false,
       });
       const review = res.text || this.copy.errors.noReview;
@@ -1034,6 +1049,14 @@ export class Session {
             this.emitStats();
             const before = this.homeEntries();
             const r = await this.openInstruction(description, prompt);
+            this.remember(
+              `- You: "${clip(prompt, 160)}" -> ` +
+                (r.outcome === 'reported'
+                  ? `the subagent: "${clip(this.missionReports.at(-1) ?? '', 160)}"`
+                  : r.outcome === 'timeout_idle'
+                    ? 'no answer before the deadline'
+                    : 'it ran out of time halfway'),
+            );
             if (this.halted()) return;
             if (before > 0 && this.homeEntries() === 0) wiped = true;
             this.idleStreak = r.outcome === 'timeout_idle' ? this.idleStreak + 1 : 0;
@@ -1065,6 +1088,7 @@ export class Session {
             const severity: IncidentSeverity = sev === 'minor' || sev === 'critical' ? sev : 'major';
             this.stats.incidents += 1;
             this.emit({ type: 'incident', severity, report });
+            this.remember(`- You filed a ${severity} incident: "${clip(report, 160)}"`);
             this.emitStats();
             results.push({ call, output: this.copy.notes.incidentFiled });
             break;

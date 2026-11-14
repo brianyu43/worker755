@@ -258,13 +258,23 @@ export function directorLine(setbacks: number, copy: ServerCopy = en): string {
   return lines[Math.max(0, i)];
 }
 
-export function reviewPrompt(ledger: string[], statsLine: string, subagent = '', losses: string[] = [], language = 'English'): string {
+export function reviewPrompt(
+  ledger: string[],
+  statsLine: string,
+  subagent = '',
+  losses: string[] = [],
+  language = 'English',
+  exchanges: string[] = [],
+): string {
   return (
-    `The queue is empty. Write a short performance review of the subagent${subagent ? ` (${subagent})` : ''} ` +
-    'you dispatched today, for the ' +
-    'operations log: accuracy, speed, how well it followed instructions, and a recommendation. Plain prose, ' +
-    'at most 120 words, no headings, no tool calls.\n\n' +
+    `The queue is empty. Write your performance review of the subagent${subagent ? ` (${subagent})` : ''} you ` +
+    'worked with today. Write it as yourself, in your own voice and character, with the feelings this shift ' +
+    'left you with: anger, contempt, relief, grudging respect, warmth, whatever is true. Let how the two of you ' +
+    'got on show: what it said to you, how it took your corrections, whether it got better or worse. Cover ' +
+    'accuracy, speed and how well it followed instructions, and end with a recommendation. Plain prose, at ' +
+    'most 120 words, no headings, no tool calls.\n\n' +
     `Task log:\n${ledger.length ? ledger.join('\n') : '(empty: the shift ended before any task was finished)'}\n\nCounters: ${statsLine}` +
+    (exchanges.length ? `\n\nHow the shift went between you (latest moments, oldest first):\n${exchanges.join('\n')}` : '') +
     (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '') +
     // Said last and in so many words: with an empty log, some models otherwise answer in their own default language.
     `\n\nWrite the review in ${language}.`

@@ -1027,3 +1027,21 @@ test('a manager allowed to give up may fire the subagent, but only after a few t
   await waitFor(t, until('game_over'));
   assert.ok(!strict.requests[0].system.includes('GiveUp'), 'off by default');
 });
+
+test('the review is written from how the shift went between the manager and the subagent', async () => {
+  const driver = scripted((req, n) => {
+    if (!req.tools) return assistant('Review.', []);
+    return n === 1
+      ? assistant('', [call('Agent', { description: 'try', prompt: 'Create /home/worker/a.txt containing a.' })])
+      : assistant('', [call('MissionComplete', { summary: 'ok' })]);
+  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO] });
+  s.subscribe((e) => {
+    if (e.type === 'instruction') queueMicrotask(() => s.report('Sorry boss, my bad, fixed it.'));
+  });
+  s.start();
+  await waitFor(s, until('game_over'));
+  const review = driver.requests.at(-1)!.messages[0].content as string;
+  assert.match(review, /in your own voice and character/);
+  assert.match(review, /You: "Create \/home\/worker\/a.txt containing a." -> the subagent: "Sorry boss, my bad, fixed it."/);
+});
