@@ -16,9 +16,12 @@ import { cleanLine, directorSetting } from './director.ts';
 import type { Allowance } from './limits.ts';
 import type { DirectorDriver, Moment } from './director.ts';
 import {
+  compactPrompt,
   KEY_REJECTED,
   ManagerError,
   missionPrompt,
+  renderConversation,
+  resumePrompt,
   OUT_OF_CREDIT,
   stallLine,
   stallLineAfterDamage,
@@ -57,6 +60,14 @@ const clip = (s: string, n: number) => {
   return one.length > n ? `${one.slice(0, n - 1)}…` : one;
 };
 export const MAX_STEPS = 25;
+/**
+ * The manager keeps one conversation for the whole shift. Once a step's prompt reaches this size it
+ * condenses the conversation into notes and goes on from them; it stays under the 200k context of
+ * the smaller models, with room for the reply and the next tool results.
+ */
+export const COMPACT_AT_TOKENS = 150_000;
+/** Prompt-cache reads cost about a tenth of fresh input, so they count for that much of the allowance. */
+const CACHED_TOKEN_WEIGHT = 0.1;
 /** Consecutive replies without a tool call before the mission is failed. */
 export const MAX_NUDGES = 3;
 /** Identical checks in a row (same path, same result) before the user complains. */
@@ -237,6 +248,12 @@ export class Session {
   private lastTreeJson = '';
   private lastCwd = '';
   private ledger: string[] = [];
+  /** The manager's conversation across tasks, so whatever grew between it and the subagent carries on. */
+  private conversation: ModelMessage[] = [];
+  /** Where the current task begins in the conversation. */
+  private missionFrom = 0;
+  /** Prompt plus reply of the manager's latest working step: the size of its conversation now. */
+  private contextTokens = 0;
   private idleStreak = 0;
   private setbacks = 0;
   /** Runs of prose-only replies so far this shift; each run gets the user's next wording. */
@@ -830,6 +847,7 @@ export class Session {
       // The review is written after the player quits, so only the work before it stops on quit.
       signal: req.tools ? AbortSignal.any([this.abort.signal, this.quit.signal]) : this.abort.signal,
       mission: req.mission,
+      missionFrom: this.missionFrom,
       language: this.language,
       checkNow: req.mission?.check
         ? () => req.mission!.check!(this.shell.fs, this.missionStart, this.missionReports.join('\n'))
@@ -837,7 +855,9 @@ export class Session {
     });
     this.usage.inputTokens += res.usage.inputTokens;
     this.usage.outputTokens += res.usage.outputTokens;
-    this.allowance?.spend(res.usage.inputTokens + res.usage.outputTokens);
+    const cached = Math.min(res.usage.cachedInputTokens ?? 0, res.usage.inputTokens);
+    this.allowance?.spend(Math.round(res.usage.inputTokens - cached + cached * CACHED_TOKEN_WEIGHT + res.usage.outputTokens));
+    if (req.tools) this.contextTokens = res.usage.inputTokens + res.usage.outputTokens;
     return res;
   }
 
@@ -892,6 +912,26 @@ export class Session {
     }
   }
 
+  /** Replaces the manager's conversation with notes it writes on it, then goes on with the current task. */
+  private async compact(task: string): Promise<void> {
+    const messages = this.conversation;
+    const last = messages.at(-1);
+    // Words the manager has not answered yet stay word for word.
+    const waiting = last?.role === 'user' && typeof last.content === 'string' ? last.content : '';
+    const record = renderConversation(waiting ? messages.slice(0, -1) : messages);
+    const res = await this.step({
+      messages: [{ role: 'user', content: compactPrompt(record, languageName[this.language]) }],
+      tools: false,
+    });
+    const now = waiting.includes(task)
+      ? waiting
+      : `You are in the middle of this task.\n${task}\n\nCarry on from where you left off.${waiting ? `\n\n${waiting}` : ''}`;
+    messages.splice(0, messages.length, { role: 'user', content: resumePrompt(res.text || '(none)', this.ledger, now) });
+    this.missionFrom = 0;
+    this.contextTokens = 0;
+    this.log(`session ${this.id.slice(0, 8)} condensed the manager's conversation into notes`);
+  }
+
   private async runMission(mission: Mission, index: number): Promise<void> {
     if (mission.seed) {
       // The browser gets the seed as changes to apply; epoch tells a late sync it missed one.
@@ -921,12 +961,14 @@ export class Session {
     });
 
     const heard = this.takeHeard();
-    const messages: ModelMessage[] = [
-      {
-        role: 'user',
-        content: (heard ? `${heard}\n\n` : '') + missionPrompt({ ...mission, ...text }, index, this.missions.length, this.ledger),
-      },
-    ];
+    const task = missionPrompt({ ...mission, ...text }, index, this.missions.length);
+    const messages = this.conversation;
+    const opening = (heard ? `${heard}\n\n` : '') + task;
+    const last = messages.at(-1);
+    // A task that ended on the user's words leaves them last; the next task joins them in one turn.
+    if (last?.role === 'user' && typeof last.content === 'string') last.content += `\n\n${opening}`;
+    else messages.push({ role: 'user', content: opening });
+    this.missionFrom = messages.length - 1;
     let steps = 0;
     let agentCalls = 0;
     // Without skipping, the step limit only guards against a manager that stops instructing:
@@ -952,6 +994,7 @@ export class Session {
         }
       }
       steps += 1;
+      if (this.contextTokens >= COMPACT_AT_TOKENS) await this.compact(task);
       const res = await this.step({ messages, tools: true, mission });
       messages.push(...res.messages);
       if (res.reasoning) this.emit({ type: 'manager_thinking', text: res.reasoning });

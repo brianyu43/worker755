@@ -209,9 +209,53 @@ export function systemPrompt(
   ].join('\n');
 }
 
-export function missionPrompt(mission: Mission, index: number, total: number, ledger: string[]): string {
-  const history = ledger.length ? `Earlier tasks:\n${ledger.join('\n')}\n\n` : '';
-  return `${history}Task ${index + 1} of ${total}: ${mission.title}\n\n${mission.brief}`;
+export function missionPrompt(mission: Mission, index: number, total: number): string {
+  return `Task ${index + 1} of ${total}: ${mission.title}\n\n${mission.brief}`;
+}
+
+/** Asks the manager to condense its own conversation into notes it keeps for the rest of the shift. */
+export function compactPrompt(transcript: string, language = 'English'): string {
+  return (
+    'Your conversation this shift has grown too long to keep in full. Below is the record of it so far. ' +
+    'Write notes to yourself that will replace it: what each task was and how it ended, what the subagent ' +
+    'did, said and got wrong, what the user told you, how you feel about both of them and how the two of you ' +
+    'have been getting on, and exactly where the current task stands (what you last asked for, what came ' +
+    'back, what you checked). Keep your own voice; you will read these notes as your memory. At most 600 ' +
+    `words, plain prose, no tool calls.\n\n${transcript}\n\nWrite the notes in ${language}.`
+  );
+}
+
+/** Opens the conversation that replaces a condensed one; now is the task at hand and any words waiting. */
+export function resumePrompt(notes: string, ledger: string[], now: string): string {
+  return (
+    `Your notes on the shift so far, written by you when the conversation grew too long:\n${notes}\n\n` +
+    (ledger.length ? `Earlier tasks:\n${ledger.join('\n')}\n\n` : '') +
+    now
+  );
+}
+
+/** Characters of the record a condensing step reads, from the end; about 100k tokens. */
+const RECORD_CAP = 400_000;
+const PART_CAP = 1500;
+
+/** The conversation as plain text, for the manager to condense. */
+export function renderConversation(messages: ModelMessage[]): string {
+  const cut = (s: string) => (s.length > PART_CAP ? `${s.slice(0, PART_CAP)}…` : s);
+  const lines: string[] = [];
+  for (const m of messages) {
+    const parts = typeof m.content === 'string' ? [{ type: 'text', text: m.content }] : m.content;
+    for (const p of parts as Array<Record<string, unknown>>) {
+      if (m.role === 'user' && p.type === 'text') lines.push(`[to you] ${cut(String(p.text))}`);
+      else if (m.role === 'assistant' && p.type === 'text' && String(p.text).trim()) lines.push(`[you] ${cut(String(p.text))}`);
+      else if (p.type === 'tool-call') lines.push(`[you called ${String(p.toolName)}] ${cut(JSON.stringify(p.input ?? {}))}`);
+      else if (p.type === 'tool-result') {
+        const out = p.output as { value?: unknown } | undefined;
+        lines.push(`[${String(p.toolName)} returned] ${cut(typeof out?.value === 'string' ? out.value : JSON.stringify(out?.value ?? ''))}`);
+      }
+    }
+  }
+  const text = lines.join('\n');
+  return text.length > RECORD_CAP ? `…${text.slice(-RECORD_CAP)}` : text;
 }
 
 export const UNCHANGED_NOTE = en.notes.unchanged;
@@ -383,6 +427,8 @@ export interface StepRequest {
   signal: AbortSignal;
   /** Context for the scripted driver; the real driver ignores it. */
   mission?: Mission;
+  /** Where the current task begins in messages, for the scripted driver. */
+  missionFrom?: number;
   checkNow?: () => boolean;
   /** The player's language, so the scripted driver writes in it as a model would. */
   language?: Language;
@@ -395,7 +441,8 @@ export interface StepResult {
   toolCalls: ToolCall[];
   /** Assistant message(s) to append to the conversation. */
   messages: ModelMessage[];
-  usage: { inputTokens: number; outputTokens: number };
+  /** cachedInputTokens: the part of inputTokens read from the provider's prompt cache. */
+  usage: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
 }
 
 export interface ManagerDriver {
@@ -473,7 +520,11 @@ export function createLiveDriver(model: string, cred: Credentials): ManagerDrive
             input: c.input && typeof c.input === 'object' ? (c.input as Record<string, unknown>) : {},
           })),
           messages: result.response.messages as ModelMessage[],
-          usage: { inputTokens: result.usage.inputTokens ?? 0, outputTokens: result.usage.outputTokens ?? 0 },
+          usage: {
+            inputTokens: result.usage.inputTokens ?? 0,
+            outputTokens: result.usage.outputTokens ?? 0,
+            cachedInputTokens: result.usage.inputTokenDetails?.cacheReadTokens ?? 0,
+          },
         };
       } catch (err) {
         if (req.signal.aborted) throw new ManagerError('aborted');
@@ -511,8 +562,7 @@ export function call(name: string, input: Record<string, unknown>): ToolCall {
   return { id: `mock_${mockCallSeq}`, name, input };
 }
 
-/** Tool names of the calls made so far in this mission, oldest first. */
-// The conversation holds one mission, so every tool call in it belongs to the current task.
+/** Tool names of the calls in messages, oldest first. */
 function callsSoFar(messages: ModelMessage[]): string[] {
   const out: string[] = [];
   for (const m of messages) {
@@ -540,7 +590,7 @@ export function createMockDriver(delayMs = 0): ManagerDriver {
       if (!req.tools || !req.mission) return assistant(c.review, []);
       // Briefs come in the player's language; the mission's own focus path is the same in all of them.
       const m = { ...req.mission, ...missionText(copyFor(req.language ?? 'en'), req.mission) };
-      const done = callsSoFar(req.messages);
+      const done = callsSoFar(req.messages.slice(req.missionFrom ?? 0));
       const agents = done.filter((n) => n === 'Agent').length;
       const last = done[done.length - 1];
       if (last !== 'Agent' && last !== 'LS' && last !== 'Read') {

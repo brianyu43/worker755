@@ -1045,3 +1045,61 @@ test('the review is written from how the shift went between the manager and the 
   assert.match(review, /in your own voice and character/);
   assert.match(review, /You: "Create \/home\/worker\/a.txt containing a." -> the subagent: "Sorry boss, my bad, fixed it."/);
 });
+
+test('the manager keeps its conversation from one task to the next', async () => {
+  const second: Mission = { ...HELLO, id: 't2', title: 'Second task' };
+  const driver = scripted((req) => {
+    if (!req.tools) return assistant('Review.', []);
+    const mine = req.messages.slice(req.missionFrom ?? 0).some((m) => m.role === 'assistant');
+    return mine
+      ? assistant('', [call('MissionComplete', { summary: 'ok' })])
+      : assistant('You again.', [call('Agent', { description: 'try', prompt: 'Create /home/worker/a.txt containing a.' })]);
+  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO, second] });
+  s.subscribe((e) => {
+    if (e.type === 'instruction') queueMicrotask(() => s.report('Sorry boss, my bad.'));
+  });
+  s.start();
+  await waitFor(s, until('game_over'));
+  const opening = driver.requests.find((r) => r.tools && JSON.stringify(r.messages.at(-1)).includes('Task 2 of 2'))!;
+  const seen = JSON.stringify(opening.messages);
+  assert.match(seen, /Task 1 of 2: Test task/);
+  assert.match(seen, /Sorry boss, my bad/);
+  assert.equal(opening.missionFrom, opening.messages.length - 1);
+});
+
+test('a conversation grown too long is condensed into the manager\'s own notes, and the task goes on', async () => {
+  const second: Mission = { ...HELLO, id: 't2', title: 'Second task' };
+  const driver = scripted((req, n) => {
+    if (!req.tools) return assistant(n === 2 ? 'Notes: the subagent grovels a lot.' : 'Review.', []);
+    const mine = req.messages.slice(req.missionFrom ?? 0).some((m) => m.role === 'assistant');
+    const res = mine
+      ? assistant('', [call('MissionComplete', { summary: 'ok' })])
+      : assistant('', [call('Agent', { description: 'try', prompt: 'Create /home/worker/a.txt containing a.' })]);
+    return n === 1 ? { ...res, usage: { inputTokens: 160_000, outputTokens: 10, cachedInputTokens: 150_000 } } : res;
+  });
+  const spent: number[] = [];
+  const s = new Session({
+    driver,
+    timeoutMs: 5000,
+    missions: [HELLO, second],
+    allowance: { canSpend: () => true, spend: (t) => spent.push(t) },
+  });
+  s.subscribe((e) => {
+    if (e.type === 'instruction') queueMicrotask(() => s.report('Sorry boss.'));
+  });
+  s.start();
+  await waitFor(s, until('game_over'));
+  const condense = driver.requests[1];
+  assert.equal(condense.tools, false);
+  assert.match(condense.messages[0].content as string, /grown too long[\s\S]*\[you called Agent\][\s\S]*Sorry boss/);
+  const after = driver.requests[2];
+  assert.equal(after.messages.length, 1);
+  assert.match(after.messages[0].content as string, /^Your notes[\s\S]*Notes: the subagent grovels a lot\.\n\nYou are in the middle of this task\.\nTask 1 of 2: Test task/);
+  // The notes stay the start of the conversation for the next task.
+  const next = driver.requests.find((r) => r.tools && JSON.stringify(r.messages.at(-1)).includes('Task 2 of 2'))!;
+  assert.match(next.messages[0].content as string, /grovels/);
+  assert.equal(s.status, 'finished');
+  // Cached input is charged at a tenth.
+  assert.equal(spent[0], 160_000 - 150_000 + 15_000 + 10);
+});
