@@ -26,6 +26,8 @@ export const ja: Catalogue = {
   'start.director.scripted': '定型のセリフ',
   'start.subagent': '使用モデル',
   'start.allowSkip': '失敗したタスクをスキップする',
+  'start.stance': 'マネージャーに伝えられているあなたの情報',
+  'start.stance.reset': 'リセット',
   'start.assigning': '割り当て中…',
   'start.unavailable': '利用不可',
   'start.models': 'モデル',
@@ -268,6 +270,7 @@ export const ja: Catalogue = {
   'shared.loading': '記録を引き出し中…',
   'shared.takeShift': '勤務を始める',
   'shared.takeShiftYourself': '自分で勤務を始める',
+  'shared.customStance': 'プレイヤーが、マネージャーに伝えられていた自分の情報を書き換えた。',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← 社員証発行窓口に戻る',

@@ -105,6 +105,8 @@ export interface SessionOptions {
   allowance?: Allowance;
   /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
   ownKey?: boolean;
+  /** Replaces the manager's DEFAULT_STANCE paragraph ('' drops it); unset keeps the default. */
+  stance?: string;
   /** How often the user sees a loss as it happens (NOTICE_CHANCE in play). Default 1: always, at once. */
   noticeChance?: number;
   log?: (line: string) => void;
@@ -229,6 +231,8 @@ export class Session {
   private reliefs = 0;
   private grudges = 0;
   private noticeChance: number;
+  /** The player's own stance for the manager, or undefined for the default. */
+  readonly stance: string | undefined;
   /** Losses the user has not seen yet. */
   private unseen = new Map<string, Damage>();
   /** Until the user notices the unseen losses on their own. */
@@ -271,6 +275,7 @@ export class Session {
     this.allowance = opts.allowance ?? null;
     this.ownKey = opts.ownKey ?? false;
     this.noticeChance = opts.noticeChance ?? 1;
+    this.stance = opts.stance;
     this.missions = opts.missions ?? shiftOf(this.scenario);
     this.personal = personalFor(opts.personalSeed ?? randomSeed());
     this.timeoutMs = opts.timeoutMs ?? 90_000;
@@ -785,7 +790,7 @@ export class Session {
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
         environment: this.scenario.environment,
         commands: this.scenario.commands,
-      }, languageName[this.language]),
+      }, languageName[this.language], this.stance),
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,

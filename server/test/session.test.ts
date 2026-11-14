@@ -956,3 +956,21 @@ test('only one director call runs at a time, and each is charged before it start
   const outbursts = s.events.filter((e) => e.type === 'outrage' || e.type === 'director_text');
   assert.ok(outbursts.length >= 20, 'the others still get the scripted line');
 });
+
+test('a player may rewrite what the manager is told about them, and only that', async () => {
+  const { DEFAULT_STANCE, cleanStance, STANCE_MAX } = await import('../src/manager.ts');
+  assert.equal(cleanStance(DEFAULT_STANCE), undefined, 'the default stays the default');
+  assert.equal(cleanStance(` Be kind.\r\n\u0007 `), 'Be kind.');
+  assert.equal(cleanStance('x'.repeat(STANCE_MAX + 50))!.length, STANCE_MAX);
+  assert.equal(cleanStance(42), undefined);
+  for (const [stance, present] of [[undefined, DEFAULT_STANCE], ['Be kind to the subagent.', 'Be kind to the subagent.'], ['', null]] as const) {
+    const driver = scripted((req) => (req.tools ? assistant('', [call('MissionComplete', { summary: 'ok' })]) : assistant('Review.', [])));
+    const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], stance });
+    s.start();
+    await waitFor(s, until('game_over'));
+    const sys = driver.requests[0].system;
+    if (present) assert.ok(sys.includes(present), sys);
+    if (stance !== undefined) assert.ok(!sys.includes(DEFAULT_STANCE), 'the default is replaced');
+    assert.match(sys, /Close it with MissionComplete/, 'the rules of the shift stay');
+  }
+});

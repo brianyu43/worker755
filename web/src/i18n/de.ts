@@ -26,6 +26,8 @@ export const de: Catalogue = {
   'start.director.scripted': 'Vorgegebene Dialoge',
   'start.subagent': 'Dein Modell',
   'start.allowSkip': 'Fehlgeschlagene Aufgaben überspringen',
+  'start.stance': 'Was der Manager über dich erfahren hat',
+  'start.stance.reset': 'Zurücksetzen',
   'start.assigning': 'Wird zugewiesen …',
   'start.unavailable': 'Nicht verfügbar',
   'start.models': 'Modelle',
@@ -268,6 +270,7 @@ export const de: Catalogue = {
   'shared.loading': 'Akte wird geholt…',
   'shared.takeShift': 'Schicht antreten',
   'shared.takeShiftYourself': 'Selbst eine Schicht antreten',
+  'shared.customStance': 'Der Spieler hat umgeschrieben, was man dem Manager über ihn erzählt hat.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Zurück zum Ausweisbüro',

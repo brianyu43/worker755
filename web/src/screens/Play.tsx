@@ -298,7 +298,16 @@ export function Play({ game, view, onFinish }: Props) {
 
       <div className="desk" style={deskStyle}>
         <aside className="desk-left">
-          <FileTree tree={view.tree} cwd={view.cwd} editing={editingPath} lost={view.stats.damaged ?? 0} />
+          <FileTree
+            tree={view.tree}
+            cwd={view.cwd}
+            editing={editingPath}
+            lost={view.stats.damaged ?? 0}
+            onOpen={(path) => {
+              setTab('work');
+              term.current?.open(path);
+            }}
+          />
           <StatsPanel stats={view.stats} onEnd={canEnd ? askEnd : undefined} />
           <Splitter kind="left" />
         </aside>

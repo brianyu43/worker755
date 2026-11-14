@@ -23,7 +23,7 @@ export const COMMANDS: Record<string, Command> = {
   websearch, curl,
   pwd, cd, ls, mkdir, rmdir, touch, cat, echo, printf, rm, mv, cp, chmod, head, tail, wc, grep,
   find, tree, stat, sort, uniq, whoami, date, help, clear, sqlite3,
-  nano: edit, edit, vi: edit, vim: edit,
+  nano: edit, edit, vi: edit, vim: edit, open: edit, 'xdg-open': edit,
   true: trueCmd, false: falseCmd,
   cut, tr, tee, diff, cmp, comm, paste, rev, tac, nl, seq, yes, column, fold, shuf, expr, base64,
   md5sum, sha1sum, sha256sum, cksum, xxd, hexdump, od, strings, basename, dirname, realpath, readlink,

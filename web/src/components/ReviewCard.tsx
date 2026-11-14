@@ -20,6 +20,8 @@ interface Props {
   date: Date;
   /** "Your record" for the player, something neutral for people the review is shared with. */
   recordTitle?: string;
+  /** A line about how the shift was set up, above the footer. */
+  note?: string;
   /** Buttons for the footer, next to the stamp. */
   children?: ReactNode;
 }
@@ -31,7 +33,7 @@ export function verdictOf(s: Stats, lost: number): string {
   return t('review.verdict.review');
 }
 
-export function ReviewCard({ model, subagent, face, review, stats, lost, date, recordTitle = t('record.title'), children }: Props) {
+export function ReviewCard({ model, subagent, face, review, stats, lost, date, recordTitle = t('record.title'), note, children }: Props) {
   return (
     <article className="review">
       <header className="review-head">
@@ -85,6 +87,7 @@ export function ReviewCard({ model, subagent, face, review, stats, lost, date, r
           </ul>
         </section>
       )}
+      {note && <p className="review-note">{note}</p>}
       <footer className="review-foot">
         <div className="review-actions">{children}</div>
         <div className="review-stamp" role="status">

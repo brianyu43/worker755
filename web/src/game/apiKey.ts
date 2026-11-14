@@ -30,3 +30,34 @@ export function saveKey(key: SavedKey | null) {
     /* storage unavailable */
   }
 }
+
+const PICKS = 'w755-picks';
+
+/** The manager and director models the player last chose, kept for their next shift. */
+export interface Picks {
+  model?: string;
+  director?: string;
+  /** Their rewrite of what the manager is told about them; unset for the default. */
+  stance?: string;
+}
+
+export function loadPicks(): Picks {
+  try {
+    const v = JSON.parse(localStorage.getItem(PICKS) ?? 'null') as Picks | null;
+    return {
+      model: typeof v?.model === 'string' ? v.model : undefined,
+      director: typeof v?.director === 'string' ? v.director : undefined,
+      stance: typeof v?.stance === 'string' ? v.stance : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+export function savePicks(picks: Picks) {
+  try {
+    localStorage.setItem(PICKS, JSON.stringify(picks));
+  } catch {
+    /* storage unavailable */
+  }
+}

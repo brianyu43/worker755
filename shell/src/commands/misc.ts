@@ -152,7 +152,7 @@ const DESCRIPTIONS: Record<string, string> = {
   date: 'print the date (+FORMAT)',
   sqlite3: 'query a SQLite database (sqlite3 FILE "SQL")',
   clear: 'clear the screen',
-  nano: 'edit a file (also: edit, vi, vim)',
+  nano: 'edit a file (also: edit, vi, vim, open, xdg-open)',
   help: 'this list',
   true: 'do nothing, successfully',
   false: 'do nothing, unsuccessfully',

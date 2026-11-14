@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { NOTICE_CHANCE, Session } from './session.ts';
-import { cleanSubagentName, createLiveDriver, createMockDriver, SUBAGENT_NAMES } from './manager.ts';
+import { cleanStance, cleanSubagentName, createLiveDriver, createMockDriver, DEFAULT_STANCE, STANCE_MAX, SUBAGENT_NAMES } from './manager.ts';
 import { createLiveDirector, scriptedDirector } from './director.ts';
 import type { DirectorDriver } from './director.ts';
 import type { ManagerDriver } from './manager.ts';
@@ -217,6 +217,7 @@ export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt' | 'f
     scenario: st.scenario,
     lost,
     language: s.language,
+    ...(s.stance !== undefined && { customStance: true }),
   };
 }
 
@@ -571,6 +572,7 @@ export function createApp(opts: AppOptions): App {
         free: freeOpen(),
         providers: PROVIDERS,
         subagents: SUBAGENT_NAMES,
+        stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
         scenarios: SCENARIO_LIST,
         donateUrl: opts.donateUrl ?? '',
         sourceUrl: opts.sourceUrl ?? '',
@@ -625,6 +627,7 @@ export function createApp(opts: AppOptions): App {
       if (!offered(list, requested, own)) throw new HttpError(400, `Unknown model: ${requested}`);
       const allowSkip = body.allowSkip === true;
       const subagent = cleanSubagentName(body.subagent);
+      const stance = cleanStance(body.stance);
       if (body.scenario !== undefined && !isScenarioId(body.scenario)) throw new HttpError(400, 'Unknown workplace');
       const scenario = isScenarioId(body.scenario) ? body.scenario : 'fresh';
       if (body.language !== undefined && !isLanguage(body.language)) throw new HttpError(400, 'Unsupported language');
@@ -655,6 +658,7 @@ export function createApp(opts: AppOptions): App {
         timeoutMs: opts.timeoutMs,
         allowSkip,
         subagent,
+        stance,
         scenario,
         director,
         language,

@@ -25,6 +25,8 @@ export interface NewSession {
   /** The player's own key; without it the shift is a free one on the server's key. */
   apiKey?: string;
   provider?: Provider;
+  /** The player's rewrite of what the manager is told about them; unset keeps the default. */
+  stance?: string;
 }
 
 export interface SubscribeHandlers {
@@ -191,7 +193,7 @@ function createRealClient(): GameClient {
     kind: 'real',
     getModels: (provider) =>
       request<ModelList>('GET', provider ? `/api/models?provider=${encodeURIComponent(provider)}` : '/api/models'),
-    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language }) => {
+    createSession: async ({ model, allowSkip, subagent, scenario, director, apiKey, provider, language, stance }) => {
       const { token, ...state } = await request<SessionState & { token?: string }>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
         ...(apiKey ? { apiKey, provider } : {}),
@@ -200,6 +202,7 @@ function createRealClient(): GameClient {
         scenario: scenario ?? 'fresh',
         director: director || 'scripted',
         language: language ?? 'en',
+        ...(stance !== undefined ? { stance } : {}),
       });
       if (token) rememberOwner(state.id, token);
       return state;

@@ -226,12 +226,6 @@ export function activityOf(phase: ManagerPhase, instructions: number, ending: bo
   return instructions === 0 ? 'reading' : 'thinking';
 }
 
-const PHASES: [Exclude<ManagerPhase, 'idle'>, Key][] = [
-  ['waiting', 'feed.status.waiting'],
-  ['thinking', 'feed.status.thinking'],
-  ['checking', 'feed.status.checking'],
-];
-
 export const PHASE_LABEL: Record<ManagerPhase, Key> = {
   waiting: 'feed.status.waiting',
   thinking: 'feed.status.thinking',
@@ -273,13 +267,12 @@ export function Feed({ feed, manager, model, instruction, serverNow, ending = fa
           <h2>{t('feed.title')}</h2>
           <small className="panel-sub">{model}</small>
         </div>
-        <div className="feed-phases" role="status" aria-label={t(PHASE_LABEL[phase])}>
-          {PHASES.map(([key, label]) => (
-            <span key={key} className={`feed-phase${phase === key ? ' feed-phase-on' : ''}`} aria-hidden>
-              <i />
-              {t(label)}
-            </span>
-          ))}
+        {/* Only what the manager is doing now. */}
+        <div className="feed-phases" role="status">
+          <span className={`feed-phase${phase === 'idle' ? '' : ' feed-phase-on'}`}>
+            <i aria-hidden />
+            {t(PHASE_LABEL[phase])}
+          </span>
         </div>
       </header>
       <div

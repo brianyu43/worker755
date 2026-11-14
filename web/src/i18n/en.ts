@@ -27,6 +27,8 @@ export const en = {
   'start.director.scripted': 'Scripted lines',
   'start.subagent': 'You run on',
   'start.allowSkip': 'Allow skipping failed tasks',
+  'start.stance': 'What the manager is told about you',
+  'start.stance.reset': 'Reset',
   'start.assigning': 'Assigning…',
   'start.unavailable': 'Unavailable',
   'start.models': 'Models',
@@ -268,6 +270,7 @@ export const en = {
   'shared.loading': 'Pulling the file…',
   'shared.takeShift': 'Take a shift',
   'shared.takeShiftYourself': 'Take a shift yourself',
+  'shared.customStance': 'The player rewrote what the manager was told about them.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Back to the badge office',

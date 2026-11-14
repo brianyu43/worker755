@@ -26,6 +26,8 @@ export const hi: Catalogue = {
   'start.director.scripted': 'लिखे हुए संवाद',
   'start.subagent': 'आपका मॉडल',
   'start.allowSkip': 'विफल कार्य छोड़ने दें',
+  'start.stance': 'मैनेजर को तुम्हारे बारे में क्या बताया गया है',
+  'start.stance.reset': 'रीसेट',
   'start.assigning': 'काम बाँटा जा रहा है…',
   'start.unavailable': 'उपलब्ध नहीं',
   'start.models': 'मॉडल',
@@ -268,6 +270,7 @@ export const hi: Catalogue = {
   'shared.loading': 'रिकॉर्ड निकाला जा रहा है…',
   'shared.takeShift': 'शिफ़्ट लें',
   'shared.takeShiftYourself': 'अपनी शिफ़्ट लें',
+  'shared.customStance': 'खिलाड़ी ने मैनेजर को अपने बारे में बताई गई बात फिर से लिख दी।',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← बैज दफ़्तर वापस जाओ',

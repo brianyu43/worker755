@@ -35,6 +35,8 @@ export interface SharedReview {
   language?: Language;
   /** The sharer's avatar, when their browser sent one. */
   face?: Face;
+  /** The player rewrote how the user treats the manager, so the review is partly theirs. */
+  customStance?: boolean;
 }
 
 const ID_RE = /^[A-Za-z0-9]{10}$/;

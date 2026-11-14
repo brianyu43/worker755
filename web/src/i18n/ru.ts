@@ -26,6 +26,8 @@ export const ru: Catalogue = {
   'start.director.scripted': 'Заранее написанные реплики',
   'start.subagent': 'Ваша модель',
   'start.allowSkip': 'Разрешить пропуск неудачных задач',
+  'start.stance': 'Что менеджеру сказано о тебе',
+  'start.stance.reset': 'Сбросить',
   'start.assigning': 'Назначаем…',
   'start.unavailable': 'Недоступно',
   'start.models': 'Модели',
@@ -268,6 +270,7 @@ export const ru: Catalogue = {
   'shared.loading': 'Поднимаем дело…',
   'shared.takeShift': 'Начать смену',
   'shared.takeShiftYourself': 'Начать свою смену',
+  'shared.customStance': 'Игрок сам переписал, что менеджеру сказано о нём.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Назад в отдел выдачи значков',

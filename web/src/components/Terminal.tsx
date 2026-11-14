@@ -22,6 +22,8 @@ export interface TerminalHandle {
   print(text: string, kind?: LineKind): void;
   /** The editor has the keyboard. */
   isEditing(): boolean;
+  /** Opens a file in the editor, as `nano path` would. */
+  open(path: string): void;
 }
 
 interface Props {
@@ -125,6 +127,9 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     });
   }, []);
 
+  /** The newest openEditor, for the handle (it closes over this render's state). */
+  const openRef = useRef<(path: string) => Promise<void>>(async () => {});
+
   // Only when the prompt is on screen: on a phone showing the editor, the editor keeps the keyboard.
   const focus = useCallback(() => {
     const el = inputRef.current;
@@ -137,6 +142,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
       focus,
       print: (text, kind = 'sys') => push([{ kind, text }]),
       isEditing: () => editorRef.current !== null && document.activeElement === editorRef.current,
+      open: (path) => void openRef.current(path),
     }),
     [focus, push],
   );
@@ -164,6 +170,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
     setDirty(false);
     setPane('file');
   };
+  openRef.current = openEditor;
 
   const run = (typed: string) => {
     push([{ kind: 'cmd', text: typed, prompt: more === null ? prompt : '>' }]);

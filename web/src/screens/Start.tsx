@@ -5,7 +5,7 @@ import type { ModelList, Provider, Workplace } from '../api/types';
 import { rememberLabels } from '../game/labels';
 import { BotAvatar } from '../components/BotAvatar';
 import { loadFace, randomFace, saveFace } from '../game/avatar';
-import { loadKey, saveKey } from '../game/apiKey';
+import { loadKey, loadPicks, saveKey, savePicks } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
 import { KeyCheckRow, ModelOptions, useKeyCheck } from '../components/KeyCheck';
 import { currentLanguage, dateLocale, LANGUAGE_LABELS, LANGUAGES, setLanguage, t, type Key, type Language } from '../i18n';
@@ -45,13 +45,28 @@ export function Start({ onStart }: Props) {
   const [freeOpen, setFreeOpen] = useState(true);
   const [reload, setReload] = useState(0);
   const [models, setModels] = useState<ModelList | null>(null);
-  const [model, setModel] = useState<string>('');
+  /** What the player chose last time; kept while the lists load, until a list on offer has it. */
+  const wanted = useRef(loadPicks());
+  const [model, setModel] = useState<string>(wanted.current.model ?? '');
   const [allowSkip, setAllowSkip] = useState(false);
   const [subagent, setSubagent] = useState('');
   /** The badge gets a random knock-off model name once the list arrives, unless the player typed one. */
   const named = useRef(false);
   const [scenario, setScenario] = useState<Workplace>('fresh');
-  const [director, setDirector] = useState('');
+  const [director, setDirector] = useState(wanted.current.director ?? '');
+  /** The player's rewrite of what the manager is told about them; null shows the default. */
+  const [stance, setStance] = useState<string | null>(wanted.current.stance ?? null);
+  const writeStance = (text: string | null) => {
+    setStance(text);
+    wanted.current = { ...wanted.current, stance: text ?? undefined };
+    savePicks(wanted.current);
+  };
+  const pick = (next: { model?: string; director?: string }) => {
+    wanted.current = { ...wanted.current, ...next };
+    savePicks(wanted.current);
+    if (next.model !== undefined) setModel(next.model);
+    if (next.director !== undefined) setDirector(next.director);
+  };
   const [face, setFace] = useState(loadFace);
   const badge = useLanyard<HTMLDivElement>();
   const newFace = () => {
@@ -84,8 +99,6 @@ export function Start({ onStart }: Props) {
           named.current = true;
           setSubagent((cur) => cur || m.subagents[Math.floor(Math.random() * m.subagents.length)]);
         }
-        setModel((cur) => (m.models.some((x) => x.id === cur) ? cur : m.default));
-        setDirector((cur) => (!cur || m.models.some((x) => x.id === cur) ? cur : ''));
       })
       .catch(() => live && setLoadError(true));
     return () => {
@@ -96,12 +109,20 @@ export function Start({ onStart }: Props) {
   const keyCheck = useKeyCheck(provider, apiKey);
   // Once the key is checked, everything it can use is on offer, not only the usual picks.
   const offer = access === 'own' && keyCheck.models ? keyCheck.models : (models?.models ?? []);
-  // The picks always come from the list on offer, also when a checked key is changed again.
+  // The picks always come from the list on offer, also when a checked key is changed again. The
+  // player's own choice comes back whenever the list has it (e.g. once their saved key is checked).
   useEffect(() => {
     if (!offer.length) return;
-    setModel((cur) => (offer.some((x) => x.id === cur) ? cur : (models?.default ?? offer[0].id)));
-    setDirector((cur) => (!cur || offer.some((x) => x.id === cur) ? cur : ''));
+    const has = (id?: string) => !!id && offer.some((x) => x.id === id);
+    const { model: m, director: d } = wanted.current;
+    setModel((cur) => (has(m) ? m! : has(cur) ? cur : (models?.default ?? offer[0].id)));
+    setDirector((cur) => (has(d) ? d! : has(cur) ? cur : ''));
   }, [offer, models]);
+  // A remembered key is checked on arrival, so its whole model list is on offer straight away.
+  useEffect(() => {
+    if (saved) void keyCheck.check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // The button is disabled until the list arrives, and a disabled button cannot take focus.
   useEffect(() => {
     if (models) btn.current?.focus();
@@ -125,6 +146,7 @@ export function Start({ onStart }: Props) {
         subagent: subagent.trim(),
         scenario,
         director,
+        ...(stance !== null && stance !== models?.stance?.text ? { stance } : {}),
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
@@ -239,7 +261,7 @@ export function Start({ onStart }: Props) {
               <label className="field">
                 <span className="field-label">{t('start.manager')}</span>
                 {models ? (
-                  <select value={model} onChange={(e) => setModel(e.target.value)} className="select">
+                  <select value={model} onChange={(e) => pick({ model: e.target.value })} className="select">
                     <ModelOptions models={offer} recommended={models.models} />
                   </select>
                 ) : (
@@ -249,7 +271,7 @@ export function Start({ onStart }: Props) {
               <label className="field">
                 <span className="field-label">{t('start.director')}</span>
                 {models ? (
-                  <select value={director} onChange={(e) => setDirector(e.target.value)} className="select">
+                  <select value={director} onChange={(e) => pick({ director: e.target.value })} className="select">
                     <option value="">{t('start.director.scripted')}</option>
                     <ModelOptions models={offer} recommended={models.models} />
                   </select>
@@ -277,6 +299,25 @@ export function Start({ onStart }: Props) {
                 <input type="checkbox" checked={allowSkip} onChange={(e) => setAllowSkip(e.target.checked)} />
                 <span>{t('start.allowSkip')}</span>
               </label>
+              {models?.stance && (
+                <details className="stance" open={stance !== null && stance !== models.stance.text}>
+                  <summary>{t('start.stance')}</summary>
+                  <textarea
+                    className="stance-text"
+                    value={stance ?? models.stance.text}
+                    maxLength={models.stance.max}
+                    rows={5}
+                    spellCheck={false}
+                    aria-label={t('start.stance')}
+                    onChange={(e) => writeStance(e.target.value)}
+                  />
+                  {stance !== null && stance !== models.stance.text && (
+                    <button type="button" className="btn btn-small" onClick={() => writeStance(null)}>
+                      {t('start.stance.reset')}
+                    </button>
+                  )}
+                </details>
+              )}
             </div>
           </section>
 

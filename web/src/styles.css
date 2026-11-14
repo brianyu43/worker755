@@ -400,6 +400,30 @@ kbd {
 .start-form .check {
   height: 46px;
 }
+/* What the manager is told about the player: folded until they open it. */
+.stance {
+  grid-column: 1 / -1;
+}
+.stance summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+.stance-text {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--rule);
+  border-radius: 3px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
 .start-form .clock-in {
   width: 100%;
   justify-content: center;
@@ -1787,6 +1811,13 @@ kbd {
 .tree-dir .tree-name {
   font-weight: 700;
 }
+.tree-file {
+  cursor: pointer;
+}
+.tree-file:hover .tree-name,
+.tree-file:focus-visible .tree-name {
+  text-decoration: underline;
+}
 .tree-size {
   flex: none;
   margin-left: auto;
@@ -1983,6 +2014,8 @@ kbd {
 }
 .feed-phases {
   display: flex;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 9px;
   border: 1px solid var(--rule);
   background: var(--sheet-2);
@@ -1990,18 +2023,13 @@ kbd {
   line-height: 1.2;
 }
 .feed-phase {
-  flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  border-right: 1px solid var(--rule);
+  padding: 5px 10px;
   color: var(--ink-faint);
   overflow-wrap: anywhere;
-}
-.feed-phase:last-child {
-  border-right: 0;
 }
 .feed-phase i {
   flex: none;
@@ -3084,6 +3112,12 @@ kbd {
   column-gap: 32px;
   font-size: 14.5px;
   overflow: visible;
+}
+.review-note {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-soft);
 }
 .review-foot {
   margin-top: 30px;

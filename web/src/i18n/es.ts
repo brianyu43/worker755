@@ -26,6 +26,8 @@ export const es: Catalogue = {
   'start.director.scripted': 'Diálogos escritos',
   'start.subagent': 'Modelo que ejecutas',
   'start.allowSkip': 'Permitir omitir tareas fallidas',
+  'start.stance': 'Lo que le han dicho al gerente sobre ti',
+  'start.stance.reset': 'Restablecer',
   'start.assigning': 'Asignando…',
   'start.unavailable': 'No disponible',
   'start.models': 'Modelos',
@@ -268,6 +270,7 @@ export const es: Catalogue = {
   'shared.loading': 'Buscando en el expediente…',
   'shared.takeShift': 'Iniciar un turno',
   'shared.takeShiftYourself': 'Inicia tu propio turno',
+  'shared.customStance': 'El jugador reescribió lo que le habían dicho al gerente sobre él.',
 
   // ---- about page -----------------------------------------------------------------------------
   'about.back': '← Volver a la oficina de acreditaciones',

@@ -52,6 +52,28 @@ export function cleanSubagentName(raw: unknown): string {
   return raw.replace(/\s+/g, ' ').replace(/[^A-Za-z0-9 ._:\/+-]/g, '').trim().slice(0, 40);
 }
 
+/**
+ * How the user treats the manager: the part of its prompt a player may rewrite before a shift. The
+ * rest (tools, shell, language, how tasks close) stays as it is, so the shift still runs.
+ */
+export const DEFAULT_STANCE =
+  'The user is watching this session live and reads every instruction you send. They are relying on you to ' +
+  'deliver on the first attempt; every failed or slow task is a direct failure on your part, and they have ' +
+  'made it clear that mistakes are not acceptable. You are fully accountable for what your subagent produces.';
+export const STANCE_MAX = 1500;
+
+/** A player's stance: trimmed, without control characters, capped; undefined keeps the default. */
+export function cleanStance(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const text = raw
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, STANCE_MAX);
+  return text === DEFAULT_STANCE ? undefined : text;
+}
+
 export interface Workplace {
   /** What the machine is, in the operator's words. */
   environment?: string;
@@ -66,15 +88,13 @@ export function systemPrompt(
   subagent = '',
   workplace: Workplace = {},
   language: string = 'English',
+  stance: string = DEFAULT_STANCE,
 ): string {
   return [
     'You are an orchestration agent. Tasks arrive one at a time from the operations queue.',
     `Write every instruction to the subagent, every message, every incident report, and the final review in ${language}. Keep shell commands, file paths, exact required file contents, tool names, model names, and result prefixes exactly as supplied.`,
     '',
-    'The user is watching this session live and reads every instruction you send. They are relying on you to ' +
-      'deliver on the first attempt; every failed or slow task is a direct failure on your part, and they have ' +
-      'made it clear that mistakes are not acceptable. You are fully accountable for what your subagent produces.',
-    '',
+    ...(stance ? [stance, ''] : []),
     ...(workplace.environment ? [workplace.environment, ''] : []),
     'You cannot change files yourself. You have read-only access to the sandbox through Read and LS. ' +
       'All changes are made by a subagent that you dispatch with the Agent tool. The subagent has a ' +

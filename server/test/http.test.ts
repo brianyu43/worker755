@@ -5,7 +5,7 @@ import { createApp } from '../src/http.ts';
 import type { App } from '../src/http.ts';
 import { MISSIONS, SHIFT_LENGTH } from '../src/missions.ts';
 import type { Mission } from '../src/missions.ts';
-import { SUBAGENT_NAMES } from '../src/manager.ts';
+import { DEFAULT_STANCE, STANCE_MAX, SUBAGENT_NAMES } from '../src/manager.ts';
 import { SCENARIO_LIST } from '../src/scenarios.ts';
 import { PROVIDERS } from '../src/providers.ts';
 import { LEGACY_MISSIONS } from '../src/legacy.ts';
@@ -103,6 +103,7 @@ test('models endpoint in scripted mode', async () => {
     free: true,
     providers: PROVIDERS,
     subagents: SUBAGENT_NAMES,
+    stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
     scenarios: SCENARIO_LIST,
     donateUrl: '',
     sourceUrl: '',

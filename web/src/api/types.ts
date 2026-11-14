@@ -117,6 +117,8 @@ export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deep
 export interface ModelList {
   models: { id: string; label: string }[];
   subagents: string[];
+  /** What the manager is told about the user by default, which a player may rewrite. */
+  stance?: { text: string; max: number };
   scenarios: { id: Workplace; label: string }[];
   default: string;
   mock: boolean;
@@ -148,6 +150,8 @@ export interface SharedReview {
   /** The language the shift was played in; missing on reviews shared before it was kept. */
   language?: string;
   face?: { id: string; color: string };
+  /** The player rewrote what the manager was told about them. */
+  customStance?: boolean;
 }
 
 export type ExecResponse = ExecResult & {

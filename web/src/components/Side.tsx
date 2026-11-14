@@ -50,9 +50,11 @@ interface FileTreeProps {
   editing?: string | null;
   /** Files lost to the director this shift. */
   lost?: number;
+  /** Opens a file in the editor. */
+  onOpen?(path: string): void;
 }
 
-export function FileTree({ tree, cwd, editing = null, lost = 0 }: FileTreeProps) {
+export function FileTree({ tree, cwd, editing = null, lost = 0, onOpen }: FileTreeProps) {
   // Show the area the player is working in (their home, another user's home, an app), or everything above that.
   const area = areaOf(cwd);
   const root = (area && findNode(tree, area)) || tree;
@@ -85,11 +87,22 @@ export function FileTree({ tree, cwd, editing = null, lost = 0 }: FileTreeProps)
       <ul className="tree">
         {rows.map(({ node, depth, branch }) => {
           const open = node.path === editing;
+          const openable = onOpen && node.type === 'file';
           return (
             <li
               key={node.path}
-              className={`tree-row${node.path === cwd ? ' tree-cwd' : ''}${open ? ' tree-open' : ''}${node.type === 'dir' ? ' tree-dir' : ''}${changed.has(node.path) ? ' tree-changed' : ''}`}
+              className={`tree-row${node.path === cwd ? ' tree-cwd' : ''}${open ? ' tree-open' : ''}${node.type === 'dir' ? ' tree-dir' : ''}${changed.has(node.path) ? ' tree-changed' : ''}${openable ? ' tree-file' : ''}`}
               title={`${modeString(node.type, node.mode)}  ${node.path}`}
+              {...(openable && {
+                role: 'button',
+                tabIndex: 0,
+                onClick: () => onOpen(node.path),
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                  e.preventDefault();
+                  onOpen(node.path);
+                },
+              })}
             >
               <span className="tree-branch" aria-hidden>
                 {branch}
