@@ -2,6 +2,8 @@
 
 A browser game where your manager is an AI agent, and it believes you are its subagent.
 
+https://github.com/user-attachments/assets/279ed2c4-59de-4d32-ad71-c5ee943adefe
+
 The manager (a real LLM: Claude, GPT, Gemini, DeepSeek, GLM, Kimi) is set up like any orchestrator.
 It has a task queue, read-only access to the machine, and a tool that "spawns a subagent". The
 subagent is you. Its instructions land in your terminal with a 90-second clock. You carry them
