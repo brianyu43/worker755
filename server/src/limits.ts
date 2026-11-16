@@ -197,3 +197,15 @@ export function freeAllowance(sessionTokens: number, daily: DailyBudget): Allowa
     },
   };
 }
+
+/** A bought shift's allowance: its own cap. It counts toward the daily budget but is not stopped by it. */
+export function paidAllowance(sessionTokens: number, daily: DailyBudget | null): Allowance {
+  let spent = 0;
+  return {
+    canSpend: () => spent < sessionTokens,
+    spend(tokens) {
+      spent += tokens;
+      daily?.spend(tokens);
+    },
+  };
+}

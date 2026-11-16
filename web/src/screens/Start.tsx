@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
+import { checkoutUrl, getMe, signInUrl, signOut } from '../api/account';
+import type { Me } from '../api/account';
 import type { NewSession } from '../api/client';
 import type { Character, ModelList, Provider, Workplace } from '../api/types';
 import { rememberLabels } from '../game/labels';
@@ -98,6 +100,45 @@ export function Start({ onStart }: Props) {
     const next = randomFace(face);
     saveFace(next);
     setFace(next);
+  };
+  const [me, setMe] = useState<Me | null>(null);
+  /** Back from sign-in or the checkout: what to tell the player. */
+  const [arrival] = useState(() => {
+    const q = new URLSearchParams(location.search);
+    return q.get('bought') ? 'bought' : q.get('signin') === 'failed' ? 'signInFailed' : null;
+  });
+  const [buying, setBuying] = useState(false);
+  useEffect(() => {
+    if (arrival) history.replaceState(null, '', location.pathname);
+    let live = true;
+    const load = () =>
+      getMe()
+        .then((m) => live && setMe(m))
+        .catch(() => live && setMe({ signIn: [], account: null, pack: null }));
+    void load();
+    // Freemius tells the server about a purchase within seconds; look again a few times.
+    const timers = arrival === 'bought' ? [2000, 5000, 10000, 20000].map((ms) => setTimeout(load, ms)) : [];
+    return () => {
+      live = false;
+      timers.forEach(clearTimeout);
+    };
+  }, [arrival]);
+  /** Shifts on our key need an account here. */
+  const accounts = !!me?.signIn.length;
+  const shiftsLeft = me?.account?.shifts ?? 0;
+  const buy = async () => {
+    setBuying(true);
+    setStartError(null);
+    try {
+      location.assign(await checkoutUrl(language));
+    } catch (err) {
+      setStartError(err instanceof ApiError ? err.message : t('start.failed'));
+      setBuying(false);
+    }
+  };
+  const leave = async () => {
+    await signOut();
+    setMe((m) => (m ? { ...m, account: null } : m));
   };
   const [loadError, setLoadError] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -367,10 +408,50 @@ export function Start({ onStart }: Props) {
               {(freeOpen ? (['free', 'own'] as const) : (['own'] as const)).map((a) => (
                 <label key={a} className={`seg-opt${access === a ? ' seg-on' : ''}`}>
                   <input type="radio" name="access" value={a} checked={access === a} onChange={() => setAccess(a)} />
-                  <span>{t(a === 'free' ? 'start.access.free' : 'start.access.own')}</span>
+                  <span>{t(a === 'own' ? 'start.access.own' : accounts ? 'start.access.ours' : 'start.access.free')}</span>
                 </label>
               ))}
             </div>
+            {access === 'free' && accounts && (
+              <div className="account">
+                {me?.account ? (
+                  <>
+                    <p className="account-who">
+                      <span>{me.account.email || me.account.name}</span>
+                      <button type="button" className="link-btn" onClick={() => void leave()}>
+                        {t('start.signOut')}
+                      </button>
+                    </p>
+                    <p className={`account-shifts${shiftsLeft ? '' : ' account-empty'}`}>
+                      {t('start.shiftsLeft', { count: shiftsLeft })}
+                    </p>
+                    {me.pack && (
+                      <button type="button" className="btn btn-buy" disabled={buying} onClick={() => void buy()}>
+                        {t('start.buy', { count: me.pack.shifts, price: me.pack.price })}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="account-why">{t('start.signInWhy')}</p>
+                    <div className="sign-in">
+                      {me?.signIn.map((p) => (
+                        <a key={p} className={`btn btn-sign-in sign-in-${p}`} href={signInUrl(p)}>
+                          {t(p === 'google' ? 'start.signIn.google' : 'start.signIn.github')}
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {models?.sourceUrl && (
+                  <p className="account-alt">
+                    <a href={models.sourceUrl} target="_blank" rel="noreferrer">
+                      {t('start.selfHost')}
+                    </a>
+                  </p>
+                )}
+              </div>
+            )}
             {access === 'own' && (
               <div className="form-grid">
                 <label className="field">
@@ -431,12 +512,19 @@ export function Start({ onStart }: Props) {
               {t('start.tryAgain')}
             </button>
           ) : (
-            <button ref={btn} type="submit" className="btn btn-ink btn-big clock-in" disabled={!models || starting}>
+            <button
+              ref={btn}
+              type="submit"
+              className="btn btn-ink btn-big clock-in"
+              disabled={!models || starting || (access === 'free' && accounts && shiftsLeft === 0)}
+            >
               {starting ? t('start.clockingIn') : t('start.clockIn')}
             </button>
           )}
         </form>
         {loadError && <p className="form-error">{t('start.offline')}</p>}
+        {arrival === 'signInFailed' && !me?.account && <p className="form-error">{t('start.signInFailed')}</p>}
+        {arrival === 'bought' && <p className="form-note">{t('start.bought')}</p>}
         {startError && <p className="form-error">{startError}</p>}
         <SiteLinks site={models} />
       </div>
@@ -450,6 +538,8 @@ export function SiteLinks({ site }: { site: Pick<ModelList, 'donateUrl' | 'sourc
     <p className="site-links">
       <a href="/about">{t('links.about')}</a>
       <a href="/faq">{t('links.faq')}</a>
+      <a href="/privacy">{t('links.privacy')}</a>
+      <a href="/terms">{t('links.terms')}</a>
       {site?.sourceUrl && (
         <a href={site.sourceUrl} target="_blank" rel="noreferrer">
           {t('links.source')}

@@ -6,6 +6,7 @@ import { Start } from './screens/Start';
 import { Shared } from './screens/Shared';
 import { About } from './screens/About';
 import { Faq } from './screens/Faq';
+import { Privacy, Terms } from './screens/Legal';
 import { currentLanguage, t } from './i18n';
 
 /** /r/<id> is a shared review; everything else is the game. */
@@ -21,6 +22,8 @@ export function App() {
   if (shared) return <Shared id={shared} />;
   if (/^\/about\/?$/.test(window.location.pathname)) return <About />;
   if (/^\/faq\/?$/.test(window.location.pathname)) return <Faq />;
+  if (/^\/privacy\/?$/.test(window.location.pathname)) return <Privacy />;
+  if (/^\/terms\/?$/.test(window.location.pathname)) return <Terms />;
   return <Game />;
 }
 

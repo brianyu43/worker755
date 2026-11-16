@@ -472,6 +472,83 @@ kbd {
   font-weight: 560;
 }
 
+.legal-date {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+.form-note {
+  margin-top: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---------- Start: the player's account on our key ---------- */
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink);
+  border-radius: 3px;
+  background: var(--sheet);
+  font-size: 14px;
+}
+.account p {
+  margin: 0;
+}
+.account-who {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.account-shifts {
+  font-weight: 600;
+}
+.account-empty {
+  color: var(--stamp);
+}
+.account-why {
+  color: var(--ink-soft);
+}
+.account-alt {
+  font-size: 13px;
+}
+.account-alt a {
+  color: var(--ink-soft);
+}
+.sign-in {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.btn-sign-in,
+.btn-buy {
+  text-decoration: none;
+  justify-content: center;
+}
+.btn-buy {
+  align-self: flex-start;
+}
+.btn-sign-in {
+  color: var(--ink);
+}
+.btn-sign-in:hover,
+.btn-buy:not(:disabled):hover {
+  background: rgb(28 42 74 / 0.07);
+}
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ---------- Play: frame ---------- */
 /* The watched desk: files and record on the left, the order, terminal and report in the middle,
    the manager's feed on the right. Below 1024px it becomes a phone screen with a tab bar. */

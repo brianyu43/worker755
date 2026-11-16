@@ -18,7 +18,7 @@ import type { Credentials, ProviderId } from './providers.ts';
 import { parseSync, SYNC_BODY_CAP, SyncError } from './sync.ts';
 import { WEB } from './web.ts';
 import type { SyncRequest } from './sync.ts';
-import { DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
+import { DailyBudget, freeAllowance, paidAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
@@ -30,6 +30,10 @@ import { CardBusy, Cards, CARD_VERSION } from './cards.ts';
 import { CARD_COPY, statsOf, verdictOf } from './card-copy.ts';
 import { excerptOf } from './card.ts';
 import type { Stats } from './stats.ts';
+import type { Accounts, Provider } from './accounts.ts';
+import { AuthFailed, beginSignIn, clearStateCookie, finishSignIn, safeNext, sessionAccount, sessionCookie, signOutCookie } from './auth.ts';
+import type { AuthConfig } from './auth.ts';
+import type { Freemius } from './freemius.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -83,6 +87,11 @@ export interface AppOptions {
   cards?: Cards | false;
   /** Counts visits and shifts per day. */
   stats?: Stats;
+  /**
+   * Sign-in. With it, shifts on the server's key need an account with shifts left: its free ones,
+   * then bought ones. Without it, anyone gets the free shifts per address.
+   */
+  accounts?: { store: Accounts; auth: AuthConfig; freemius?: Freemius };
   idleMs?: number;
   log?: (line: string) => void;
 }
@@ -321,6 +330,16 @@ export function createApp(opts: AppOptions): App {
   /** New shared reviews per address. */
   const shares = new RateLimiter(20, 60 * 60_000);
   const publicBase = siteBase(opts.publicUrl);
+  const accounts = opts.accounts ?? null;
+  /** This site's address as the browser sees it, for the providers' redirects. */
+  const siteOf = (req: IncomingMessage) => publicBase ?? `http://${req.headers.host ?? 'localhost'}`;
+  const secureCookies = (req: IncomingMessage) => siteOf(req).startsWith('https:');
+  const accountOf = (req: IncomingMessage) => {
+    const id = accounts ? sessionAccount(accounts.auth.secret, req) : null;
+    return id ? accounts!.store.get(id) : null;
+  };
+  /** Payments add their shifts on top of the free pool, so they are offered whenever the server has a key. */
+  const serverShifts = () => (accounts ? opts.mock || !!freeCred : freeOpen());
   const cards =
     opts.cards === false || !opts.reviews
       ? null
@@ -575,16 +594,95 @@ export function createApp(opts: AppOptions): App {
       return;
     }
 
+    const auth = /^\/api\/auth\/(google|github)(\/callback)?$/.exec(path);
+    if (auth && method === 'GET') {
+      if (!accounts?.auth[auth[1] as Provider]) throw new HttpError(404, 'Not found');
+      const provider = auth[1] as Provider;
+      const redirectUri = `${siteOf(req)}/api/auth/${provider}/callback`;
+      const secure = secureCookies(req);
+      if (!auth[2]) {
+        const start = beginSignIn(accounts.auth, provider, redirectUri, safeNext(url.searchParams.get('next')), secure);
+        res.writeHead(302, { location: start.location, 'set-cookie': start.cookie, 'cache-control': 'no-store' }).end();
+        return;
+      }
+      try {
+        const { identity, next } = await finishSignIn(accounts.auth, provider, req, url, redirectUri);
+        const { account, created } = accounts.store.signIn(identity.provider, identity.subject, identity.email, identity.name);
+        if (created) stats?.count(`signup:${provider}`);
+        stats?.count(`signin:${provider}`);
+        res.writeHead(302, {
+          location: next,
+          'set-cookie': [sessionCookie(accounts.auth.secret, account.id, secure), clearStateCookie(secure)],
+          'cache-control': 'no-store',
+        }).end();
+      } catch (err) {
+        log(`sign-in with ${provider} failed: ${err instanceof AuthFailed ? err.message : 'internal error'}`);
+        res.writeHead(302, { location: '/?signin=failed', 'set-cookie': clearStateCookie(secure), 'cache-control': 'no-store' }).end();
+      }
+      return;
+    }
+
+    if (path === '/api/auth/signout' && method === 'POST') {
+      res.writeHead(204, { 'set-cookie': signOutCookie(secureCookies(req)) }).end();
+      return;
+    }
+
+    if (path === '/api/me' && method === 'GET') {
+      const a = accountOf(req);
+      const pack = accounts?.freemius ? { shifts: accounts.freemius.config.shifts, price: accounts.freemius.config.price } : null;
+      return sendJson(res, 200, {
+        signIn: accounts ? (['google', 'github'] as const).filter((p) => accounts.auth[p]) : [],
+        account: a ? { name: a.name, email: a.email, shifts: a.freeShifts + a.paidShifts } : null,
+        pack,
+      });
+    }
+
+    if (path === '/api/billing/checkout' && method === 'POST') {
+      const fm = accounts?.freemius;
+      if (!fm) throw new HttpError(404, 'Not found');
+      const body = await readJson(req, 2_000);
+      const errors = copyFor(isLanguage(body.language) ? body.language : 'en').errors;
+      const a = accountOf(req);
+      if (!a) throw new HttpError(401, errors.signInNeeded);
+      if (!a.email) throw new HttpError(400, errors.emailNeeded);
+      stats?.count('checkout');
+      return sendJson(res, 200, { url: fm.checkoutUrl(a.id, a.email) });
+    }
+
+    if (path === '/api/billing/return' && method === 'GET') {
+      const fm = accounts?.freemius;
+      if (!fm) throw new HttpError(404, 'Not found');
+      await fm.returned(`${siteOf(req)}${req.url ?? ''}`);
+      res.writeHead(302, { location: '/?bought=1', 'cache-control': 'no-store' }).end();
+      return;
+    }
+
+    if (path === '/api/billing/webhook' && method === 'POST') {
+      const fm = accounts?.freemius;
+      if (!fm) throw new HttpError(404, 'Not found');
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of req) {
+        size += (chunk as Buffer).length;
+        if (size > 200_000) throw new HttpError(413, 'Request body too large');
+        chunks.push(chunk as Buffer);
+      }
+      const ok = await fm.receive(Buffer.concat(chunks).toString('utf8'), req.headers['x-signature']);
+      if (!ok) throw new HttpError(401, 'Invalid signature');
+      res.writeHead(200).end();
+      return;
+    }
+
     if (path === '/api/models' && method === 'GET') {
       // Without ?provider: the free-shift models. With it: what a player's own key can use there.
       const p = url.searchParams.get('provider');
       if (p !== null && !isProviderId(p)) throw new HttpError(400, 'Unknown provider');
-      const list = p ? await models(p) : freeOpen() ? await freeList() : [];
+      const list = p ? await models(p) : serverShifts() ? await freeList() : [];
       sendJson(res, 200, {
         models: list,
         default: list[0]?.id ?? '',
         mock: opts.mock,
-        free: freeOpen(),
+        free: serverShifts(),
         providers: PROVIDERS,
         subagents: SUBAGENT_NAMES,
         stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
@@ -626,6 +724,7 @@ export function createApp(opts: AppOptions): App {
       // A player's own key, or a free shift on the server's key.
       let cred: Credentials | null = null;
       let list: ModelOption[];
+      let player: ReturnType<typeof accountOf> = null;
       const own = body.apiKey !== undefined && body.apiKey !== '';
       if (own) {
         if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
@@ -634,7 +733,16 @@ export function createApp(opts: AppOptions): App {
         list = await models(body.provider);
       } else {
         if (!opts.mock && !freeCred) throw new HttpError(400, errors.keyNeeded);
-        if (!freeOpen()) {
+        if (accounts) {
+          player = accountOf(req);
+          if (!player) throw new HttpError(401, errors.signInNeeded);
+          if (player.freeShifts + player.paidShifts === 0) throw new HttpError(402, errors.noShifts);
+          // When today's free pool is spent, only bought shifts still play.
+          if (!freeOpen() && player.paidShifts === 0) {
+            stats?.count('free:closed');
+            throw new HttpError(429, errors.freeClosedBuy);
+          }
+        } else if (!freeOpen()) {
           stats?.count('free:closed');
           throw new HttpError(429, errors.freeClosed);
         }
@@ -666,7 +774,15 @@ export function createApp(opts: AppOptions): App {
       if (own) await verifyKey(req, cred!, errors);
       if (!shiftLimiter.take(address)) throw new HttpError(429, errors.tooManyShifts);
       let allowance: Allowance | undefined;
-      if (!own && !opts.mock && opts.free && daily) {
+      let taken: { account: string; kind: 'free' | 'paid' } | null = null;
+      if (player) {
+        const kind = accounts!.store.take(player.id, !freeOpen());
+        if (!kind) throw new HttpError(402, errors.noShifts);
+        taken = { account: player.id, kind };
+        if (!opts.mock && opts.free) {
+          allowance = kind === 'paid' ? paidAllowance(opts.free.sessionTokens, daily) : freeAllowance(opts.free.sessionTokens, daily!);
+        }
+      } else if (!own && !opts.mock && opts.free && daily) {
         if (!freePerAddress!.take(clientAddress(req, 48))) {
           stats?.count('free:used');
           throw new HttpError(429, errors.freeUsed);
@@ -692,8 +808,20 @@ export function createApp(opts: AppOptions): App {
         log,
       });
       const token = adopt(session, address);
+      if (taken) {
+        // A shift the manager could not get going is given back: an error before any task was done.
+        const t = taken;
+        const stop = session.subscribe((e) => {
+          if (e.type === 'mission_end' || e.type === 'game_over') stop();
+          else if (e.type === 'error') {
+            stop();
+            accounts!.store.giveBack(t.account, t.kind);
+            log(`session ${session.id.slice(0, 8)} failed before any task; shift given back`);
+          }
+        });
+      }
       if (stats) {
-        for (const c of ['shift:start', `access:${own ? 'own' : 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
+        for (const c of ['shift:start', `access:${own ? 'own' : taken?.kind ?? 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
         const stop = session.subscribe((e) => {
           if (e.type !== 'game_over') return;
           stats.count('shift:end');
@@ -821,6 +949,7 @@ export function createApp(opts: AppOptions): App {
       sessions.clear();
       cards?.close();
       stats?.close();
+      accounts?.store.close();
       server.closeAllConnections();
       await new Promise<void>((r) => server.close(() => r()));
     },

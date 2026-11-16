@@ -1,8 +1,12 @@
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { createApp } from './http.ts';
 import { Stats } from './stats.ts';
 import { ReviewStore } from './reviews.ts';
+import { Accounts } from './accounts.ts';
+import { Freemius } from './freemius.ts';
+import type { AuthConfig } from './auth.ts';
 
 // Empty means unset: some launchers pass unset variables through as empty strings.
 function envNumber(name: string, fallback: number): number {
@@ -37,6 +41,37 @@ const free = hosted
     }
   : undefined;
 
+// With AUTH_SECRET, shifts on the server's key need a signed-in player: one free shift each, then
+// packs bought through Freemius. Without it, anyone gets FREE_SHIFTS_PER_DAY per address.
+const client = (id: string | undefined, secret: string | undefined) => (id && secret ? { id, secret } : undefined);
+const auth: AuthConfig | null = process.env.AUTH_SECRET
+  ? {
+      secret: process.env.AUTH_SECRET,
+      google: client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET),
+      github: client(process.env.GITHUB_CLIENT_ID, process.env.GITHUB_CLIENT_SECRET),
+    }
+  : null;
+if (auth) mkdirSync(dataDir, { recursive: true });
+const store = auth ? new Accounts(join(dataDir, 'accounts.db'), envNumber('FREE_SHIFTS_ON_SIGNUP', 1)) : null;
+const fm = process.env;
+const freemius =
+  store && fm.FREEMIUS_PRODUCT_ID && fm.FREEMIUS_PLAN_ID && fm.FREEMIUS_PUBLIC_KEY && fm.FREEMIUS_SECRET_KEY && fm.FREEMIUS_API_KEY
+    ? new Freemius(
+        {
+          productId: fm.FREEMIUS_PRODUCT_ID,
+          planId: fm.FREEMIUS_PLAN_ID,
+          publicKey: fm.FREEMIUS_PUBLIC_KEY,
+          secretKey: fm.FREEMIUS_SECRET_KEY,
+          apiKey: fm.FREEMIUS_API_KEY,
+          sandbox: fm.FREEMIUS_SANDBOX !== 'false',
+          shifts: envNumber('SHIFTS_PER_PACK', 10),
+          price: fm.PACK_PRICE || '$9.90',
+          log: console.log,
+        },
+        store,
+      )
+    : undefined;
+
 const app = createApp({
   mock,
   timeoutMs,
@@ -51,6 +86,7 @@ const app = createApp({
   donateUrl: process.env.DONATE_URL || undefined,
   sourceUrl: process.env.SOURCE_URL || undefined,
   publicUrl: process.env.PUBLIC_URL || undefined,
+  accounts: store && auth ? { store, auth, freemius } : undefined,
   stats: new Stats(join(dataDir, 'stats'), process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL).hostname : '', console.log),
 });
 
