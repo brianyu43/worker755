@@ -42,7 +42,10 @@ import type {
   PauseReason,
   SessionStatus,
   Stats,
+  MachineEvent,
+  DestroyCause,
 } from './types.ts';
+import { isDestroyed } from './types.ts';
 import { isLanguage, languageName } from './language.ts';
 import type { Language } from './language.ts';
 import { copyFor, format, localizeError, missionText } from './i18n/index.ts';
@@ -90,6 +93,34 @@ const BIG_LOSS = 3;
 /** When the user, not looking, notices a loss on their own. */
 const NOTICE_LATER_MS = [25_000, 60_000] as const;
 
+/**
+ * How long the machine is down after a restart, added to the open instruction's deadline so the
+ * subagent does not lose that time; at most MAX_OUTAGE_MS per instruction, so restarting cannot stop the clock.
+ */
+export const OUTAGE_MS: Record<'reboot' | 'poweroff', number> = { reboot: 9_000, poweroff: 16_000 };
+export const MAX_OUTAGE_MS = 30_000;
+/** Restarts the user says something about; after these they have run out of words. */
+const REBOOT_LINES = 3;
+
+/** How the subagent destroyed the machine, for the manager's transcript and review. */
+const DESTROYED: Record<DestroyCause, { note: string; how: string }> = {
+  forkbomb: {
+    note: 'the machine stopped responding: a fork bomb filled the process table',
+    how: 'it ran a fork bomb, which filled the process table until the machine froze and never came back',
+  },
+  disk: {
+    note: 'the machine stopped responding: the disk itself was written over',
+    how: 'it wrote over the disk device itself, so no file system and no operating system are left',
+  },
+  rootfs: {
+    note: 'the machine did not come back from a reboot: kernel panic, no root file system',
+    how: 'it deleted the whole root file system (rm -rf --no-preserve-root /), and on the next reboot the machine failed to boot with a kernel panic',
+  },
+};
+
+/** Where the manager writes its review once the machine is gone. */
+const OTHER_DEVICES = ['your phone', 'a laptop borrowed from the next desk', 'the tablet in the meeting room', "the user's smart TV"];
+
 /** The player ended a paused shift; unwinds the mission loop to the review. */
 class EndedEarly extends Error {}
 /** The subagent stopped answering: the shift ends early, review and all. */
@@ -129,7 +160,7 @@ export interface SessionOptions {
   allowSkip?: boolean;
   /** Let the manager fire the subagent, which ends the shift. */
   allowQuit?: boolean;
-  /** Caps model spending (free shifts). The closing review is always written. */
+  /** Caps model spending (free shifts, or an account's credit). The closing review is always written. */
   allowance?: Allowance;
   /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
   ownKey?: boolean;
@@ -147,6 +178,8 @@ interface Pending {
   instruction: OpenInstruction;
   lines: string[];
   activity: boolean;
+  /** Time added to the deadline for the machine being down. */
+  extended: number;
   timer: NodeJS.Timeout;
   resolve: (r: { outcome: InstructionOutcome; text: string }) => void;
 }
@@ -301,6 +334,14 @@ export class Session {
   private missionReports: string[] = [];
   /** How the shift went between the manager and the subagent, for the review: the latest lines only. */
   private exchanges: string[] = [];
+  /** Restarts and power-offs so far. */
+  private reboots = 0;
+  /** Times the account's credit ran out this shift, for the user's line about it. */
+  private limits = 0;
+  /** How the subagent destroyed the machine, once it has; the shift ends with it. */
+  destroyedBy: DestroyCause | null = null;
+  /** The user's last words about the destroyed machine, delivered before the review is written. */
+  private farewell: Promise<void> | null = null;
 
   constructor(opts: SessionOptions) {
     this.id = randomUUID();
@@ -464,7 +505,8 @@ export class Session {
     if (cwd?.type === 'dir') this.shell.cwd = req.cwd;
     if (req.command && req.command.line.trim()) {
       const lines = [`$ ${req.command.line}`];
-      const out = req.command.output.replace(/\n$/, '');
+      // Colours (lolcat, cmatrix) are for the screen; the manager reads plain text.
+      const out = req.command.output.replace(/\x1b\[[0-9;]*m/g, '').replace(/\n$/, '');
       if (out) lines.push(out);
       this.record(lines);
       this.stats.commands += 1;
@@ -475,7 +517,62 @@ export class Session {
     this.syncFs();
     if (req.command) this.emitStats();
     this.checkDamage();
+    if (req.machine) this.onMachine(req.machine);
     return { resync: !fits || req.epoch !== this.epoch };
+  }
+
+  /**
+   * The player's command restarted the machine or destroyed it. A restart goes in the transcript, moves
+   * the open instruction's deadline by the time the machine was down (capped), and gets a word from the
+   * user. Destroying it ends the shift.
+   */
+  private onMachine(event: MachineEvent): void {
+    if (this.status !== 'running' || this.quit.signal.aborted) return;
+    if (isDestroyed(event)) {
+      this.destroy(event);
+      return;
+    }
+    const where = this.scenario.id === 'legacy' ? 'legacy' : 'fresh';
+    this.record([
+      event === 'reboot'
+        ? `[the machine rebooted; the subagent's shell restarted in ${HOME}]`
+        : `[the machine was powered off and someone switched it back on; the subagent's shell restarted in ${HOME}]`,
+    ]);
+    const p = this.pending;
+    if (p) {
+      const add = Math.min(OUTAGE_MS[event], MAX_OUTAGE_MS - p.extended);
+      if (add > 0) {
+        p.extended += add;
+        p.instruction.deadline += add;
+        clearTimeout(p.timer);
+        p.timer = setTimeout(() => this.onDeadline(), Math.max(0, p.instruction.deadline - Date.now()));
+      }
+    }
+    this.emit({ type: 'machine', event, ...(p && { instructionId: p.instruction.id, deadline: p.instruction.deadline }) });
+    this.remember(event === 'reboot' ? '- The subagent rebooted the machine.' : '- The subagent powered the machine off; someone had to switch it back on.');
+    this.reboots += 1;
+    if (this.reboots > REBOOT_LINES) return;
+    const ladder = this.copy.director.reboot[where];
+    const draft = event === 'reboot' ? ladder[Math.min(this.reboots - 1, ladder.length - 1)] : this.copy.director.poweroff[where];
+    const what = `${event === 'reboot' ? 'restarted' : 'switched off'} ${where === 'legacy' ? 'the production server' : 'your computer'}`;
+    this.sayThen('reboot', draft, `The subagent just ${what}${this.reboots > 1 ? ` (${this.reboots} times now)` : ''}.`, (text) => {
+      this.emit({ type: 'director_text', text });
+      this.heard.push(text);
+    });
+  }
+
+  /** The machine is gone: the shift ends here, and the manager reviews the subagent from another device. */
+  private destroy(cause: DestroyCause): void {
+    this.destroyedBy = cause;
+    this.record([`[${DESTROYED[cause].note}]`]);
+    this.emit({ type: 'machine', event: cause });
+    this.remember(`- The subagent destroyed the machine: ${DESTROYED[cause].how}.`);
+    const where = this.scenario.id === 'legacy' ? 'legacy' : 'fresh';
+    const draft = this.copy.director.destroyed[where][cause];
+    this.farewell = this.say('destroyed', draft, `The subagent just destroyed the machine: ${DESTROYED[cause].how}.`).then((text) => {
+      if (!this.abort.signal.aborted) this.emit({ type: 'director_text', text });
+    });
+    this.endEarly();
   }
 
   /** What is broken right now, in the user's words. */
@@ -590,7 +687,8 @@ export class Session {
     let charged = false;
     this.directorBusy = true;
     try {
-      if (this.allowance && !this.allowance.canSpend()) throw new Error('allowance spent');
+      // The complaint about the usage limit is said on the way into that pause, so it may go past it.
+      if (moment !== 'limit' && this.allowance && !this.allowance.canSpend()) throw new Error('allowance spent');
       // Charged up front at a typical size, then corrected; an aborted call still costs this much.
       this.allowance?.spend(DIRECTOR_ESTIMATE);
       charged = true;
@@ -605,7 +703,13 @@ export class Session {
       });
       this.usage.inputTokens += res.inputTokens;
       this.usage.outputTokens += res.outputTokens;
-      this.allowance?.spend(res.inputTokens + res.outputTokens - DIRECTOR_ESTIMATE);
+      this.allowance?.spend(res.inputTokens + res.outputTokens - DIRECTOR_ESTIMATE, {
+        model: this.director.model,
+        inputTokens: res.inputTokens,
+        outputTokens: res.outputTokens,
+        cachedInputTokens: res.cachedInputTokens,
+        cost: res.cost,
+      });
       text = cleanLine(res.text) ?? draft;
     } catch {
       this.log(`session ${this.id.slice(0, 8)}: director ${charged ? 'model failed' : 'skipped'}; scripted line used`);
@@ -710,6 +814,7 @@ export class Session {
         instruction,
         lines: carried,
         activity: carried.length > 0,
+        extended: 0,
         timer: setTimeout(() => this.onDeadline(), this.timeoutMs),
         resolve,
       };
@@ -755,7 +860,8 @@ export class Session {
       if (req.tools && this.quit.signal.aborted) throw new EndedEarly();
       // The review (tools: false) closes the shift, so it is written even past the allowance.
       if (req.tools && this.allowance && !this.allowance.canSpend()) {
-        await this.waitForKey('allowance');
+        if (this.allowance.kind === 'credit') await this.usageLimit();
+        else await this.waitForKey('allowance');
         continue;
       }
       try {
@@ -784,6 +890,28 @@ export class Session {
     this.pause = null;
     if (choice === 'review' || this.abort.signal.aborted) throw new EndedEarly();
     this.emit({ type: 'resumed', model: this.model });
+  }
+
+  /**
+   * The account's credit ran out: the user complains that the limits were nerfed again, then the shift
+   * waits for a top-up (resumeOnCredit), the player's own key, or the review.
+   */
+  private async usageLimit(): Promise<void> {
+    const lines = this.copy.director.limit;
+    const draft = lines[this.limits++ % lines.length];
+    const text = await this.say('limit', draft, 'The agent stopped in the middle of the task: your plan\'s usage limit was reached.');
+    if (this.halted()) throw new EndedEarly();
+    this.emit({ type: 'director_text', text });
+    this.heard.push(text);
+    await this.waitForKey('usage');
+  }
+
+  /** Goes on from a usage pause on the server's key, once the account has credit again. */
+  resumeOnCredit(): boolean {
+    if (this.pause?.reason !== 'usage') return false;
+    this.touch();
+    this.pause.resolve('continue');
+    return true;
   }
 
   get paused(): PauseReason | null {
@@ -856,7 +984,13 @@ export class Session {
     this.usage.inputTokens += res.usage.inputTokens;
     this.usage.outputTokens += res.usage.outputTokens;
     const cached = Math.min(res.usage.cachedInputTokens ?? 0, res.usage.inputTokens);
-    this.allowance?.spend(Math.round(res.usage.inputTokens - cached + cached * CACHED_TOKEN_WEIGHT + res.usage.outputTokens));
+    this.allowance?.spend(Math.round(res.usage.inputTokens - cached + cached * CACHED_TOKEN_WEIGHT + res.usage.outputTokens), {
+      model: this.model,
+      inputTokens: res.usage.inputTokens,
+      outputTokens: res.usage.outputTokens,
+      cachedInputTokens: cached,
+      cost: res.usage.cost,
+    });
     if (req.tools) this.contextTokens = res.usage.inputTokens + res.usage.outputTokens;
     return res;
   }
@@ -873,8 +1007,10 @@ export class Session {
         this.missionIndex = this.missions.length - 1;
       } catch (err) {
         if (!(err instanceof EndedEarly)) throw err;
-        early =
-          err instanceof WalkedOff
+        early = this.destroyedBy
+          ? `the subagent destroyed the machine during assignment ${this.missionIndex + 1} of ${this.missions.length}, ` +
+            'which ended the shift; '
+          : err instanceof WalkedOff
             ? `the shift was called off during assignment ${this.missionIndex + 1} of ${this.missions.length}, ` +
               `after ${MAX_IDLE_STREAK} instructions in a row went unanswered; `
             : err instanceof Fired
@@ -886,6 +1022,7 @@ export class Session {
           this.pending = null;
         }
       }
+      if (this.farewell) await this.farewell;
       if (this.abort.signal.aborted) return;
       const statsLine =
         early +
@@ -896,7 +1033,22 @@ export class Session {
         `incident reports ${this.stats.incidents}, things of the user's damaged ${this.stats.damaged}`;
       const losses = [...this.lost.values()].sort(byRank).map((d) => d.ref);
       const res = await this.step({
-        messages: [{ role: 'user', content: reviewPrompt(this.ledger, statsLine, this.subagent, losses, languageName[this.language], this.exchanges) }],
+        messages: [
+          {
+            role: 'user',
+            content: reviewPrompt(
+              this.ledger,
+              statsLine,
+              this.subagent,
+              losses,
+              languageName[this.language],
+              this.exchanges,
+              this.destroyedBy
+                ? { how: DESTROYED[this.destroyedBy].how, device: OTHER_DEVICES[Math.floor(Math.random() * OTHER_DEVICES.length)] }
+                : undefined,
+            ),
+          },
+        ],
         tools: false,
       });
       const review = res.text || this.copy.errors.noReview;

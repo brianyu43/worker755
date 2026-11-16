@@ -8,6 +8,8 @@ export type {
   Vfs,
   VfsErrorCode,
   ExecResult,
+  Action,
+  DestroyCause,
   Shell,
   ShellOptions,
   Web,

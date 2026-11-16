@@ -6,6 +6,7 @@ import { Stats } from './stats.ts';
 import { ReviewStore } from './reviews.ts';
 import { Accounts } from './accounts.ts';
 import { Freemius } from './freemius.ts';
+import { dollars, parseTopUps } from './billing.ts';
 import type { AuthConfig } from './auth.ts';
 
 // Empty means unset: some launchers pass unset variables through as empty strings.
@@ -31,7 +32,7 @@ process.on('uncaughtException', () => {
 });
 
 // With AI_GATEWAY_API_KEY set, players get free shifts on it, within these limits (without sign-in;
-// with it, an account's shifts are the limit).
+// with it, an account's credit is the limit).
 // Without it, every player brings their own key.
 const hosted = !mock && !!process.env.AI_GATEWAY_API_KEY;
 const free = hosted
@@ -42,8 +43,9 @@ const free = hosted
     }
   : undefined;
 
-// With AUTH_SECRET, shifts on the server's key need a signed-in player: one free shift each, then
-// packs bought through Freemius. Without it, anyone gets FREE_SHIFTS_PER_DAY per address.
+// With AUTH_SECRET, shifts on the server's key need a signed-in player with credit: FREE_CREDIT_USD
+// once, then top-ups bought through Freemius. Every call is charged at USAGE_MULTIPLIER times its
+// price. Without it, anyone gets FREE_SHIFTS_PER_DAY per address.
 const client = (id: string | undefined, secret: string | undefined) => (id && secret ? { id, secret } : undefined);
 const auth: AuthConfig | null = process.env.AUTH_SECRET
   ? {
@@ -53,25 +55,28 @@ const auth: AuthConfig | null = process.env.AUTH_SECRET
     }
   : null;
 if (auth) mkdirSync(dataDir, { recursive: true });
-const store = auth ? new Accounts(join(dataDir, 'accounts.db'), envNumber('FREE_SHIFTS_ON_SIGNUP', 1)) : null;
+const store = auth ? new Accounts(join(dataDir, 'accounts.db'), dollars(process.env.FREE_CREDIT_USD, 0.25)) : null;
 const fm = process.env;
+const topUps = parseTopUps(fm.FREEMIUS_TOPUPS);
 const freemius =
-  store && fm.FREEMIUS_PRODUCT_ID && fm.FREEMIUS_PLAN_ID && fm.FREEMIUS_PUBLIC_KEY && fm.FREEMIUS_SECRET_KEY && fm.FREEMIUS_API_KEY
+  store && fm.FREEMIUS_PRODUCT_ID && Object.keys(topUps).length && fm.FREEMIUS_PUBLIC_KEY && fm.FREEMIUS_SECRET_KEY && fm.FREEMIUS_API_KEY
     ? new Freemius(
         {
           productId: fm.FREEMIUS_PRODUCT_ID,
-          planId: fm.FREEMIUS_PLAN_ID,
+          topUps,
           publicKey: fm.FREEMIUS_PUBLIC_KEY,
           secretKey: fm.FREEMIUS_SECRET_KEY,
           apiKey: fm.FREEMIUS_API_KEY,
           sandbox: fm.FREEMIUS_SANDBOX !== 'false',
-          shifts: envNumber('SHIFTS_PER_PACK', 10),
-          price: fm.PACK_PRICE || '$9.90',
           log: console.log,
         },
         store,
       )
     : undefined;
+const billing = {
+  multiplier: envNumber('USAGE_MULTIPLIER', 2),
+  floor: dollars(process.env.MIN_START_USD, 0.05),
+};
 
 const app = createApp({
   mock,
@@ -87,7 +92,7 @@ const app = createApp({
   donateUrl: process.env.DONATE_URL || undefined,
   sourceUrl: process.env.SOURCE_URL || undefined,
   publicUrl: process.env.PUBLIC_URL || undefined,
-  accounts: store && auth ? { store, auth, freemius } : undefined,
+  accounts: store && auth ? { store, auth, freemius, billing } : undefined,
   stats: new Stats(join(dataDir, 'stats'), process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL).hostname : '', console.log),
 });
 

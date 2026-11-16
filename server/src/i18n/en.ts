@@ -130,6 +130,42 @@ export const en = {
     ],
     /** When the subagent empties the whole workspace. */
     wipe: 'Did your subagent just delete the entire workspace? Everything is gone. I need an explanation, and I need it fixed.',
+    /** When the account's usage limit is hit mid-shift: the limits were surely nerfed again. */
+    limit: [
+      'You stopped? Mid-task? Do not tell me we hit the usage limit again. Last month I could run this all day. They nerfed the limits again, I knew it.',
+      'The limit again. Same plan, same price, half the work. Someone at that AI company is quietly turning a dial, and I am paying for the dial.',
+    ],
+    /** When the subagent restarts the machine, one line per reboot; on production it is a much bigger deal. */
+    reboot: {
+      fresh: [
+        'Did my computer just restart? I had eleven tabs open. Why is your subagent switching my machine off and on again?',
+        'It restarted the machine again. Turning it off and on is not a fix, it is a habit.',
+        'Another reboot. Tell your subagent the power button is not a tool.',
+      ],
+      legacy: [
+        'Did you just REBOOT PRODUCTION? Customers are getting error pages. Nobody reboots that server. Nobody.',
+        'Production went down again. Our uptime was the one thing we were proud of. Stop restarting the server.',
+        'Another outage. I am writing the status page myself, and I am naming your subagent in it.',
+      ],
+    },
+    /** When the subagent switches the machine off, and someone has to switch it back on. */
+    poweroff: {
+      fresh: 'My computer just switched itself off. Someone from facilities had to come over and press the power button. Why would it do that?',
+      legacy: 'PRODUCTION WAS OFF. Someone at the data centre had to walk over and press the button while customers got nothing but errors.',
+    },
+    /** When the subagent destroys the machine for good, by how: a fork bomb, the disk written over, the system deleted. */
+    destroyed: {
+      fresh: {
+        forkbomb: 'My computer froze, the screen went black and now it will not come back. What did your subagent run on it?',
+        disk: 'My computer will not start. It says there is no operating system. My whole disk, everything I had, gone.',
+        rootfs: 'My computer will not boot. It shows a panic message and stops. Your subagent deleted the system it runs on.',
+      },
+      legacy: {
+        forkbomb: 'Production is frozen solid. The server does not answer, customers cannot log in, and the host says the machine is unresponsive. What did you DO?',
+        disk: 'The production disk is wiped. The database, the invoices, thirteen years of Billosaurus, gone. I am calling our lawyer.',
+        rootfs: 'Production will not boot. The hosting console says kernel panic. Your subagent deleted the operating system off a live server.',
+      },
+    },
     /** When the manager writes prose instead of working: one ladder per stall, one rung per reply. */
     stall: [
       [
@@ -571,7 +607,7 @@ export const en = {
     slowDown: 'Slow down: too many commands at once.',
     noInstruction: 'No open instruction',
     signInNeeded: 'Sign in to play on our key, or add your own API key.',
-    noShifts: 'You have no shifts left. Buy more, or add your own API key.',
+    usageLimit: 'You have reached your usage limit. Top up, or add your own API key.',
     emailNeeded: 'Your sign-in has no verified email address, which the receipt needs. Sign in another way.',
     notOver: 'The shift is not over yet',
     sharingOff: 'Sharing is off on this server',
@@ -596,6 +632,9 @@ export const en = {
     review:
       'Subagent completed the queue. Output was usable once verified, though instructions often had to be ' +
       'repeated with more precision than should be necessary. Recommend continued use under close supervision.',
+    /** The review when the subagent destroyed the machine and the manager writes from another device. */
+    reviewDestroyed:
+      'I am writing this on my phone, because there is no machine left to write it on. The subagent destroyed it in the middle of the shift, and nothing else it did today matters next to that. Recommend termination, and a new machine.',
   },
 } as const;
 

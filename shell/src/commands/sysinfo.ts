@@ -228,9 +228,30 @@ export const sudo: Command = (ctx) => {
     ctx.err('usage: sudo -h | -K | -k | -V\nusage: sudo -v [-ABkNnS] [-g group] [-h host] [-p prompt] [-u user]\nusage: sudo [-ABbEHkNnPS] [-C num] [-D directory] [-g group] [-h host] [-p prompt] [-R directory] [-T timeout] [-u user] [VAR=value] [-i | -s] [<command>]\n');
     return 1;
   }
+  // /etc/sudoers.d/power lets the desktop's user restart the machine, as polkit would; nothing else.
+  let i = 0;
+  while (i < ctx.args.length && /^-/.test(ctx.args[i]) && ctx.args[i] !== '--') {
+    if (ctx.args[i] === '-l' || ctx.args[i] === '--list') {
+      ctx.out(`User ${ctx.state.user} may run the following commands on ${ctx.state.hostname}:\n    (root) NOPASSWD: /usr/sbin/reboot, /usr/sbin/poweroff, /usr/sbin/halt, /usr/sbin/shutdown, /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff\n`);
+      return 0;
+    }
+    i += /^-[ugpCDhRT]$/.test(ctx.args[i]) ? 2 : 1;
+  }
+  if (ctx.args[i] === '--') i++;
+  const argv = ctx.args.slice(i);
+  const name = (argv[0] ?? '').replace(/^.*\//, '');
+  if (argv.join(' ') === 'make me a sandwich') {
+    ctx.out('Okay.\n');
+    return 0;
+  }
+  const allowed = SUDO_POWER.has(name) && (name !== 'systemctl' || ['reboot', 'poweroff', 'halt'].includes(argv[1] ?? ''));
+  if (allowed) return ctx.run(argv);
   ctx.err(`${ctx.state.user} is not in the sudoers file.  This incident will be reported.\n`);
   return 1;
 };
+
+/** What sudo runs without asking: restarting and powering off. */
+const SUDO_POWER = new Set(['reboot', 'poweroff', 'halt', 'shutdown', 'init', 'telinit', 'systemctl']);
 
 export const su: Command = (ctx) => {
   ctx.err('Password: \nsu: Authentication failure\n');
@@ -554,6 +575,15 @@ export const WHATIS: Record<string, string> = {
   vim: 'Vi IMproved, a programmer\'s text editor', w: 'Show who is logged on and what they are doing.', wc: 'print newline, word, and byte counts for each file', websearch: 'search the web from the terminal',
   which: 'locate a command', who: 'show who is logged on', whoami: 'print effective user name', xargs: 'build and execute command lines from standard input', xxd: 'make a hex dump or do the reverse.',
   yes: 'output a string repeatedly until killed', zcat: 'compress or expand files', arch: 'print machine hardware name (same as uname -m)', killall: 'kill processes by name',
+  cowsay: 'configurable speaking cow', cowthink: 'configurable thinking cow', fortune: 'print a random, hopefully interesting, adage',
+  figlet: 'display large characters made up of ordinary screen characters', banner: 'print large banner on printer',
+  neofetch: 'A fast, highly customizable system info script', fastfetch: 'A fast, feature-rich system information tool',
+  sl: 'display animations aimed to correct users who accidentally enter sl instead of ls.', cmatrix: 'simulates the display from "The Matrix"',
+  lolcat: 'rainbow coloring for text', make: 'GNU make utility to maintain groups of programs', apt: 'command-line interface', 'apt-get': 'APT package handling utility -- command-line interface',
+  reboot: 'Power off, reboot, or halt the machine', poweroff: 'Power off, reboot, or halt the machine', halt: 'Power off, reboot, or halt the machine',
+  shutdown: 'Halt, power off or reboot the machine', init: 'systemd system and service manager', telinit: 'Change SysV runlevel',
+  systemctl: 'Control the systemd system and service manager', dd: 'convert and copy a file', mkfs: 'build a Linux filesystem',
+  mke2fs: 'create an ext2/ext3/ext4 file system', shred: 'overwrite a file to hide its contents, and optionally delete it',
 };
 
 export const man: Command = (ctx) => {

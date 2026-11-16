@@ -90,7 +90,7 @@ export const ptBR: Faq = {
         {
           id: 'cost',
           q: 'Quanto custa?',
-          a: 'Seu primeiro turno é grátis: entre com o Google ou o GitHub na tela inicial. Depois disso, os turnos vêm em pacotes de 10 por $9.90, com pagamento único. Um turno, depois de começar, vai até o fim.\n\nCom sua própria chave de API, você não precisa de conta nem de turnos. Você paga ao seu provedor pelo que o gerente lê e escreve.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">rode o jogo por conta própria</a>.',
+          a: 'Ao entrar com o Google ou o GitHub na tela inicial, você ganha um crédito inicial, suficiente para mais ou menos um turno com o modelo padrão. Depois você paga pelo que usa: recargas de $10, $20, $50 ou $200, com pagamento único, e cada chamada a um modelo custa o dobro do que o provedor nos cobra. Modelos maiores gastam o crédito mais rápido; depois da primeira recarga você pode escolher qualquer um. O crédito não expira. Se ele acabar no meio do turno, o turno espera enquanto você recarrega.\n\nCom sua própria chave de API, você não precisa de conta nem de crédito. Você paga ao seu provedor pelo que o gerente lê e escreve.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">rode o jogo por conta própria</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const ptBR: Faq = {
         {
           id: 'stored',
           q: 'O que vocês guardam?',
-          a: 'Se você entrar: seu nome e e-mail vindos do Google ou do GitHub, e quantos turnos ainda restam. As avaliações que você compartilha. Nada mais do turno fica salvo.\n\nO turno em si, seus comandos, arquivos e conversas ficam na memória do servidor e desaparecem em até quatro horas. Para aplicar os limites, o servidor também salva quantos turnos cada endereço de rede iniciou recentemente.\n\nA página não carrega nada de outros sites. Seu navegador guarda seu login, seu idioma, seu rosto e, se você pedir, sua chave. Os detalhes estão na <a href="/privacy">página de privacidade</a>.',
+          a: 'Se você entrar: seu nome e e-mail vindos do Google ou do GitHub, seu saldo de uso e as recargas que você comprou. As avaliações que você compartilha. Nada mais do turno fica salvo.\n\nO turno em si, seus comandos, arquivos e conversas ficam na memória do servidor e desaparecem em até quatro horas. Para aplicar os limites, o servidor também salva quantos turnos cada endereço de rede iniciou recentemente.\n\nA página não carrega nada de outros sites. Seu navegador guarda seu login, seu idioma, seu rosto e, se você pedir, sua chave. Os detalhes estão na <a href="/privacy">página de privacidade</a>.',
         },
       ],
     },

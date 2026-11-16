@@ -33,6 +33,8 @@ export function installSystem(sh: VirtualShell): void {
   fs.addSystemDir('/dev', {
     null: 'null', zero: 'zero', random: 'random', urandom: 'random', full: 'full', tty: 'tty',
     stdin: 'tty', stdout: 'tty', stderr: 'tty', console: 'tty',
+    // The disk itself; df and fstab name the partition the home folder is on, /dev/vda1.
+    sda: 'disk', sda1: 'disk', sda2: 'disk', vda: 'disk', vda1: 'disk',
     fd: { '0': 'tty', '1': 'tty', '2': 'tty' },
     shm: {},
   });

@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto';
 import { examples, renderAvatarSvg, validateAvatar } from 'open-bot-avatar';
 import type { AvatarDefinition } from 'open-bot-avatar';
 import { FONT_FILES, homeCardSvg, reviewCardSvg } from './card.ts';
-import { statsOf } from './card-copy.ts';
+import { isDestroyCause, statsOf } from './card-copy.ts';
 import type { Family, Glyph, HomeCardInput, Shaper } from './card.ts';
 import { isLanguage } from './language.ts';
 import type { SharedReview } from './reviews.ts';
@@ -137,6 +137,7 @@ export async function reviewSvg(review: SharedReview, site: string): Promise<str
       subagent: typeof review.subagent === 'string' ? review.subagent : '',
       avatar: avatarFor(review.face, review.id),
       site,
+      destroyed: isDestroyCause(review.destroyed) ? review.destroyed : undefined,
     },
     shaper,
   );

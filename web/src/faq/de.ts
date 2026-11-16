@@ -90,7 +90,7 @@ export const de: Faq = {
         {
           id: 'cost',
           q: 'Was kostet das?',
-          a: 'Deine erste Schicht ist kostenlos: Melde dich auf dem Startbildschirm mit Google oder GitHub an. Danach gibt es Schichten im Paket zu 10 für $9.90, einmalig bezahlt. Eine begonnene Schicht läuft bis zum Ende.\n\nMit deinem eigenen API-Schlüssel brauchst du weder Konto noch Schichten. Du bezahlst deinem Anbieter, was der Manager liest und schreibt.\n\nOder <a href="https://github.com/gulivan/worker755#run-it">betreibe das Spiel selbst</a>.',
+          a: 'Wenn du dich auf dem Startbildschirm mit Google oder GitHub anmeldest, bekommst du ein Startguthaben, etwa genug für eine Schicht mit dem Standardmodell. Danach zahlst du, was du nutzt: Aufladungen über $10, $20, $50 oder $200, einmalig bezahlt, und jeder Aufruf eines Modells kostet das Doppelte dessen, was uns sein Anbieter berechnet. Größere Modelle verbrauchen das Guthaben schneller; nach deiner ersten Aufladung kannst du jedes wählen. Guthaben verfällt nicht. Geht es mitten in einer Schicht aus, wartet die Schicht, bis du aufgeladen hast.\n\nMit deinem eigenen API-Schlüssel brauchst du weder Konto noch Guthaben. Du bezahlst deinem Anbieter, was der Manager liest und schreibt.\n\nOder <a href="https://github.com/gulivan/worker755#run-it">betreibe das Spiel selbst</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const de: Faq = {
         {
           id: 'stored',
           q: 'Was speichert ihr?',
-          a: 'Wenn du dich anmeldest: deinen Namen und deine E-Mail-Adresse von Google oder GitHub und wie viele Schichten du noch hast. Bewertungen, die du teilst. Sonst wird nichts aus einer Schicht gespeichert.\n\nDie Schicht selbst, deine Befehle, Dateien und der Chat bleiben im Arbeitsspeicher des Servers und sind nach spätestens vier Stunden weg. Zur Begrenzung speichert der Server außerdem, wie viele Schichten von jeder Netzwerkadresse kürzlich gestartet wurden.\n\nDie Seite lädt nichts von anderen Websites. Dein Browser speichert deine Anmeldung, deine Sprache, dein Gesicht und – wenn du ihn darum bittest – deinen Schlüssel. Die Einzelheiten stehen auf der <a href="/privacy">Datenschutzseite</a>.',
+          a: 'Wenn du dich anmeldest: deinen Namen und deine E-Mail-Adresse von Google oder GitHub, dein Guthaben und die Aufladungen, die du gekauft hast. Bewertungen, die du teilst. Sonst wird nichts aus einer Schicht gespeichert.\n\nDie Schicht selbst, deine Befehle, Dateien und der Chat bleiben im Arbeitsspeicher des Servers und sind nach spätestens vier Stunden weg. Zur Begrenzung speichert der Server außerdem, wie viele Schichten von jeder Netzwerkadresse kürzlich gestartet wurden.\n\nDie Seite lädt nichts von anderen Websites. Dein Browser speichert deine Anmeldung, deine Sprache, dein Gesicht und – wenn du ihn darum bittest – deinen Schlüssel. Die Einzelheiten stehen auf der <a href="/privacy">Datenschutzseite</a>.',
         },
       ],
     },

@@ -99,6 +99,12 @@ export class LoopSignal extends Error {
 /** A budget ran out; the whole command line stops. */
 class LimitError extends Error {}
 
+/** A function that keeps forking copies of itself: the process table fills and the machine goes down. */
+class ForkBomb extends LimitError {}
+
+/** What bash prints while the process table fills, before the machine stops answering. */
+export const FORK_RETRY = 'bash: fork: retry: Resource temporarily unavailable';
+
 /** An error a builtin reports with its message; the command fails with `status`. */
 export class ShellError extends Error {
   readonly status: number;
@@ -107,6 +113,15 @@ export class ShellError extends Error {
     this.status = status;
   }
 }
+
+/**
+ * What still runs once the root filesystem is gone: bash's own builtins, and the power commands
+ * (systemd is still in memory, so the machine can at least be restarted, and find out it cannot boot).
+ */
+const SURVIVES_WIPE = new Set([
+  'cd', 'echo', 'printf', 'pwd', 'true', 'false', 'kill', 'help', 'edit',
+  'reboot', 'poweroff', 'halt', 'shutdown', 'init', 'telinit', 'systemctl',
+]);
 
 /** How deep scripts may call scripts, so one that runs itself stops instead of looping. */
 const MAX_SCRIPT_DEPTH = 16;
@@ -171,6 +186,14 @@ export class VirtualShell implements Shell {
   subshellDepth = 0;
   lastBg = 0;
   private jobs = 0;
+  /** Pipeline stages and background jobs the running line is inside: forks, as a real shell counts them. */
+  private forks = 0;
+  /** `forks` when each running function was called, outermost first. */
+  private callForks: number[] = [];
+  /** A block device was written to during this line (the disk is gone). */
+  private diskHit: string | null = null;
+  /** Set by reboot/poweroff: the shell starts over once the line ends. */
+  pendingPower: 'reboot' | 'poweroff' | null = null;
   private steps = 0;
   private deadline = 0;
   private timeLimit: number;
@@ -187,6 +210,9 @@ export class VirtualShell implements Shell {
     this.fs.mount(home);
     this.timeLimit = options.timeLimitMs ?? DEFAULT_TIME_LIMIT_MS;
     this.start = baseNow();
+    this.fs.onDiskWrite = (path) => {
+      this.diskHit = path;
+    };
     this.state = {
       cwd: home,
       oldpwd: null,
@@ -197,7 +223,18 @@ export class VirtualShell implements Shell {
       web: options.web,
       hostname: options.hostname ?? HOSTNAME,
     };
+    this.initVars();
+    if (options.system !== false) {
+      seedSystem(this.fs, { user: this.state.user, home, hostname: this.state.hostname });
+      this.installSystem();
+    }
+  }
+
+  /** The variables a login shell starts with. */
+  private initVars(): void {
+    const home = this.state.home;
     const user = this.state.user;
+    this.vars = new Map();
     const scalars: Record<string, string> = {
       HOME: home, USER: user, LOGNAME: user, SHELL: '/bin/bash', PATH: '/usr/local/bin:/usr/bin:/bin',
       TERM: 'xterm-256color', LANG: 'C.UTF-8', HOSTNAME: this.state.hostname, SHLVL: '1', IFS: ' \t\n',
@@ -209,10 +246,30 @@ export class VirtualShell implements Shell {
     for (const [k, v] of Object.entries(scalars)) {
       this.vars.set(k, { scalar: v, exported: exported.has(k), readonly: k === 'UID' || k === 'EUID' || k === 'PPID' });
     }
-    if (options.system !== false) {
-      seedSystem(this.fs, { user, home, hostname: this.state.hostname });
-      this.installSystem();
-    }
+  }
+
+  /**
+   * The machine came back up: a new login shell in the home folder. Files stay; variables, functions,
+   * aliases, options, the directory stack and jobs start over. History stays, as the terminal keeps it.
+   */
+  restart(): void {
+    this.initVars();
+    this.state.cwd = this.state.home;
+    this.state.oldpwd = null;
+    this.state.lastExit = 0;
+    this.functions = new Map();
+    this.aliases = new Map();
+    this.options = { errexit: false, nounset: false, xtrace: false, pipefail: false, noglob: false, noclobber: false };
+    this.dirStack = [];
+    this.umask = 0o022;
+    this.args = [];
+    this.jobs = 0;
+    this.lastBg = 0;
+  }
+
+  /** `rm -rf --no-preserve-root /` happened: /etc and /var are gone, and with them every program. */
+  rootGone(): boolean {
+    return !this.fs.exists('/etc') && !this.fs.exists('/var');
   }
 
   /** Adds /dev, /proc, /bin and /usr/bin; again after a snapshot is loaded, since /usr comes with it. */
@@ -292,6 +349,10 @@ export class VirtualShell implements Shell {
     this.subshellDepth = 0;
     this.locals = [];
     this.funcNames = [];
+    this.forks = 0;
+    this.callForks = [];
+    this.diskHit = null;
+    this.pendingPower = null;
     try {
       let text = String(line ?? '');
       if (text.length > MAX_SOURCE) {
@@ -341,6 +402,15 @@ export class VirtualShell implements Shell {
   private finish(result: ExecResult, status: number): ExecResult {
     result.exitCode = status;
     this.state.lastExit = status;
+    if (this.diskHit) {
+      result.action = { type: 'destroy', cause: 'disk' };
+      this.diskHit = null;
+    } else if (this.pendingPower && result.action?.type !== 'destroy') {
+      // The machine goes down once the line is through; it comes back with a new shell.
+      result.action = this.rootGone() ? { type: 'destroy', cause: 'rootfs' } : { type: 'power', mode: this.pendingPower };
+      this.restart();
+    }
+    this.pendingPower = null;
     return result;
   }
 
@@ -353,6 +423,11 @@ export class VirtualShell implements Shell {
     }
     if (e instanceof ReturnSignal) return e.status;
     if (e instanceof LoopSignal) return 0;
+    if (e instanceof ForkBomb) {
+      this.write({ kind: 'tty', stream: 'stderr' }, `${FORK_RETRY}\n`.repeat(3) + 'bash: fork: Resource temporarily unavailable\n');
+      this.result.action = { type: 'destroy', cause: 'forkbomb' };
+      return 254;
+    }
     if (e instanceof LimitError) {
       this.write({ kind: 'tty', stream: 'stderr' }, `${e.message}\n`);
       return 130;
@@ -450,7 +525,12 @@ export class VirtualShell implements Shell {
       if (guarded) this.condDepth++;
       try {
         if (item.background) {
-          this.runPipeline(item.pipeline, io);
+          this.forks++;
+          try {
+            this.runPipeline(item.pipeline, io);
+          } finally {
+            this.forks--;
+          }
           this.lastBg = PID + 10 + ++this.jobs;
           if (top && this.scriptDepth === 0) this.err(io, `[${this.jobs}] ${this.lastBg}\n`);
           status = 0;
@@ -489,7 +569,12 @@ export class VirtualShell implements Shell {
             if (p.withStderr?.[i]) out.set(2, { kind: 'buf', buf });
           }
           const stageIo: Io = { out, stdin };
-          statuses.push(this.inSubshell(() => this.runCommand(cmd, stageIo)));
+          this.forks++;
+          try {
+            statuses.push(this.inSubshell(() => this.runCommand(cmd, stageIo)));
+          } finally {
+            this.forks--;
+          }
           stdin = last ? null : { text: buf.chunks.join(''), pos: 0 };
         });
         status = statuses[statuses.length - 1];
@@ -836,6 +921,11 @@ export class VirtualShell implements Shell {
     const script = this.scriptCommand(name, argv.slice(1), io);
     if (script !== null) return script;
     const program = this.program(name);
+    if (program && this.rootGone() && !SURVIVES_WIPE.has(name.slice(name.lastIndexOf('/') + 1))) {
+      // /usr/bin went with the rest: only what lives inside bash still runs.
+      this.err(io, `bash: ${name}: ${name.includes('/') ? 'No such file or directory' : 'command not found'}\n`);
+      return 127;
+    }
     if (!program) {
       this.err(io, `bash: ${name}: ${name.includes('/') ? 'No such file or directory' : 'command not found'}\n`);
       return 127;
@@ -900,6 +990,9 @@ export class VirtualShell implements Shell {
       sleep: (ms) => {
         this.clock += Math.max(0, ms);
       },
+      power: (mode) => {
+        this.pendingPower = mode;
+      },
       tick: () => this.tick(),
     };
   }
@@ -919,10 +1012,13 @@ export class VirtualShell implements Shell {
 
   callFunction(name: string, fn: FunctionDef, args: string[], io: Io): number {
     if (this.callDepth >= MAX_CALL_DEPTH) {
+      // Recursion that went through pipes or `&` all the way down forks a new process each time: a fork bomb.
+      if (this.funcNames.includes(name) && this.forks - (this.callForks[0] ?? 0) >= MAX_CALL_DEPTH / 2) throw new ForkBomb('fork bomb');
       throw new ShellError(`bash: ${name}: maximum function nesting level exceeded (${MAX_CALL_DEPTH})`);
     }
     const savedArgs = this.args;
     this.args = args;
+    this.callForks.push(this.forks);
     this.callDepth++;
     this.locals.push(new Map());
     this.funcNames.unshift(name);
@@ -939,6 +1035,7 @@ export class VirtualShell implements Shell {
         else this.vars.delete(k);
       }
       this.callDepth--;
+      this.callForks.pop();
       this.args = savedArgs;
     }
   }

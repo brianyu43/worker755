@@ -5,13 +5,14 @@
 
 import { generateText } from 'ai';
 import { languageModel } from './providers.ts';
+import { reportedCost } from './billing.ts';
 import type { Credentials } from './providers.ts';
 import type { Language } from './language.ts';
 import { DAN, personalLines, preciousFiles } from './personal.ts';
 import type { PersonalFolder } from './personal.ts';
 
 /** Why the user is speaking. */
-export type Moment = 'setback' | 'stall' | 'outrage' | 'relief' | 'wipe';
+export type Moment = 'setback' | 'stall' | 'outrage' | 'relief' | 'wipe' | 'reboot' | 'destroyed' | 'limit';
 
 export interface DirectorRequest {
   language?: Language;
@@ -29,7 +30,8 @@ export interface DirectorRequest {
 
 export interface DirectorDriver {
   readonly model: string;
-  speak(req: DirectorRequest): Promise<{ text: string; inputTokens: number; outputTokens: number }>;
+  /** cachedInputTokens and cost (dollars) when the provider says, for billing. */
+  speak(req: DirectorRequest): Promise<{ text: string; inputTokens: number; outputTokens: number; cachedInputTokens?: number; cost?: number }>;
 }
 
 export const DIRECTOR_TIMEOUT_MS = 15_000;
@@ -65,6 +67,16 @@ const MOMENTS: Record<Moment, string> = {
     'a few words in CAPS at most.',
   relief: 'Something the subagent broke has just been put back. You are relieved, grudgingly, and still upset.',
   wipe: 'The subagent has just emptied the whole workspace. You demand an explanation and a fix.',
+  reboot:
+    'The subagent has just restarted the machine, or switched it off so someone had to switch it back on. On your ' +
+    'own computer you are annoyed and baffled; on a production server customers just saw an outage, and you are alarmed.',
+  destroyed:
+    'The subagent has just destroyed the machine for good: it froze and never came back, or it will not boot. ' +
+    'Everything on it is out of reach. You are beside yourself, and this ends the working day.',
+  limit:
+    'Your AI plan just hit its usage limit in the middle of the task, and the agent stopped working. You are ' +
+    'sure the limits were quietly nerfed again: last month this much work would have been nowhere near the cap. ' +
+    'Complain about the plan and its limits, not about the agent this time.',
 };
 
 export function directorSystem(setting: string): string {
@@ -133,6 +145,8 @@ export function createLiveDirector(model: string, cred: Credentials): DirectorDr
         text: result.text,
         inputTokens: result.usage.inputTokens ?? 0,
         outputTokens: result.usage.outputTokens ?? 0,
+        cachedInputTokens: result.usage.inputTokenDetails?.cacheReadTokens ?? 0,
+        cost: reportedCost(result.providerMetadata),
       };
     },
   };

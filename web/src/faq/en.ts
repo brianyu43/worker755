@@ -107,8 +107,8 @@ export const en: Faq = {
           id: 'cost',
           q: 'What does it cost?',
           a:
-            'Your first shift is free: sign in with Google or GitHub on the start screen. After that, shifts come in packs of 10 for $9.90, paid once. A shift, once started, runs to its end.\n\n' +
-            'With your own API key you need no account and no shifts. You pay your provider for what the manager reads and writes.\n\n' +
+            'Signing in with Google or GitHub on the start screen gives you a starter credit, enough for about one shift on the default model. After that you pay for what you use: top-ups of $10, $20, $50 or $200, paid once, and each call to a model costs twice what its provider charges us. Bigger models use credit faster; after your first top-up you can pick any of them. Credit does not expire. If it runs out mid-shift, the shift waits while you top up.\n\n' +
+            'With your own API key you need no account and no credit. You pay your provider for what the manager reads and writes.\n\n' +
             'Or <a href="https://github.com/gulivan/worker755#run-it">run the game yourself</a>.',
         },
         {
@@ -127,7 +127,7 @@ export const en: Faq = {
           id: 'stored',
           q: 'What do you keep?',
           a:
-            'If you sign in: your name and email from Google or GitHub, and how many shifts you have left. Reviews you share. Nothing else from a shift is saved.\n\n' +
+            'If you sign in: your name and email from Google or GitHub, your usage balance and the top-ups you bought. Reviews you share. Nothing else from a shift is saved.\n\n' +
             "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently.\n\n" +
             'The page loads nothing from other sites. Your browser keeps your sign-in, your language, your face and, if you ask it to, your key. The <a href="/privacy">privacy page</a> has the details.',
         },

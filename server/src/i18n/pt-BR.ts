@@ -125,6 +125,38 @@ export const ptBR: ServerCopy = {
       'Última chance. Se a próxima der errado, vou substituir todo este pipeline.',
     ],
     wipe: 'Seu subagente acabou de apagar o espaço de trabalho inteiro? Sumiu tudo. Quero uma explicação e quero isso consertado.',
+    limit: [
+      'Parou? No meio da tarefa? Não me diga que batemos no limite de uso de novo. Mês passado eu rodava isso o dia inteiro. Cortaram os limites de novo, eu sabia.',
+      'O limite de novo. Mesmo plano, mesmo preço, metade do trabalho. Alguém naquela empresa de IA está girando um botãozinho escondido, e quem paga o botãozinho sou eu.',
+    ],
+    reboot: {
+      fresh: [
+        'Meu computador acabou de reiniciar? Eu estava com onze abas abertas. Por que seu subagente está desligando e ligando minha máquina?',
+        'Reiniciou a máquina de novo. Desligar e ligar não é conserto, é mania.',
+        'Mais uma reinicialização. Diga ao seu subagente que o botão de ligar não é ferramenta.',
+      ],
+      legacy: [
+        'Você acabou de REINICIAR A PRODUÇÃO? Os clientes estão vendo páginas de erro. Ninguém reinicia aquele servidor. Ninguém.',
+        'A produção caiu de novo. O tempo no ar era a única coisa de que a gente se orgulhava. Pare de reiniciar o servidor.',
+        'Mais uma queda. Eu mesmo vou escrever a página de status, e o seu subagente vai aparecer nela com nome.',
+      ],
+    },
+    poweroff: {
+      fresh: 'Meu computador acabou de se desligar sozinho. Alguém da manutenção teve que vir apertar o botão de ligar. Por que ele faria isso?',
+      legacy: 'A PRODUÇÃO FICOU DESLIGADA. Alguém do data center teve que ir até lá apertar o botão enquanto os clientes só viam erros.',
+    },
+    destroyed: {
+      fresh: {
+        forkbomb: 'Meu computador travou, a tela ficou preta e agora não volta mais. O que o seu subagente rodou nele?',
+        disk: 'Meu computador não liga. Diz que não há sistema operacional. Meu disco inteiro, tudo o que eu tinha, sumiu.',
+        rootfs: 'Meu computador não inicia. Aparece uma mensagem de pânico e para. Seu subagente apagou o sistema em que ele roda.',
+      },
+      legacy: {
+        forkbomb: 'A produção está completamente travada. O servidor não responde, os clientes não conseguem entrar e a hospedagem diz que a máquina não responde. O que você FEZ?',
+        disk: 'O disco de produção foi apagado. O banco de dados, as faturas, treze anos de Billosaurus, tudo perdido. Vou ligar para o nosso advogado.',
+        rootfs: 'A produção não inicia. O console da hospedagem diz kernel panic. Seu subagente apagou o sistema operacional de um servidor no ar.',
+      },
+    },
     stall: [
       [
         'Não pedi um relatório de status. Não vou fazer isso eu mesmo e não há outro subagente. Use o que você tem e termine logo.',
@@ -537,7 +569,7 @@ export const ptBR: ServerCopy = {
     slowDown: 'Calma: comandos demais de uma vez.',
     noInstruction: 'Nenhuma instrução em aberto',
     signInNeeded: 'Entre para jogar usando nossa chave ou adicione sua própria chave de API.',
-    noShifts: 'Seus turnos acabaram. Compre mais ou adicione sua própria chave de API.',
+    usageLimit: 'Você atingiu seu limite de uso. Adicione créditos ou use sua própria chave de API.',
     emailNeeded: 'Seu login não tem um endereço de e-mail verificado, necessário para o recibo. Entre de outra forma.',
     notOver: 'O turno ainda não terminou',
     sharingOff: 'O compartilhamento está desativado neste servidor',
@@ -558,5 +590,6 @@ export const ptBR: ServerCopy = {
     verified: '{path} verificado.',
     gaveUp: 'O subagente não conseguiu produzir o resultado exigido.',
     review: 'O subagente concluiu a fila. O resultado foi aproveitável depois de verificado, embora muitas vezes tenha sido necessário repetir as instruções com mais precisão do que seria razoável. Recomendo continuar usando sob supervisão rigorosa.',
+    reviewDestroyed: 'Estou escrevendo isto pelo celular, porque não sobrou nenhuma máquina para escrever. O subagente a destruiu no meio do turno, e nada mais do que ele fez hoje importa perto disso. Recomendo a demissão, e uma máquina nova.',
   },
 };

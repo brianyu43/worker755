@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { signInUrl } from '../api/account';
 import type { Me } from '../api/account';
 import { t } from '../i18n';
+import { TopUps, UsageMeter } from './Usage';
 
-/** Why a free shift could not start: the player is not signed in, or their shifts are used up. */
-export type OfferKind = 'signIn' | 'out';
+/** Why a shift on our key could not start: the player is not signed in, or their usage is used up. */
+export type OfferKind = 'signIn' | 'limit';
 
 interface Props {
   kind: OfferKind | null;
@@ -13,13 +14,13 @@ interface Props {
   sourceUrl: string;
   buying: boolean;
   error: string | null;
-  onBuy(): void;
+  onTopUp(amount: number): void;
   onOwnKey(): void;
   onClose(): void;
 }
 
 /** Shown on clocking in when a free shift cannot start, with the ways to play on. */
-export function ShiftOffer({ kind, me, sourceUrl, buying, error, onBuy, onOwnKey, onClose }: Props) {
+export function ShiftOffer({ kind, me, sourceUrl, buying, error, onTopUp, onOwnKey, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -29,7 +30,6 @@ export function ShiftOffer({ kind, me, sourceUrl, buying, error, onBuy, onOwnKey
     else if (!kind && d.open) d.close();
   }, [kind]);
 
-  const pack = me?.pack;
   return (
     <dialog
       ref={ref}
@@ -44,9 +44,11 @@ export function ShiftOffer({ kind, me, sourceUrl, buying, error, onBuy, onOwnKey
       {kind && (
         <div className="end-sheet offer-sheet">
           <h2 className="end-title" id="offer-title">
-            {t(kind === 'signIn' ? 'offer.signIn.title' : 'offer.out.title')}
+            {t(kind === 'signIn' ? 'offer.signIn.title' : 'limit.title')}
           </h2>
-          <p className="end-text">{t(kind === 'signIn' ? 'offer.signIn.body' : 'offer.out.body')}</p>
+          <p className="end-text">{t(kind === 'signIn' ? 'offer.signIn.body' : 'limit.body')}</p>
+          {kind === 'limit' && me?.account && <UsageMeter usage={me.account.usage} className="offer-usage" />}
+          {kind === 'limit' && <TopUps amounts={me?.topUps ?? []} busy={buying} onTopUp={onTopUp} />}
           <div className="offer-actions">
             {kind === 'signIn' &&
               me?.signIn.map((p) => (
@@ -54,15 +56,10 @@ export function ShiftOffer({ kind, me, sourceUrl, buying, error, onBuy, onOwnKey
                   {t(p === 'google' ? 'start.signIn.google' : 'start.signIn.github')}
                 </a>
               ))}
-            {kind === 'out' && pack && (
-              <button type="button" className="btn btn-ink" disabled={buying} onClick={onBuy}>
-                {t('offer.buy', { count: pack.shifts, price: pack.price })}
-              </button>
-            )}
             <button type="button" className="btn" onClick={onOwnKey}>
               {t('offer.ownKey')}
             </button>
-            {kind === 'out' && sourceUrl && (
+            {kind === 'limit' && sourceUrl && (
               <a className="btn" href={`${sourceUrl}#run-it`} target="_blank" rel="noreferrer">
                 {t('offer.selfHost')}
               </a>

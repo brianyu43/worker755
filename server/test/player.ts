@@ -41,6 +41,9 @@ export class Machine {
       changes: collectChanges(this.sh.fs),
       command: { line, output: r.stdout + r.stderr, exitCode: r.exitCode },
     };
+    // As the browser does: a restart or the end of the machine goes with the command.
+    if (r.action?.type === 'power') request.machine = r.action.mode;
+    else if (r.action?.type === 'destroy') request.machine = r.action.cause;
     return { result: { ...r, cwd: this.sh.cwd }, request };
   }
 

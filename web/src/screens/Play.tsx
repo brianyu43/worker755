@@ -363,6 +363,7 @@ export function Play({ game, view, onFinish }: Props) {
             tree={view.tree}
             onReport={report}
             onEditingChange={setEditingPath}
+            destroyed={view.destroyed}
           />
           <form
             className={`report${open ? ' report-open' : ''}`}

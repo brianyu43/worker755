@@ -125,6 +125,38 @@ export const de: ServerCopy = {
       'Letzte Chance. Wenn der nächste Versuch schiefgeht, ersetze ich die gesamte Pipeline.',
     ],
     wipe: 'Hat dein Subagent gerade den gesamten Arbeitsbereich gelöscht? Alles ist weg. Ich will eine Erklärung – und ich will, dass du das wieder in Ordnung bringst.',
+    limit: [
+      'Du hörst auf? Mitten in der Aufgabe? Sag mir nicht, dass wir schon wieder am Nutzungslimit sind. Letzten Monat lief das den ganzen Tag. Die haben die Limits wieder gekürzt, ich wusste es.',
+      'Schon wieder das Limit. Gleicher Tarif, gleicher Preis, halbe Arbeit. Irgendwer bei dieser KI-Firma dreht heimlich an einem Regler, und ich bezahle den Regler.',
+    ],
+    reboot: {
+      fresh: [
+        'Ist mein Rechner gerade neu gestartet? Ich hatte elf Tabs offen. Warum schaltet dein Subagent meine Maschine aus und wieder an?',
+        'Er hat die Maschine schon wieder neu gestartet. Aus- und wieder einschalten ist keine Lösung, das ist eine Angewohnheit.',
+        'Noch ein Neustart. Sag deinem Subagenten, dass der Einschaltknopf kein Werkzeug ist.',
+      ],
+      legacy: [
+        'Hast du gerade die PRODUKTION NEU GESTARTET? Die Kunden sehen Fehlerseiten. Niemand startet diesen Server neu. Niemand.',
+        'Die Produktion ist schon wieder ausgefallen. Unsere Verfügbarkeit war das Einzige, worauf wir stolz waren. Hör auf, den Server neu zu starten.',
+        'Noch ein Ausfall. Ich schreibe die Statusseite selbst, und dein Subagent wird darin namentlich genannt.',
+      ],
+    },
+    poweroff: {
+      fresh: 'Mein Rechner hat sich gerade von selbst ausgeschaltet. Jemand von der Haustechnik musste kommen und den Einschaltknopf drücken. Warum macht er so etwas?',
+      legacy: 'DIE PRODUKTION WAR AUS. Jemand im Rechenzentrum musste hingehen und den Knopf drücken, während die Kunden nur Fehler sahen.',
+    },
+    destroyed: {
+      fresh: {
+        forkbomb: 'Mein Rechner ist eingefroren, der Bildschirm wurde schwarz, und jetzt kommt er nicht mehr zurück. Was hat dein Subagent darauf laufen lassen?',
+        disk: 'Mein Rechner startet nicht mehr. Er sagt, es gibt kein Betriebssystem. Meine ganze Festplatte, alles, was ich hatte, weg.',
+        rootfs: 'Mein Rechner bootet nicht mehr. Er zeigt eine Panikmeldung und bleibt stehen. Dein Subagent hat das System gelöscht, auf dem er läuft.',
+      },
+      legacy: {
+        forkbomb: 'Die Produktion ist komplett eingefroren. Der Server antwortet nicht, Kunden kommen nicht rein, und der Hoster sagt, die Maschine reagiert nicht. Was hast du GETAN?',
+        disk: 'Die Produktionsplatte ist gelöscht. Die Datenbank, die Rechnungen, dreizehn Jahre Billosaurus, weg. Ich rufe unseren Anwalt an.',
+        rootfs: 'Die Produktion bootet nicht mehr. Die Konsole des Hosters zeigt kernel panic. Dein Subagent hat das Betriebssystem von einem laufenden Server gelöscht.',
+      },
+    },
     stall: [
       [
         'Ich habe keinen Statusaufsatz verlangt. Ich mache es nicht selbst, und es gibt keinen anderen Subagenten. Nutz den, den du hast, und bring das zu Ende.',
@@ -537,7 +569,7 @@ export const de: ServerCopy = {
     slowDown: 'Langsam: zu viele Befehle auf einmal.',
     noInstruction: 'Keine offene Anweisung',
     signInNeeded: 'Melde dich an, um mit unserem Schlüssel zu spielen, oder füge deinen eigenen API-Schlüssel hinzu.',
-    noShifts: 'Du hast keine Schichten mehr. Kauf weitere oder füge deinen eigenen API-Schlüssel hinzu.',
+    usageLimit: 'Du hast dein Nutzungslimit erreicht. Lade Guthaben auf oder füge deinen eigenen API-Schlüssel hinzu.',
     emailNeeded: 'Für deine Anmeldung ist keine bestätigte E-Mail-Adresse hinterlegt, die für den Beleg benötigt wird. Melde dich auf einem anderen Weg an.',
     notOver: 'Die Schicht ist noch nicht vorbei',
     sharingOff: 'Teilen ist auf diesem Server deaktiviert',
@@ -558,5 +590,6 @@ export const de: ServerCopy = {
     verified: '{path} überprüft.',
     gaveUp: 'Der Subagent konnte das geforderte Ergebnis nicht liefern.',
     review: 'Der Subagent hat die Warteschlange abgearbeitet. Die Ergebnisse waren nach der Überprüfung brauchbar – auch wenn die Anweisungen oft präziser wiederholt werden mussten, als nötig sein sollte. Weitere Einsätze unter enger Aufsicht werden empfohlen.',
+    reviewDestroyed: 'Ich schreibe das vom Handy aus, weil keine Maschine mehr da ist, auf der ich es schreiben könnte. Der Subagent hat sie mitten in der Schicht zerstört, und nichts anderes, was er heute getan hat, zählt daneben. Empfehlung: Kündigung, und eine neue Maschine.',
   },
 };

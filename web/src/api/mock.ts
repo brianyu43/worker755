@@ -335,6 +335,9 @@ export function createMockClient(): GameClient {
     async finishShift() {
       throw new ApiError(409, 'The shift is already over.');
     },
+    async resumeShift() {
+      throw new ApiError(409, 'The shift is not waiting.');
+    },
     async checkKey() {
       await delay(250);
       return { models: [{ id: 'mock/manager', label: 'Scripted manager' }], default: 'mock/manager' };

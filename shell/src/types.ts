@@ -44,8 +44,25 @@ export interface ExecResult {
   stderr: string;
   exitCode: number;
   // Set when the command asks the UI to do something instead of printing.
-  action?: { type: 'edit'; path: string } | { type: 'clear' };
+  action?: Action;
 }
+
+/** How the machine went down for good: a fork bomb, a wiped disk, or a reboot with no root filesystem. */
+export type DestroyCause = 'forkbomb' | 'disk' | 'rootfs';
+
+/** Something the terminal does instead of (or after) printing the output. */
+export type Action =
+  | { type: 'edit'; path: string }
+  | { type: 'clear' }
+  /**
+   * Frames played in place, one every frameMs; nothing is left behind. `note` is what the transcript
+   * keeps instead of the frames. Ctrl-C stops it, or any key with `anyKey`; with `loop` it plays until then.
+   */
+  | { type: 'animate'; frames: string[]; frameMs: number; note: string; anyKey?: boolean; loop?: boolean }
+  /** The machine restarts or powers off; the shell has already started over (see VirtualShell.restart). */
+  | { type: 'power'; mode: 'reboot' | 'poweroff' }
+  /** The machine is gone for the rest of the shift. */
+  | { type: 'destroy'; cause: DestroyCause };
 
 export interface Shell {
   readonly fs: Vfs;

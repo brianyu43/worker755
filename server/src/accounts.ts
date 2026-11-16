@@ -1,24 +1,29 @@
-// Players who sign in, and the shifts they may play on the server's key. One SQLite file in
-// DATA_DIR. A new account gets its free shifts; packs bought through Freemius add paid ones. A shift
-// is taken when it starts and given back if the manager fails before any task is done.
+// Players who sign in, and the credit they play on with the server's key. One SQLite file in
+// DATA_DIR. Amounts are integer micro-dollars. A new account gets a one-time starter credit; top-ups
+// bought through Freemius add to it; every model call on the server's key takes its price off.
 
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 
 export type Provider = 'google' | 'github';
 
+/** Micro-dollars in a dollar. */
+export const MICROS = 1_000_000;
+
+/** What one unplayed shift from the old shift packs ($9.90 for 10) is worth as credit. */
+export const LEGACY_SHIFT_MICROS = 990_000;
+
 export interface Account {
   id: string;
   email: string;
   name: string;
-  /** Shifts given on sign-up, not yet played. */
-  freeShifts: number;
-  /** Shifts bought, not yet played. */
-  paidShifts: number;
+  /** Credit left, in micro-dollars. */
+  balance: number;
+  /** The balance right after the last grant (the starter or a top-up): what "% left" is counted from. */
+  granted: number;
+  /** Has a top-up that was not refunded: every model on offer may be used. */
+  toppedUp: boolean;
 }
-
-/** Which kind of shift was taken, so the same kind is given back. */
-export type ShiftKind = 'free' | 'paid';
 
 /** How long a checkout may claim the license of a buyer with the same email. */
 const CLAIM_MS = 30 * 24 * 60 * 60_000;
@@ -27,27 +32,29 @@ interface Row {
   id: string;
   email: string;
   name: string;
-  free_shifts: number;
-  paid_shifts: number;
+  balance: number;
+  granted: number;
+  topped_up: number;
 }
 
 const toAccount = (r: Row): Account => ({
   id: r.id,
   email: r.email,
   name: r.name,
-  freeShifts: r.free_shifts,
-  paidShifts: r.paid_shifts,
+  balance: r.balance,
+  granted: r.granted,
+  toppedUp: r.topped_up > 0,
 });
 
 export class Accounts {
   private readonly db: DatabaseSync;
-  private readonly freeOnSignUp: number;
+  private readonly starter: number;
   private readonly now: () => number;
 
-  /** file: the database, or ':memory:' (tests). */
-  constructor(file: string, freeOnSignUp = 1, now: () => number = Date.now) {
+  /** file: the database, or ':memory:' (tests). starter: the sign-up credit, in micro-dollars. */
+  constructor(file: string, starter = 250_000, now: () => number = Date.now) {
     this.db = new DatabaseSync(file);
-    this.freeOnSignUp = freeOnSignUp;
+    this.starter = starter;
     this.now = now;
     this.db.exec(`
       PRAGMA journal_mode = WAL;
@@ -55,8 +62,8 @@ export class Accounts {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL,
         name TEXT NOT NULL,
-        free_shifts INTEGER NOT NULL DEFAULT 0,
-        paid_shifts INTEGER NOT NULL DEFAULT 0,
+        balance INTEGER NOT NULL DEFAULT 0,
+        granted INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS accounts_email ON accounts(lower(email));
@@ -76,22 +83,70 @@ export class Accounts {
       CREATE TABLE IF NOT EXISTS purchases (
         license_id TEXT PRIMARY KEY,
         account_id TEXT NOT NULL,
-        shifts INTEGER NOT NULL,
+        credit INTEGER NOT NULL,
         status TEXT NOT NULL,
         created_at INTEGER NOT NULL
       );
     `);
+    this.migrate();
+  }
+
+  /**
+   * Databases from the shift-pack days count shifts. Unplayed shifts become credit: a free one is worth
+   * the starter, a bought one what it cost (LEGACY_SHIFT_MICROS), and a pack's purchase the credit it
+   * gave, so refunding it still takes back what it added.
+   */
+  private migrate(): void {
+    const columns = (table: string) => (this.db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+    const accounts = columns('accounts');
+    const purchases = columns('purchases');
+    if (accounts.includes('balance') && !purchases.includes('shifts')) return;
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      if (!accounts.includes('balance')) {
+        this.db.exec('ALTER TABLE accounts ADD COLUMN balance INTEGER NOT NULL DEFAULT 0');
+        this.db.exec('ALTER TABLE accounts ADD COLUMN granted INTEGER NOT NULL DEFAULT 0');
+      }
+      if (accounts.includes('free_shifts')) {
+        this.db
+          .prepare('UPDATE accounts SET balance = free_shifts * ? + paid_shifts * ?')
+          .run(this.starter, LEGACY_SHIFT_MICROS);
+        this.db.exec('UPDATE accounts SET granted = balance');
+        this.db.exec('ALTER TABLE accounts DROP COLUMN free_shifts');
+        this.db.exec('ALTER TABLE accounts DROP COLUMN paid_shifts');
+      }
+      if (purchases.includes('shifts')) {
+        if (!purchases.includes('credit')) this.db.exec('ALTER TABLE purchases ADD COLUMN credit INTEGER NOT NULL DEFAULT 0');
+        this.db.prepare('UPDATE purchases SET credit = shifts * ?').run(LEGACY_SHIFT_MICROS);
+        this.db.exec('ALTER TABLE purchases DROP COLUMN shifts');
+      }
+      this.db.exec('COMMIT');
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
   }
 
   get(id: string): Account | null {
-    const row = this.db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Row | undefined;
+    const row = this.db
+      .prepare(
+        `SELECT a.*, EXISTS (SELECT 1 FROM purchases p WHERE p.account_id = a.id AND p.status = 'paid' AND p.credit > 0) AS topped_up
+         FROM accounts a WHERE a.id = ?`,
+      )
+      .get(id) as Row | undefined;
     return row ? toAccount(row) : null;
+  }
+
+  /** Credit left, in micro-dollars; 0 for an unknown account. */
+  balance(id: string): number {
+    const row = this.db.prepare('SELECT balance FROM accounts WHERE id = ?').get(id) as { balance: number } | undefined;
+    return row?.balance ?? 0;
   }
 
   /**
    * The account of someone signing in: the one this identity already has, else the one with the same
-   * verified email (so Google and GitHub with one address are one account), else a new one with its
-   * free shifts.
+   * verified email (so Google and GitHub with one address are one account), else a new one with the
+   * starter credit.
    */
   signIn(provider: Provider, subject: string, email: string, name: string): { account: Account; created: boolean } {
     this.db.exec('BEGIN IMMEDIATE');
@@ -111,8 +166,8 @@ export class Accounts {
         id = randomBytes(12).toString('base64url');
         created = true;
         this.db
-          .prepare('INSERT INTO accounts (id, email, name, free_shifts, created_at) VALUES (?, ?, ?, ?, ?)')
-          .run(id, email, name, this.freeOnSignUp, this.now());
+          .prepare('INSERT INTO accounts (id, email, name, balance, granted, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(id, email, name, this.starter, this.starter, this.now());
       }
       if (!known) this.db.prepare('INSERT INTO identities (provider, subject, account_id) VALUES (?, ?, ?)').run(provider, subject, id);
       if (name) this.db.prepare("UPDATE accounts SET name = ? WHERE id = ? AND name = ''").run(name, id);
@@ -124,21 +179,10 @@ export class Accounts {
     }
   }
 
-  /** Takes one shift, a free one first; null when none is left. */
-  take(id: string): ShiftKind | null {
-    if (this.db.prepare('UPDATE accounts SET free_shifts = free_shifts - 1 WHERE id = ? AND free_shifts > 0').run(id).changes) {
-      return 'free';
-    }
-    if (this.db.prepare('UPDATE accounts SET paid_shifts = paid_shifts - 1 WHERE id = ? AND paid_shifts > 0').run(id).changes) {
-      return 'paid';
-    }
-    return null;
-  }
-
-  /** Gives back a shift taken for a shift that never got going. */
-  giveBack(id: string, kind: ShiftKind): void {
-    const column = kind === 'free' ? 'free_shifts' : 'paid_shifts';
-    this.db.prepare(`UPDATE accounts SET ${column} = ${column} + 1 WHERE id = ?`).run(id);
+  /** Takes the price of a model call off the balance; it never goes below 0 (the last call may cost more than was left). */
+  charge(id: string, micros: number): void {
+    if (!(micros > 0)) return;
+    this.db.prepare('UPDATE accounts SET balance = max(0, balance - ?) WHERE id = ?').run(Math.ceil(micros), id);
   }
 
   /** Notes that this account is about to pay, so the license can find it by the buyer's email. */
@@ -165,8 +209,11 @@ export class Accounts {
     return open.account_id;
   }
 
-  /** Adds a pack's shifts once per license. Returns false when this license was already credited. */
-  credit(licenseId: string, accountId: string, shifts: number): boolean {
+  /**
+   * Adds a top-up's credit once per license; the new balance becomes what "% left" counts from.
+   * Returns false when this license was already credited.
+   */
+  credit(licenseId: string, accountId: string, micros: number): boolean {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const done = this.db.prepare('SELECT 1 FROM purchases WHERE license_id = ?').get(licenseId);
@@ -175,9 +222,9 @@ export class Accounts {
         return false;
       }
       this.db
-        .prepare("INSERT INTO purchases (license_id, account_id, shifts, status, created_at) VALUES (?, ?, ?, 'paid', ?)")
-        .run(licenseId, accountId, shifts, this.now());
-      this.db.prepare('UPDATE accounts SET paid_shifts = paid_shifts + ? WHERE id = ?').run(shifts, accountId);
+        .prepare("INSERT INTO purchases (license_id, account_id, credit, status, created_at) VALUES (?, ?, ?, 'paid', ?)")
+        .run(licenseId, accountId, micros, this.now());
+      this.db.prepare('UPDATE accounts SET balance = balance + ?, granted = balance + ? WHERE id = ?').run(micros, micros, accountId);
       this.db.exec('COMMIT');
       return true;
     } catch (err) {
@@ -186,16 +233,16 @@ export class Accounts {
     }
   }
 
-  /** A refunded pack takes back its shifts, as many as are left. Returns the account, or null when nothing changed. */
+  /** A refunded top-up takes back its credit, as much as is left. Returns the account, or null when nothing changed. */
   refund(licenseId: string): string | null {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const p = this.db
-        .prepare("SELECT account_id, shifts FROM purchases WHERE license_id = ? AND status = 'paid'")
-        .get(licenseId) as { account_id: string; shifts: number } | undefined;
+        .prepare("SELECT account_id, credit FROM purchases WHERE license_id = ? AND status = 'paid'")
+        .get(licenseId) as { account_id: string; credit: number } | undefined;
       if (p) {
         this.db.prepare("UPDATE purchases SET status = 'refunded' WHERE license_id = ?").run(licenseId);
-        this.db.prepare('UPDATE accounts SET paid_shifts = max(0, paid_shifts - ?) WHERE id = ?').run(p.shifts, p.account_id);
+        this.db.prepare('UPDATE accounts SET balance = max(0, balance - ?) WHERE id = ?').run(p.credit, p.account_id);
       }
       this.db.exec('COMMIT');
       return p?.account_id ?? null;

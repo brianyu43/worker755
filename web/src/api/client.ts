@@ -1,4 +1,4 @@
-import type { ExecResponse, GameEvent, KeyModels, ModelList, Persona, Provider, SessionState, SharedReview, Workplace } from './types';
+import type { ExecResponse, ExecResult, GameEvent, KeyModels, MachineEvent, ModelList, Persona, Provider, SessionState, SharedReview, Workplace } from './types';
 import type { Face } from '../game/avatar';
 import { ApiError } from './errors';
 import { createMockClient } from './mock';
@@ -61,6 +61,8 @@ export interface GameClient {
   continueShift(id: string, key: { provider: Provider; apiKey: string; model: string }): Promise<{ ok: true; model: string }>;
   /** Ends the shift now, paused or not; the manager writes the review. */
   finishShift(id: string): Promise<{ ok: true }>;
+  /** Goes on with a shift paused at the usage limit, on our key, once the account has usage again. */
+  resumeShift(id: string): Promise<{ ok: true }>;
   /** Checks a player's key with its provider and lists every model it can use. */
   checkKey(key: { provider: Provider; apiKey: string; language: string }): Promise<KeyModels>;
 }
@@ -143,6 +145,14 @@ interface SyncBody {
   changes: Change[];
   command?: { line: string; output: string; exitCode: number };
   edit?: { path: string; bytes: number };
+  machine?: MachineEvent;
+}
+
+/** What the server hears about a command's action: a restart or the end of the machine. */
+function machineOf(action: ExecResult['action']): MachineEvent | undefined {
+  if (action?.type === 'power') return action.mode;
+  if (action?.type === 'destroy') return action.cause;
+  return undefined;
 }
 
 function createRealClient(): GameClient {
@@ -235,11 +245,16 @@ function createRealClient(): GameClient {
         const r = await sh.execNow(line);
         let synced = true;
         if (line.trim() && !r.killed) {
+          const action = r.result.action;
+          // An animation's frames stay on screen; the transcript gets a line about it.
+          const output = action?.type === 'animate' ? `${r.result.stdout}${r.result.stderr}${action.note}\n` : r.result.stdout + r.result.stderr;
+          const machine = machineOf(action);
           synced = await sync(id, sh, {
             epoch: r.epoch,
             cwd: r.cwd,
             changes: r.changes,
-            command: { line, output: r.result.stdout + r.result.stderr, exitCode: r.result.exitCode },
+            command: { line, output, exitCode: r.result.exitCode },
+            ...(machine && { machine }),
           });
         }
         return { ...r.result, cwd: r.cwd, killed: r.killed, unsynced: !synced };
@@ -269,6 +284,7 @@ function createRealClient(): GameClient {
     share: (id, face) => request<{ id: string; path: string }>('POST', `${s(id)}/share`, { face }, owner(id)),
     continueShift: (id, key) => request<{ ok: true; model: string }>('POST', `${s(id)}/continue`, key, owner(id)),
     finishShift: (id) => request<{ ok: true }>('POST', `${s(id)}/finish`, undefined, owner(id)),
+    resumeShift: (id) => request<{ ok: true }>('POST', `${s(id)}/resume`, undefined, owner(id)),
     checkKey: (key) => request<KeyModels>('POST', '/api/models/check', key),
     getReview: (id) => request<SharedReview>('GET', `/api/reviews/${encodeURIComponent(id)}`),
     subscribe(id, after, handlers) {

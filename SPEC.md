@@ -83,7 +83,12 @@ export interface ExecResult {
   stderr: string;
   exitCode: number;
   // Set when the command asks the UI to do something instead of printing.
-  action?: { type: 'edit'; path: string } | { type: 'clear' };
+  action?:
+    | { type: 'edit'; path: string }
+    | { type: 'clear' }
+    | { type: 'animate'; frames: string[]; frameMs: number; note: string; anyKey?: boolean; loop?: boolean } // sl, cmatrix
+    | { type: 'power'; mode: 'reboot' | 'poweroff' }          // the shell has already started over in ~
+    | { type: 'destroy'; cause: 'forkbomb' | 'disk' | 'rootfs' };
 }
 
 export interface Shell {
@@ -237,6 +242,19 @@ compares that list with the previous one:
 
 `Stats.damaged` counts each lost thing once. All of this copy lives in `server/src/copy.ts`.
 
+### The machine
+
+Commands can restart the machine (`reboot`, `poweroff`, `halt`, `shutdown`, `init 0|6`, `systemctl
+reboot|poweroff`, also through `sudo`, which allows only these) or destroy it: a fork bomb (a function
+that recurses through pipes or `&`), any write to a block device (`/dev/sda*`, `/dev/vda*`: `dd`,
+`mkfs.*`, `shred`, redirects), or a restart after `rm -rf --no-preserve-root /` (no root file system:
+kernel panic). The browser sends the event with the command's sync (`machine`). A restart goes in the
+transcript (`[the machine rebooted; ...]`), moves the open instruction's deadline by the outage
+(`OUTAGE_MS`, at most `MAX_OUTAGE_MS` per instruction) and gets a `reboot` moment from the user. A
+destroyed machine ends the shift like an early end, with a `destroyed` moment; the review prompt tells
+the manager how and that it writes from another device. Shared reviews carry `destroyed`, and a shift
+that ends this way is never given back.
+
 ### Missions
 
 Each workplace has a pool of scripted missions from easy to hard (`server/src/missions.ts` for the
@@ -286,11 +304,21 @@ Two ways to pay for model calls (`server/src/providers.ts`):
   default 5M), and free shifts per address per day (`FREE_SHIFTS_PER_DAY`, default 3). A shift
   that runs out mid-game pauses until the player adds a key or ends it for the review.
 - **Accounts**: with `AUTH_SECRET`, shifts on the server's key need a player signed in with Google
-  or GitHub (`server/src/auth.ts`, `server/src/accounts.ts`). Each account gets
-  `FREE_SHIFTS_ON_SIGNUP` (default 1); packs of `SHIFTS_PER_PACK` are bought through Freemius
-  (`server/src/freemius.ts`). The account's shifts are then the only limit: a shift has no token
-  cap and runs to its end, and the daily budget only counts. Clocking in signed out, or with no
-  shifts left, opens a dialog: sign in, or buy a pack, use your own key, or self-host.
+  or GitHub (`server/src/auth.ts`, `server/src/accounts.ts`). Each account has a credit balance in
+  US dollars (stored as integer micro-dollars): `FREE_CREDIT_USD` (default 0.25, about one shift on
+  DeepSeek V4.1 Flash) once on sign-up, then one-off top-ups of $10, $20, $50 and $200 bought
+  through Freemius (`server/src/freemius.ts`; one plan per amount, `FREEMIUS_TOPUPS`). Every
+  manager and director call on the server's key is charged at `USAGE_MULTIPLIER` (default 2) times
+  its price (`server/src/billing.ts`): the cost the gateway reports for the call, else the
+  catalogue's per-token prices (input, cached input, output), else a deliberately high fallback.
+  With only the starter, the free model is offered; after a top-up, every offered model. A shift
+  needs `MIN_START_USD` (default 0.05) to start; below it, clocking in answers 402 and the page shows
+  the usage-limit dialog (top up, own key, self-host). When the credit runs out mid-shift, the user
+  complains that the limits were nerfed again (director moment `limit`), then the shift pauses with
+  reason `usage`; a top-up lets the owner continue on our key (`POST /api/sessions/:id/resume`),
+  or they continue with their own key, or end it. The review is always written. A license is
+  credited once; a refund takes back its credit, as much as is left. The page shows "N% of your
+  usage left", counted from the balance right after the last grant.
 - **Own key**: the player picks OpenRouter or the Vercel AI Gateway and pastes a key. It is
   held only in that session's driver, never logged, stored or returned; the browser keeps it in
   memory, or in localStorage if the player ticks "Remember on this device". Model ids follow the
@@ -310,15 +338,16 @@ All JSON. Errors: `{ "error": string }` with a 4xx/5xx status.
 | Method | Path | Body | Returns |
 | --- | --- | --- | --- |
 | GET | `/api/models?provider=` | | `{ models: { id, label }[], default, mock, free, providers: { id, label, keyUrl }[], subagents: string[], scenarios: { id, label }[], donateUrl, sourceUrl, sharing }`. Without `provider`: the free-shift models (empty when free shifts are closed). |
-| POST | `/api/sessions` | `{ model?, allowSkip?, subagent?, scenario?: 'fresh' \| 'legacy', director?, apiKey?, provider?: 'openrouter' \| 'gateway' }` | `SessionState` (429 past a limit) |
+| POST | `/api/sessions` | `{ model?, allowSkip?, subagent?, scenario?: 'fresh' \| 'legacy', director?, apiKey?, provider?: 'openrouter' \| 'gateway' }` | `SessionState` (429 past a limit; on our key with sign-in, 401 signed out, 402 below the credit needed to start) |
 | POST | `/api/sessions/:id/share` | | `{ id, path }`: saves the finished shift's review (409 while running) |
 | GET | `/api/reviews/:id` | | `SharedReview` |
 | GET | `/r/:id` | | The app, with the review in its link-preview tags |
 | GET | `/api/sessions/:id` | | `SessionState` |
 | GET | `/api/sessions/:id/events` | | SSE stream of `GameEvent` |
 | GET | `/api/sessions/:id/fs` | | `{ entries: Entry[], cwd, epoch }`: every file, for the browser's shell to start from (owner only) |
-| POST | `/api/sessions/:id/sync` | `{ epoch, cwd, changes: Change[], command?: { line, output, exitCode }, edit?: { path, bytes } }` | `{ resync: boolean }`: what a command or an editor save changed in the browser (owner only; 400 on a bad shape, 413 over 8 MB, 429 past the rate limit) |
+| POST | `/api/sessions/:id/sync` | `{ epoch, cwd, changes: Change[], command?: { line, output, exitCode }, edit?: { path, bytes }, machine?: 'reboot' \| 'poweroff' \| 'forkbomb' \| 'disk' \| 'rootfs' }` | `{ resync: boolean }`: what a command or an editor save changed in the browser (owner only; 400 on a bad shape, 413 over 8 MB, 429 past the rate limit) |
 | GET | `/api/sessions/:id/web?search=` / `?url=` | | `{ results }` / `{ page }` from the simulated web, for `curl` and `websearch` (owner only) |
+| POST | `/api/sessions/:id/resume` | | `{ ok: true }`: goes on after a usage pause on our key (owner and paying account only; 409 unless paused for `usage`, 402 without credit) |
 | POST | `/api/sessions/:id/report` | `{ message?: string }` | `{ ok: true }` (409 if no open instruction) |
 
 The shell runs in the player's browser (docs/client-shell.md); the server runs no player command.
@@ -385,6 +414,8 @@ type GameEvent = { seq: number; ts: number } & (
   | { type: 'seed'; epoch: number; changes: Change[] }          // files a mission put in place
   | { type: 'stats'; stats: Stats }
   | { type: 'game_over'; review: string; stats: Stats }
+  | { type: 'machine'; event: 'reboot' | 'poweroff' | 'forkbomb' | 'disk' | 'rootfs';
+      instructionId?: string; deadline?: number }               // see "The machine"
   | { type: 'error'; message: string }
 );
 ```

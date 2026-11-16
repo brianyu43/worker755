@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Language } from './language.ts';
-import type { Stats } from './types.ts';
+import type { DestroyCause, Stats } from './types.ts';
 
 /** The worker's avatar as the player picked it: a shape id from the web app's set and a colour. */
 export interface Face {
@@ -39,6 +39,8 @@ export interface SharedReview {
   customStance?: boolean;
   /** Who the manager secretly was, when not the default. */
   persona?: string;
+  /** The subagent destroyed the machine, and how; the shift ended there. */
+  destroyed?: DestroyCause;
 }
 
 const ID_RE = /^[A-Za-z0-9]{10}$/;

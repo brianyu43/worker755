@@ -38,6 +38,8 @@ export interface CommandContext {
   run(argv: string[], stdin?: string | null): number;
   /** Runs another command with its stdout collected instead of printed (awk's `cmd | getline`). */
   capture(argv: string[], stdin?: string | null): { status: number; stdout: string };
+  /** reboot / poweroff: the machine goes down once the command line ends, and the shell starts over. */
+  power(mode: 'reboot' | 'poweroff'): void;
   /** Moves the clock forward instead of waiting. */
   sleep(ms: number): void;
   /** Counts one unit of work against the command line's budget; throws when it runs out. */

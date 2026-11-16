@@ -18,6 +18,8 @@ import {
   apropos, arch, df, du, env, free, groups, hostname, id, kill, lsbRelease, man, nproc, pkill, ps, su, sudo, top, tty,
   uname, uptime, users, w, whatis, who,
 } from './sysinfo.ts';
+import { apt, banner, cmatrix, cowsay, figlet, fortune, lolcat, make, neofetch, sl } from './toys.ts';
+import { dd, init, mkfs, power, shred, shutdown, systemctl } from './machine.ts';
 
 export const COMMANDS: Record<string, Command> = {
   websearch, curl,
@@ -30,4 +32,9 @@ export const COMMANDS: Record<string, Command> = {
   mktemp, file, xargs, printenv, sleep, timeout, nohup, ln, less, more: less, tput, bc, sed, awk, gawk: awk, mawk: awk,
   tar, gzip, gunzip, zcat, env, uname, hostname, id, groups, tty, who, users, w, uptime, nproc, arch,
   lsb_release: lsbRelease, sudo, su, ps, top, kill, pkill, pgrep: pkill, killall: pkill, free, df, du, man, whatis, apropos,
+  cowsay, cowthink: cowsay, fortune, figlet, banner, neofetch, fastfetch: neofetch, sl, cmatrix, lolcat, make,
+  apt, 'apt-get': apt,
+  reboot: power, poweroff: power, halt: power, shutdown, init, telinit: init, systemctl,
+  dd, mkfs, 'mkfs.ext4': mkfs, 'mkfs.ext3': mkfs, 'mkfs.ext2': mkfs, 'mkfs.xfs': mkfs, 'mkfs.btrfs': mkfs,
+  'mkfs.vfat': mkfs, 'mkfs.fat': mkfs, mke2fs: mkfs, shred,
 };

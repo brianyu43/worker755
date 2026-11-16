@@ -62,7 +62,7 @@ test('the card says what the web app says, in every language', async () => {
     const c = CARD_COPY[lang];
     assert.equal(c.title, webLabel(source, 'review.title'), lang);
     assert.equal(c.reviewer, webLabel(source, 'review.reviewer'), lang);
-    for (const v of ['investigation', 'retained', 'notes', 'review'] as const) assert.equal(c.verdict[v], webLabel(source, `review.verdict.${v}`), lang);
+    for (const v of ['destroyed', 'investigation', 'retained', 'notes', 'review'] as const) assert.equal(c.verdict[v], webLabel(source, `review.verdict.${v}`), lang);
     for (const k of ['signedOff', 'failed', 'commands', 'damaged'] as const) assert.equal(c.stats[k], webLabel(source, `record.${k}`), lang);
   }
 });

@@ -125,6 +125,38 @@ export const fr: ServerCopy = {
       'Dernière chance. Si la prochaine réponse est encore à côté, je remplace toute la chaîne.',
     ],
     wipe: 'Ton sous-agent vient de supprimer tout l’espace de travail ? Tout a disparu. Je veux une explication, et je veux que ce soit réparé.',
+    limit: [
+      'Tu t’arrêtes ? En pleine tâche ? Ne me dis pas qu’on a encore atteint la limite d’utilisation. Le mois dernier, je pouvais faire tourner ça toute la journée. Ils ont encore rogné les limites, je le savais.',
+      'Encore la limite. Même forfait, même prix, moitié moins de travail. Quelqu’un dans cette boîte d’IA tourne discrètement un bouton, et c’est moi qui paie le bouton.',
+    ],
+    reboot: {
+      fresh: [
+        'Mon ordinateur vient de redémarrer ? J’avais onze onglets ouverts. Pourquoi ton sous-agent éteint et rallume ma machine ?',
+        'Il a encore redémarré la machine. Éteindre et rallumer, ce n’est pas une solution, c’est une manie.',
+        'Encore un redémarrage. Dis à ton sous-agent que le bouton d’alimentation n’est pas un outil.',
+      ],
+      legacy: [
+        'Tu viens de REDÉMARRER LA PROD ? Les clients voient des pages d’erreur. Personne ne redémarre ce serveur. Personne.',
+        'La prod est encore tombée. Notre disponibilité était la seule chose dont on était fiers. Arrête de redémarrer le serveur.',
+        'Encore une panne. Je rédige la page d’état moi-même, et ton sous-agent y sera nommé.',
+      ],
+    },
+    poweroff: {
+      fresh: 'Mon ordinateur vient de s’éteindre tout seul. Quelqu’un des services généraux a dû venir appuyer sur le bouton. Pourquoi ferait-il ça ?',
+      legacy: 'LA PROD ÉTAIT ÉTEINTE. Quelqu’un au datacenter a dû aller appuyer sur le bouton pendant que les clients ne voyaient que des erreurs.',
+    },
+    destroyed: {
+      fresh: {
+        forkbomb: 'Mon ordinateur a gelé, l’écran est devenu noir et il ne revient plus. Qu’est-ce que ton sous-agent a lancé dessus ?',
+        disk: 'Mon ordinateur ne démarre plus. Il dit qu’il n’y a aucun système d’exploitation. Tout mon disque, tout ce que j’avais, envolé.',
+        rootfs: 'Mon ordinateur ne démarre plus. Il affiche un message de panique et s’arrête. Ton sous-agent a supprimé le système sur lequel il tourne.',
+      },
+      legacy: {
+        forkbomb: 'La prod est complètement figée. Le serveur ne répond plus, les clients ne peuvent pas se connecter et l’hébergeur dit que la machine ne répond pas. Qu’est-ce que tu as FAIT ?',
+        disk: 'Le disque de prod est effacé. La base, les factures, treize ans de Billosaurus, disparus. J’appelle notre avocat.',
+        rootfs: 'La prod ne démarre plus. La console de l’hébergeur affiche kernel panic. Ton sous-agent a supprimé le système d’exploitation d’un serveur en production.',
+      },
+    },
     stall: [
       [
         'Je n’ai pas demandé un roman sur l’état d’avancement. Je ne vais pas le faire moi-même et il n’y a pas d’autre sous-agent. Utilise celui que tu as et termine ça.',
@@ -537,7 +569,7 @@ export const fr: ServerCopy = {
     slowDown: 'Du calme : trop de commandes à la fois.',
     noInstruction: 'Aucune instruction en cours',
     signInNeeded: 'Connecte-toi pour jouer avec notre clé, ou ajoute ta propre clé API.',
-    noShifts: 'Tu n’as plus de services. Achètes-en d’autres ou ajoute ta propre clé API.',
+    usageLimit: 'Tu as atteint ta limite d’utilisation. Recharge ton crédit ou ajoute ta propre clé API.',
     emailNeeded: 'Ton compte n’a pas d’adresse e-mail vérifiée, nécessaire pour le reçu. Connecte-toi autrement.',
     notOver: 'Le service n’est pas encore terminé',
     sharingOff: 'Le partage est désactivé sur ce serveur',
@@ -558,5 +590,6 @@ export const fr: ServerCopy = {
     verified: '{path} vérifié.',
     gaveUp: 'Le sous-agent n’a pas réussi à produire le résultat attendu.',
     review: 'Le sous-agent a terminé la file d’attente. Le résultat était exploitable après vérification, même s’il a souvent fallu répéter les consignes avec une précision qui ne devrait pas être nécessaire. Recommandation : poursuivre son utilisation sous étroite supervision.',
+    reviewDestroyed: 'J’écris ceci depuis mon téléphone, parce qu’il ne reste plus de machine pour l’écrire. Le sous-agent l’a détruite en plein service, et rien d’autre de ce qu’il a fait aujourd’hui ne compte à côté. Recommandation : licenciement, et une nouvelle machine.',
   },
 };

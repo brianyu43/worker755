@@ -1,4 +1,4 @@
-// The signed-in player, their shifts, and buying more. Separate from the game client: the offline
+// The signed-in player, their usage, and topping it up. Separate from the game client: the offline
 // mock has no accounts, and a server without sign-in answers with nothing to sign in with.
 import { ApiError } from './errors';
 import { client } from './client';
@@ -6,16 +6,25 @@ import { t } from '../i18n';
 
 export type SignInProvider = 'google' | 'github';
 
+/** An account's usage in dollars: what is left, of what it had after the last top-up (or the starter). */
+export interface Usage {
+  left: number;
+  of: number;
+  /** Has topped up: every model on offer may be picked. */
+  topUp: boolean;
+}
+
 export interface Me {
   /** Ways to sign in; empty when shifts on the server's key need no account. */
   signIn: SignInProvider[];
-  /** shifts: all left; bought: how many of them were bought. */
-  account: { name: string; email: string; shifts: number; bought: number } | null;
-  /** A pack of shifts on sale, when payments are on. */
-  pack: { shifts: number; price: string } | null;
+  account: { name: string; email: string; usage: Usage } | null;
+  /** Top-up amounts on sale, in dollars; empty when payments are off. */
+  topUps: number[];
+  /** Usage needed to clock in, in dollars. */
+  floor: number;
 }
 
-const NONE: Me = { signIn: [], account: null, pack: null };
+export const NO_ACCOUNT: Me = { signIn: [], account: null, topUps: [], floor: 0 };
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
   let res: Response;
@@ -35,8 +44,8 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 }
 
 export async function getMe(): Promise<Me> {
-  if (client.kind === 'mock') return NONE;
-  return { ...NONE, ...(await call<Partial<Me>>('GET', '/api/me')) };
+  if (client.kind === 'mock') return NO_ACCOUNT;
+  return { ...NO_ACCOUNT, ...(await call<Partial<Me>>('GET', '/api/me')) };
 }
 
 export const signInUrl = (provider: SignInProvider) => `/api/auth/${provider}?next=${encodeURIComponent(location.pathname)}`;
@@ -45,7 +54,13 @@ export async function signOut(): Promise<void> {
   await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
 }
 
-/** Freemius's checkout page for one pack. */
-export async function checkoutUrl(language: string): Promise<string> {
-  return (await call<{ url: string }>('POST', '/api/billing/checkout', { language })).url;
+/** Freemius's checkout page for a top-up of this many dollars. */
+export async function checkoutUrl(language: string, amount: number): Promise<string> {
+  return (await call<{ url: string }>('POST', '/api/billing/checkout', { language, amount })).url;
 }
+
+/** Whether the account has too little usage left to clock in. */
+export const atLimit = (me: Me | null) => !!me?.account && me.account.usage.left < Math.max(me.floor, 0.000001);
+
+/** $6.20 */
+export const dollars = (n: number) => `$${n.toFixed(2)}`;

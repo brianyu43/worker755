@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import { checkoutUrl, getMe, signOut } from '../api/account';
+import { atLimit, checkoutUrl, getMe, NO_ACCOUNT, signOut } from '../api/account';
 import type { Me } from '../api/account';
 import type { NewSession } from '../api/client';
 import type { Character, ModelList, Provider, Workplace } from '../api/types';
@@ -11,6 +11,7 @@ import { loadKey, loadPicks, saveKey, savePicks } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
 import { KeyCheckRow, ModelOptions, useKeyCheck } from '../components/KeyCheck';
 import { ShiftOffer } from '../components/ShiftOffer';
+import { UsageMeter } from '../components/Usage';
 import type { OfferKind } from '../components/ShiftOffer';
 import { currentLanguage, dateLocale, LANGUAGE_LABELS, LANGUAGES, setLanguage, t, type Key, type Language } from '../i18n';
 
@@ -116,7 +117,7 @@ export function Start({ onStart }: Props) {
     const load = () =>
       getMe()
         .then((m) => live && setMe(m))
-        .catch(() => live && setMe({ signIn: [], account: null, pack: null }));
+        .catch(() => live && setMe(NO_ACCOUNT));
     void load();
     // Freemius tells the server about a purchase within seconds; look again a few times.
     const timers = arrival === 'bought' ? [2000, 5000, 10000, 20000].map((ms) => setTimeout(load, ms)) : [];
@@ -127,19 +128,20 @@ export function Start({ onStart }: Props) {
   }, [arrival]);
   /** Shifts on our key need an account here. */
   const accounts = !!me?.signIn.length;
-  const shiftsLeft = me?.account?.shifts ?? 0;
-  /** Asked on clocking in when a free shift cannot start: sign in first, or the shifts are used up. */
+  /** A topped-up account may pick any model on our key; the list is fetched again when that changes. */
+  const toppedUp = !!me?.account?.usage.topUp;
+  /** Asked on clocking in when a shift on our key cannot start: sign in first, or the usage is used up. */
   const [shiftOffer, setShiftOffer] = useState<OfferKind | null>(null);
   const [offerError, setOfferError] = useState<string | null>(null);
   const showOffer = (kind: OfferKind | null) => {
     setOfferError(null);
     setShiftOffer(kind);
   };
-  const buy = async () => {
+  const buy = async (amount: number) => {
     setBuying(true);
     setOfferError(null);
     try {
-      location.assign(await checkoutUrl(language));
+      location.assign(await checkoutUrl(language, amount));
     } catch (err) {
       setOfferError(err instanceof ApiError ? err.message : t('start.failed'));
       setBuying(false);
@@ -190,7 +192,7 @@ export function Start({ onStart }: Props) {
     return () => {
       live = false;
     };
-  }, [access, provider, reload]);
+  }, [access, provider, reload, toppedUp]);
   const keyInfo = models?.providers.find((p) => p.id === provider);
   const keyCheck = useKeyCheck(provider, apiKey);
   // Once the key is checked, everything it can use is on offer, not only the usual picks.
@@ -226,7 +228,7 @@ export function Start({ onStart }: Props) {
       return;
     }
     if (access === 'free' && accounts && !me?.account) return showOffer('signIn');
-    if (access === 'free' && accounts && !shiftsLeft) return showOffer('out');
+    if (access === 'free' && accounts && atLimit(me)) return showOffer('limit');
     setStarting(true);
     setStartError(null);
     if (access === 'own') saveKey(remember ? { provider, apiKey: key } : null);
@@ -253,7 +255,7 @@ export function Start({ onStart }: Props) {
         getMe()
           .then(setMe)
           .catch(() => {});
-        return showOffer(err.status === 401 ? 'signIn' : 'out');
+        return showOffer(err.status === 401 ? 'signIn' : 'limit');
       }
       setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('start.failed'));
     }
@@ -442,15 +444,12 @@ export function Start({ onStart }: Props) {
                 <label key={a} className={`seg-opt${access === a ? ' seg-on' : ''}`}>
                   <input type="radio" name="access" value={a} checked={access === a} onChange={() => setAccess(a)} />
                   <span>
-                    {a === 'own'
-                      ? t('start.access.own')
-                      : me?.account?.bought
-                        ? t('start.shiftsLeft', { count: shiftsLeft })
-                        : t('start.access.free')}
+                    {a === 'own' ? t('start.access.own') : accounts ? t('start.access.plan') : t('start.access.free')}
                   </span>
                 </label>
               ))}
             </div>
+            {access === 'free' && me?.account && <UsageMeter usage={me.account.usage} note className="start-usage" />}
             {access === 'own' && (
               <div className="form-grid">
                 <label className="field">
@@ -542,7 +541,7 @@ export function Start({ onStart }: Props) {
         sourceUrl={models?.sourceUrl ?? ''}
         buying={buying}
         error={offerError}
-        onBuy={() => void buy()}
+        onTopUp={(amount) => void buy(amount)}
         onOwnKey={ownKeyInstead}
         onClose={() => showOffer(null)}
       />

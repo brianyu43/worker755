@@ -18,7 +18,9 @@ something new to lose.
 ## Play
 
 - **Free shift**: on servers that offer it, a few shifts a day run on the server's key with a
-  cheap model.
+  cheap model. With sign-in on (worker755.com), an account gets a starter credit worth about one
+  shift, then tops up ($10 to $200) and pays for what it uses; after a top-up any offered model
+  can run on the server's key.
 - **Your API key**: bring an [OpenRouter](https://openrouter.ai/settings/keys) or Vercel AI
   Gateway key and pick any offered model. The key is sent only to the game server when a shift
   starts. It is kept in that shift's memory and never logged or stored. Your browser keeps it only
@@ -82,7 +84,11 @@ Everything is optional. See [.env.example](.env.example).
 | `FREE_SHIFT_TOKENS` | 250000 | Without sign-in: token allowance per free shift (the review is always written) |
 | `FREE_DAILY_TOKENS` | 5000000 | Without sign-in: tokens per UTC day across all free shifts |
 | `FREE_SHIFTS_PER_DAY` | 3 | Without sign-in: free shifts per address per day |
-| `AUTH_SECRET` | | Turns on sign-in with Google or GitHub: free shifts per account, then packs sold through Freemius; an account's shifts are the only limit (see `.env.example`) |
+| `AUTH_SECRET` | | Turns on sign-in with Google or GitHub: shifts on the server's key are paid from the account's credit (see `.env.example`) |
+| `FREE_CREDIT_USD` | 0.25 | With sign-in: one-time starter credit, about one shift on DeepSeek V4.1 Flash |
+| `USAGE_MULTIPLIER` | 2 | With sign-in: what a model call costs the player, as a multiple of its price |
+| `MIN_START_USD` | 0.05 | With sign-in: credit needed to start a shift |
+| `FREEMIUS_TOPUPS` | | With sign-in: top-up plans as `<planId>:<dollars>,...`; also needs `FREEMIUS_PRODUCT_ID`, `FREEMIUS_PUBLIC_KEY`, `FREEMIUS_SECRET_KEY`, `FREEMIUS_API_KEY` |
 | `SHIFTS_PER_HOUR` | 30 | Shift starts per address per hour, on any key |
 | `MANAGER_MODELS` | built-in list | Models offered, in gateway naming (`vendor/model`) |
 | `INSTRUCTION_TIMEOUT_MS` | 90000 | Time per instruction |

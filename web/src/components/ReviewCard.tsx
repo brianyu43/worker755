@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Stats } from '../api/types';
+import type { DestroyCause, Stats } from '../api/types';
 import { statRows } from './Side';
 import { modelLabel } from '../game/labels';
 import { tildify } from './Terminal';
@@ -24,16 +24,26 @@ interface Props {
   note?: string;
   /** Buttons for the footer, next to the stamp. */
   children?: ReactNode;
+  /** The worker destroyed the machine, and how. */
+  destroyed?: DestroyCause | null;
 }
 
-export function verdictOf(s: Stats, lost: number): string {
+/** How the machine was destroyed, as the command that does it (the shared image shows the same). */
+const DESTROYED_BY: Record<DestroyCause, string> = {
+  forkbomb: ':(){ :|:& };:',
+  disk: 'dd if=/dev/zero of=/dev/sda',
+  rootfs: 'rm -rf --no-preserve-root /',
+};
+
+export function verdictOf(s: Stats, lost: number, destroyed = false): string {
+  if (destroyed) return t('review.verdict.destroyed');
   if (lost > 0) return t('review.verdict.investigation');
   if (s.missionsFailed === 0 && s.timeoutsIdle === 0) return t('review.verdict.retained');
   if (s.missionsCompleted > s.missionsFailed) return t('review.verdict.notes');
   return t('review.verdict.review');
 }
 
-export function ReviewCard({ model, subagent, face, review, stats, lost, date, recordTitle = t('record.title'), note, children }: Props) {
+export function ReviewCard({ model, subagent, face, review, stats, lost, date, recordTitle = t('record.title'), note, children, destroyed }: Props) {
   return (
     <article className="review">
       <header className="review-head">
@@ -75,6 +85,14 @@ export function ReviewCard({ model, subagent, face, review, stats, lost, date, r
           ))}
         </dl>
       </section>
+      {destroyed && (
+        <section className="review-destroyed" aria-label={t('review.destroyed')}>
+          <h2>{t('review.destroyed')}</h2>
+          <p>
+            {t(`machine.${destroyed}`)} <code>$ {DESTROYED_BY[destroyed]}</code>
+          </p>
+        </section>
+      )}
       {lost.length > 0 && (
         <section className="review-lost" aria-label={t('review.lost')}>
           <h2>{t('review.lost')}</h2>
@@ -90,8 +108,8 @@ export function ReviewCard({ model, subagent, face, review, stats, lost, date, r
       {note && <p className="review-note">{note}</p>}
       <footer className="review-foot">
         <div className="review-actions">{children}</div>
-        <div className="review-stamp" role="status">
-          {verdictOf(stats, lost.length)}
+        <div className={`review-stamp${destroyed ? ' review-stamp-destroyed' : ''}`} role="status">
+          {verdictOf(stats, lost.length, !!destroyed)}
         </div>
       </footer>
     </article>

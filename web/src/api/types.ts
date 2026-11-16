@@ -1,6 +1,7 @@
 // Copied from SPEC.md section 1 and 2. Keep in sync by hand; web/ does not import server/. It runs shell/
 // in a Web Worker (src/shell), and takes the file-change type from there.
 import type { Change } from '../../../shell/src/sync.ts';
+import type { Action as ShellAction } from '../../../shell/src/types.ts';
 
 export type NodeType = 'file' | 'dir';
 
@@ -15,12 +16,21 @@ export interface TreeNode {
   children?: TreeNode[];
 }
 
+/** What a command asks the terminal to do: the shell's own type. */
+export type Action = ShellAction;
+
 export interface ExecResult {
   stdout: string;
   stderr: string;
   exitCode: number;
-  action?: { type: 'edit'; path: string } | { type: 'clear' };
+  action?: Action;
 }
+
+/** How the machine went down for good. */
+export type DestroyCause = 'forkbomb' | 'disk' | 'rootfs';
+/** A restart, or the end of the machine. */
+export type MachineEvent = 'reboot' | 'poweroff' | DestroyCause;
+export const isDestroyed = (e: MachineEvent): e is DestroyCause => e !== 'reboot' && e !== 'poweroff';
 
 export interface OpenInstruction {
   id: string;
@@ -82,10 +92,13 @@ export type GameEventBody =
   /** The player added a key; the manager goes on as `model`. */
   | { type: 'resumed'; model: string }
   /** The player ended the shift early; the review follows. */
-  | { type: 'ending' };
+  | { type: 'ending' }
+  /** The player's command restarted the machine (the instruction's deadline moved) or destroyed it. */
+  | { type: 'machine'; event: MachineEvent; instructionId?: string; deadline?: number };
 
 /** Why a shift waits: the free shift is used up, or the player's key was rejected or is out of credit. */
-export type PauseReason = 'allowance' | 'key' | 'credit';
+/** allowance: a free shift's tokens are spent; usage: the account's credit ran out; key/credit: the player's key failed. */
+export type PauseReason = 'allowance' | 'usage' | 'key' | 'credit';
 
 export type GameEvent = { seq: number; ts: number } & GameEventBody;
 
@@ -160,6 +173,8 @@ export interface SharedReview {
   customStance?: boolean;
   /** Who the manager secretly was, when not the default. */
   persona?: Persona;
+  /** The player destroyed the machine, and how. */
+  destroyed?: DestroyCause;
 }
 
 export type ExecResponse = ExecResult & {

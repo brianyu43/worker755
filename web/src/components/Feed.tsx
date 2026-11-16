@@ -3,6 +3,7 @@ import type { Activity } from './Working';
 import { modelLabel } from '../game/labels';
 import { useLayoutEffect, useState } from 'react';
 import type { GameEvent, MissionKind, OpenInstruction } from '../api/types';
+import { isDestroyed } from '../api/types';
 import type { ManagerState } from '../game/useGame';
 import { tildify } from './Terminal';
 import { useStickToBottom } from './stick';
@@ -192,6 +193,15 @@ function Item({ ev, instructionNo, latestThought }: { ev: GameEvent; instruction
       return (
         <article className="fi fi-error">
           <p>{ev.message}</p>
+        </article>
+      );
+    case 'machine':
+      return (
+        <article className={`fi fi-machine${isDestroyed(ev.event) ? ' fi-machine-dead' : ''}`}>
+          <div className="fi-kicker">
+            {isDestroyed(ev.event) ? t('feed.machine.destroyed') : ev.event === 'reboot' ? t('feed.machine.reboot') : t('feed.machine.poweroff')}
+          </div>
+          {isDestroyed(ev.event) ? <p className="fi-machine-how">{t(`machine.${ev.event}`)}</p> : ev.deadline ? <p>{t('feed.machine.clock')}</p> : null}
         </article>
       );
     case 'resumed':

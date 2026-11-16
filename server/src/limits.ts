@@ -1,16 +1,33 @@
 // Spending limits for the hosted game. Without sign-in, free shifts run on the server's key, so each
 // one has a token allowance, all of them together share a daily budget, and each address gets a few
-// per day. With sign-in, an account's shifts are the limit and a shift runs to its end.
+// per day. With sign-in, an account's credit is the limit (billing.ts).
 // Shifts on a player's own key are only rate limited.
 
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { en } from './i18n/en.ts';
 
+/** One model call, for pricing it. */
+export interface CallUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  /** The part of inputTokens read from the provider's prompt cache. */
+  cachedInputTokens?: number;
+  /** What the provider charged for the call in dollars, when it says. */
+  cost?: number;
+}
+
 /** What a session may spend on model calls. */
 export interface Allowance {
+  /**
+   * 'tokens' (default): a free shift's token cap; running out pauses for 'allowance'. 'credit': an
+   * account's credit; running out has the user complain first, then pauses for 'usage'.
+   */
+  readonly kind?: 'tokens' | 'credit';
   /** False once the shift should make no more optional model calls. */
   canSpend(): boolean;
-  spend(tokens: number): void;
+  /** tokens: weighted tokens (cached input counts a tenth); call: the call itself, when it is a real one. */
+  spend(tokens: number, call?: CallUsage): void;
 }
 
 /** Thrown by the session when a free shift runs out mid-game; the message is shown to the player. */
@@ -195,19 +212,6 @@ export function freeAllowance(sessionTokens: number, daily: DailyBudget): Allowa
     spend(tokens) {
       spent += tokens;
       daily.spend(tokens);
-    },
-  };
-}
-
-/**
- * A shift from a signed-in player's account, free or bought: the account's shift count is the limit,
- * so it has no cap of its own. It counts toward the daily budget but is never stopped by it.
- */
-export function accountAllowance(daily: DailyBudget | null): Allowance {
-  return {
-    canSpend: () => true,
-    spend(tokens) {
-      daily?.spend(tokens);
     },
   };
 }

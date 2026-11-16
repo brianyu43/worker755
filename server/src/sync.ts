@@ -4,6 +4,8 @@
 
 import { validateChanges, SyncError } from './shell.ts';
 import type { Change } from './shell.ts';
+import { MACHINE_EVENTS } from './types.ts';
+import type { MachineEvent } from './types.ts';
 
 /** Longest command line kept for the manager. */
 export const SYNC_LINE_CAP = 10_000;
@@ -22,6 +24,8 @@ export interface SyncRequest {
   command?: { line: string; output: string; exitCode: number };
   /** An editor save. */
   edit?: { path: string; bytes: number };
+  /** The command restarted the machine or destroyed it. Only with a command. */
+  machine?: MachineEvent;
 }
 
 export { SyncError };
@@ -56,5 +60,9 @@ export function parseSync(body: Record<string, unknown>): SyncRequest {
     req.edit = { path: absPath(e.path, 'edit path'), bytes };
   }
   if (req.command && req.edit) throw new SyncError('a sync is a command or an edit, not both');
+  if (body.machine !== undefined) {
+    if (!req.command || typeof body.machine !== 'string' || !(MACHINE_EVENTS as readonly string[]).includes(body.machine)) throw new SyncError('bad machine event');
+    req.machine = body.machine as MachineEvent;
+  }
   return req;
 }

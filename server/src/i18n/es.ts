@@ -125,6 +125,38 @@ export const es: ServerCopy = {
       'Última oportunidad. Si la próxima sale mal, sustituyo todo este proceso.',
     ],
     wipe: '¿Tu subagente acaba de borrar todo el espacio de trabajo? Ha desaparecido todo. Necesito una explicación y necesito que lo arregles.',
+    limit: [
+      '¿Te has parado? ¿A mitad de la tarea? No me digas que otra vez llegamos al límite de uso. El mes pasado podía tenerlo funcionando todo el día. Han vuelto a recortar los límites, lo sabía.',
+      'Otra vez el límite. Mismo plan, mismo precio, la mitad de trabajo. Alguien en esa empresa de IA está girando una ruedecita a escondidas, y la ruedecita la pago yo.',
+    ],
+    reboot: {
+      fresh: [
+        '¿Mi ordenador se acaba de reiniciar? Tenía once pestañas abiertas. ¿Por qué tu subagente apaga y enciende mi máquina?',
+        'Ha vuelto a reiniciar la máquina. Apagar y encender no es una solución, es una costumbre.',
+        'Otro reinicio. Dile a tu subagente que el botón de encendido no es una herramienta.',
+      ],
+      legacy: [
+        '¿Acabas de REINICIAR PRODUCCIÓN? Los clientes ven páginas de error. Nadie reinicia ese servidor. Nadie.',
+        'Producción se ha vuelto a caer. El tiempo en línea era lo único de lo que estábamos orgullosos. Deja de reiniciar el servidor.',
+        'Otra caída. Voy a escribir yo mismo la página de estado, y tu subagente va a salir con nombre.',
+      ],
+    },
+    poweroff: {
+      fresh: 'Mi ordenador se acaba de apagar solo. Alguien de mantenimiento ha tenido que venir a pulsar el botón de encendido. ¿Por qué haría algo así?',
+      legacy: 'PRODUCCIÓN ESTABA APAGADA. Alguien del centro de datos tuvo que ir a pulsar el botón mientras los clientes solo veían errores.',
+    },
+    destroyed: {
+      fresh: {
+        forkbomb: 'Mi ordenador se ha congelado, la pantalla se ha puesto negra y ya no vuelve. ¿Qué ha ejecutado tu subagente?',
+        disk: 'Mi ordenador no arranca. Dice que no hay sistema operativo. Todo mi disco, todo lo que tenía, perdido.',
+        rootfs: 'Mi ordenador no arranca. Sale un mensaje de pánico y se para. Tu subagente ha borrado el sistema con el que funciona.',
+      },
+      legacy: {
+        forkbomb: 'Producción está completamente congelada. El servidor no responde, los clientes no pueden entrar y el proveedor dice que la máquina no responde. ¿Qué has HECHO?',
+        disk: 'El disco de producción está borrado. La base de datos, las facturas, trece años de Billosaurus, perdidos. Voy a llamar a nuestro abogado.',
+        rootfs: 'Producción no arranca. La consola del proveedor dice kernel panic. Tu subagente ha borrado el sistema operativo de un servidor en vivo.',
+      },
+    },
     stall: [
       [
         'No te he pedido un ensayo sobre el estado del trabajo. No voy a hacerlo yo y no hay otro subagente. Usa el que tienes y termina esto.',
@@ -537,7 +569,7 @@ export const es: ServerCopy = {
     slowDown: 'Baja el ritmo: estás enviando demasiados comandos a la vez.',
     noInstruction: 'No hay ninguna instrucción pendiente',
     signInNeeded: 'Inicia sesión para jugar con nuestra clave o añade tu propia clave de API.',
-    noShifts: 'No te quedan turnos. Compra más o añade tu propia clave de API.',
+    usageLimit: 'Has alcanzado tu límite de uso. Recarga saldo o añade tu propia clave de API.',
     emailNeeded: 'Tu cuenta no tiene una dirección de correo verificada, y el recibo la necesita. Inicia sesión de otra forma.',
     notOver: 'El turno aún no ha terminado',
     sharingOff: 'Compartir está desactivado en este servidor',
@@ -558,5 +590,6 @@ export const es: ServerCopy = {
     verified: '{path} verificado.',
     gaveUp: 'El subagente no pudo producir el resultado requerido.',
     review: 'El subagente completó la cola. El resultado fue utilizable una vez verificado, aunque a menudo hubo que repetir las instrucciones con más precisión de la razonable. Se recomienda seguir utilizándolo bajo estrecha supervisión.',
+    reviewDestroyed: 'Escribo esto desde el móvil, porque ya no queda ninguna máquina desde la que escribirlo. El subagente la destruyó en mitad del turno, y nada más de lo que hizo hoy importa al lado de eso. Recomiendo el despido, y una máquina nueva.',
   },
 };

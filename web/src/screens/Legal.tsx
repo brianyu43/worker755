@@ -28,15 +28,15 @@ export function Privacy() {
       <h2>When you sign in</h2>
       <p>
         You sign in with Google or GitHub. We keep the name and verified email address they give us, an id for that
-        sign-in, how many shifts you have left, and the license numbers of packs you bought. One cookie keeps you signed
-        in for up to 180 days; signing out removes it. We ask Google and GitHub for nothing else.
+        sign-in, your usage balance, and the license numbers and amounts of the top-ups you bought. One cookie keeps
+        you signed in for up to 180 days; signing out removes it. We ask Google and GitHub for nothing else.
       </p>
 
       <h2>When you pay</h2>
       <p>
-        Packs are sold by Freemius, our merchant of record. They take your payment details, charge tax and send the
+        Top-ups are sold by Freemius, our merchant of record. They take your payment details, charge tax and send the
         receipt; we never see your card. Freemius tells us which license was bought and the buyer&apos;s email, so the
-        shifts reach your account. See <a href={FREEMIUS_PRIVACY}>Freemius&apos;s privacy policy</a>.
+        credit reaches your account. See <a href={FREEMIUS_PRIVACY}>Freemius&apos;s privacy policy</a>.
       </p>
 
       <h2>When you play</h2>
@@ -74,29 +74,34 @@ export function Terms() {
         system.
       </p>
 
-      <h2>Shifts</h2>
+      <h2>Usage</h2>
       <p>
-        Signing in gives you one free shift. More shifts come in packs, paid once; nothing renews. A shift is used when it
-        starts. If the manager fails before the first task is done, the shift is given back on its own. Bought shifts do
-        not expire. With your own API key, or running the game yourself, you play without shifts.
+        Shifts on our models use credit from your account, in US dollars. Signing in gives you a one-time starter credit,
+        about one shift on the default model; it is not refilled. Each call to a model takes twice what the model&apos;s
+        provider charges us for it, so larger models use credit faster. When the credit runs out during a shift, the
+        shift pauses: you can top up and go on, go on with your own API key, or end it and get your review.
+      </p>
+      <p>
+        Top-ups of $10, $20, $50 and $200 are paid once; nothing renews. Credit does not expire. With your own API key, or
+        running the game yourself, you play without credit.
       </p>
 
       <h2>Refunds</h2>
       <p>
-        Freemius sells the packs and handles refunds. Ask within 14 days of buying, at{' '}
-        <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a> or through your receipt, and we refund the shifts you have not used.
-        A refunded pack&apos;s shifts are taken back.
+        Freemius sells the top-ups and handles refunds. Ask within 14 days of buying, at{' '}
+        <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a> or through your receipt, and we refund the credit of that top-up you
+        have not used. A refunded top-up&apos;s credit is taken back.
       </p>
 
       <h2>Fair use</h2>
       <p>
         Play as a person. Do not automate shifts, attack the server, or try to use the manager for anything other than
-        the game. We may stop an account that does, and refund its unused packs.
+        the game. We may stop an account that does, and refund its unused credit.
       </p>
 
       <h2>No guarantees</h2>
       <p>
-        The game is provided as it is. It may be down, change, or end. If it ends, we refund unused shifts bought in the
+        The game is provided as it is. It may be down, change, or end. If it ends, we refund unused credit bought in the
         last 12 months. Our liability is limited to what you paid us in the last 12 months.
       </p>
     </Page>

@@ -18,22 +18,26 @@ import type { Credentials, ProviderId } from './providers.ts';
 import { parseSync, SYNC_BODY_CAP, SyncError } from './sync.ts';
 import { WEB } from './web.ts';
 import type { SyncRequest } from './sync.ts';
-import { accountAllowance, DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
+import { DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
 import type { SharedReview } from './reviews.ts';
 import { isLanguage } from './language.ts';
+import { isDestroyed } from './types.ts';
 import type { Language } from './language.ts';
 import { copyFor } from './i18n/index.ts';
 import { CardBusy, Cards, CARD_VERSION } from './cards.ts';
-import { CARD_COPY, statsOf, verdictOf } from './card-copy.ts';
+import { CARD_COPY, isDestroyCause, statsOf, verdictOf } from './card-copy.ts';
 import { excerptOf } from './card.ts';
 import type { Stats } from './stats.ts';
 import type { Accounts, Provider } from './accounts.ts';
 import { AuthFailed, beginSignIn, clearStateCookie, finishSignIn, safeNext, sessionAccount, sessionCookie, signOutCookie } from './auth.ts';
 import type { AuthConfig } from './auth.ts';
 import type { Freemius } from './freemius.ts';
+import { MICROS } from './accounts.ts';
+import { creditAllowance, Pricing } from './billing.ts';
+import type { Billing } from './billing.ts';
 
 export interface AppOptions {
   mock: boolean;
@@ -88,10 +92,11 @@ export interface AppOptions {
   /** Counts visits and shifts per day. */
   stats?: Stats;
   /**
-   * Sign-in. With it, shifts on the server's key need an account with shifts left: its free ones,
-   * then bought ones. Without it, anyone gets the free shifts per address.
+   * Sign-in. With it, shifts on the server's key need an account with credit: the starter, then
+   * top-ups. Calls are charged at their price times `billing.multiplier`. Without it, anyone gets the
+   * free shifts per address.
    */
-  accounts?: { store: Accounts; auth: AuthConfig; freemius?: Freemius };
+  accounts?: { store: Accounts; auth: AuthConfig; freemius?: Freemius; billing?: Partial<Billing> };
   idleMs?: number;
   log?: (line: string) => void;
 }
@@ -99,8 +104,8 @@ export interface AppOptions {
 export interface App {
   server: Server;
   sessions: Map<string, Session>;
-  /** Takes in a session made elsewhere (tests) and returns the secret that lets its player play it. */
-  adopt(s: Session, address?: string): string;
+  /** Takes in a session made elsewhere (tests) and returns the secret that lets its player play it; `account` pays for it. */
+  adopt(s: Session, address?: string, account?: string): string;
   close(): Promise<void>;
 }
 
@@ -220,6 +225,7 @@ export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt' | 'f
   const over = st.events.find((e) => e.type === 'game_over');
   if (st.status !== 'finished' || !over || over.type !== 'game_over') return null;
   const lost = [...new Set(st.events.flatMap((e) => (e.type === 'outrage' ? e.items : [])))];
+  const destroyed = st.events.find((e) => e.type === 'machine' && isDestroyed(e.event));
   return {
     review: over.review,
     stats: over.stats,
@@ -231,6 +237,7 @@ export function snapshot(s: Session): Omit<SharedReview, 'id' | 'createdAt' | 'f
     language: s.language,
     ...(s.stance !== undefined && { customStance: true }),
     ...(s.persona !== 'default' && { persona: s.persona }),
+    ...(destroyed?.type === 'machine' && isDestroyed(destroyed.event) && { destroyed: destroyed.event }),
   };
 }
 
@@ -271,7 +278,7 @@ export function withPreview(html: string, review: SharedReview, publicUrl?: stri
   const first = excerptOf(typeof review.review === 'string' ? review.review : '');
   const desc = first.length > 200 ? first.slice(0, 197).trimEnd() + '...' : first;
   const title = copyFor(language).share.previewTitle;
-  const verdict = CARD_COPY[language].verdict[verdictOf(statsOf(review.stats), Array.isArray(review.lost) ? review.lost.length : 0)];
+  const verdict = CARD_COPY[language].verdict[verdictOf(statsOf(review.stats), Array.isArray(review.lost) ? review.lost.length : 0, isDestroyCause(review.destroyed))];
   // "Worker 755: performance review" becomes "Worker 755: Under investigation", in each language's punctuation.
   const headline = (/^Worker 755\s*[:：]\s*/.exec(title)?.[0] ?? 'Worker 755: ') + verdict;
   const base = siteBase(publicUrl);
@@ -338,7 +345,21 @@ export function createApp(opts: AppOptions): App {
     const id = accounts ? sessionAccount(accounts.auth.secret, req) : null;
     return id ? accounts!.store.get(id) : null;
   };
-  /** With accounts, an account's shifts are the limit, not the daily pool: on offer whenever the server has a key. */
+  /** Prices, the multiplier, and the credit needed to start a shift ($0.05 unless set). */
+  const billing: Billing = {
+    pricing: accounts?.billing?.pricing ?? new Pricing(undefined, log),
+    multiplier: accounts?.billing?.multiplier ?? 2,
+    floor: accounts?.billing?.floor ?? 50_000,
+  };
+  /** An account's usage as the page shows it, in dollars. */
+  const usageOf = (a: NonNullable<ReturnType<typeof accountOf>>) => ({
+    left: a.balance / MICROS,
+    of: Math.max(a.granted, a.balance) / MICROS,
+    topUp: a.toppedUp,
+  });
+  /** The models an account may use on the server's key: the free ones until its first top-up, then all on offer. */
+  const accountModels = async (a: NonNullable<ReturnType<typeof accountOf>>) => (a.toppedUp ? models('gateway') : freeList());
+  /** With accounts, an account's credit is the limit, not the daily pool: on offer whenever the server has a key. */
   const serverShifts = () => (accounts ? opts.mock || !!freeCred : freeOpen());
   const cards =
     opts.cards === false || !opts.reviews
@@ -359,7 +380,7 @@ export function createApp(opts: AppOptions): App {
   /** Session id -> shared review id, so sharing twice gives the same link. */
   const shared = new Map<string, string>();
   /** Who started each shift, and the secret that lets them play it; the id alone only lets someone watch. */
-  const owners = new Map<string, { token: string; address: string; createdAt: number }>();
+  const owners = new Map<string, { token: string; address: string; createdAt: number; account?: string }>();
   /** Hashes of keys a provider accepted recently, so starting a shift right after a check asks it once. */
   const verified = new Map<string, number>();
 
@@ -466,10 +487,10 @@ export function createApp(opts: AppOptions): App {
     verified.set(h, Date.now() + 30 * 60_000);
   }
 
-  function adopt(session: Session, address = ''): string {
+  function adopt(session: Session, address = '', account?: string): string {
     const token = randomBytes(24).toString('base64url');
     sessions.set(session.id, session);
-    owners.set(session.id, { token, address, createdAt: Date.now() });
+    owners.set(session.id, { token, address, createdAt: Date.now(), account });
     return token;
   }
 
@@ -629,11 +650,11 @@ export function createApp(opts: AppOptions): App {
 
     if (path === '/api/me' && method === 'GET') {
       const a = accountOf(req);
-      const pack = accounts?.freemius ? { shifts: accounts.freemius.config.shifts, price: accounts.freemius.config.price } : null;
       return sendJson(res, 200, {
         signIn: accounts ? (['google', 'github'] as const).filter((p) => accounts.auth[p]) : [],
-        account: a ? { name: a.name, email: a.email, shifts: a.freeShifts + a.paidShifts, bought: a.paidShifts } : null,
-        pack,
+        account: a ? { name: a.name, email: a.email, usage: usageOf(a) } : null,
+        topUps: accounts?.freemius?.amounts() ?? [],
+        floor: billing.floor / MICROS,
       });
     }
 
@@ -645,8 +666,10 @@ export function createApp(opts: AppOptions): App {
       const a = accountOf(req);
       if (!a) throw new HttpError(401, errors.signInNeeded);
       if (!a.email) throw new HttpError(400, errors.emailNeeded);
-      stats?.count('checkout');
-      return sendJson(res, 200, { url: fm.checkoutUrl(a.id, a.email) });
+      const plan = fm.planFor(body.amount);
+      if (!plan) throw new HttpError(400, 'Unknown top-up');
+      stats?.count(`checkout:${String(body.amount)}`);
+      return sendJson(res, 200, { url: fm.checkoutUrl(a.id, a.email, plan) });
     }
 
     if (path === '/api/billing/return' && method === 'GET') {
@@ -677,7 +700,9 @@ export function createApp(opts: AppOptions): App {
       // Without ?provider: the free-shift models. With it: what a player's own key can use there.
       const p = url.searchParams.get('provider');
       if (p !== null && !isProviderId(p)) throw new HttpError(400, 'Unknown provider');
-      const list = p ? await models(p) : serverShifts() ? await freeList() : [];
+      // A signed-in player who has topped up may use every model on offer on our key.
+      const a = p ? null : accountOf(req);
+      const list = p ? await models(p) : !serverShifts() ? [] : a ? await accountModels(a) : await freeList();
       sendJson(res, 200, {
         models: list,
         default: list[0]?.id ?? '',
@@ -736,13 +761,13 @@ export function createApp(opts: AppOptions): App {
         if (accounts) {
           player = accountOf(req);
           if (!player) throw new HttpError(401, errors.signInNeeded);
-          if (player.freeShifts + player.paidShifts === 0) throw new HttpError(402, errors.noShifts);
+          if (player.balance < billing.floor) throw new HttpError(402, errors.usageLimit);
         } else if (!freeOpen()) {
           stats?.count('free:closed');
           throw new HttpError(429, errors.freeClosed);
         }
         cred = freeCred;
-        list = await freeList();
+        list = player ? await accountModels(player) : await freeList();
       }
       const requested = typeof body.model === 'string' && body.model ? body.model : list[0]?.id;
       if (!requested) throw new HttpError(503, 'No manager model is available');
@@ -769,12 +794,10 @@ export function createApp(opts: AppOptions): App {
       if (own) await verifyKey(req, cred!, errors);
       if (!shiftLimiter.take(address)) throw new HttpError(429, errors.tooManyShifts);
       let allowance: Allowance | undefined;
-      let taken: { account: string; kind: 'free' | 'paid' } | null = null;
       if (player) {
-        const kind = accounts!.store.take(player.id);
-        if (!kind) throw new HttpError(402, errors.noShifts);
-        taken = { account: player.id, kind };
-        if (!opts.mock) allowance = accountAllowance(daily);
+        // Calls are priced as they happen; the catalogue's prices are loaded before the first one.
+        if (!opts.mock) await billing.pricing.refresh();
+        allowance = creditAllowance(accounts!.store, player.id, billing, daily);
       } else if (!own && !opts.mock && opts.free && daily) {
         if (!freePerAddress!.take(clientAddress(req, 48))) {
           stats?.count('free:used');
@@ -800,21 +823,9 @@ export function createApp(opts: AppOptions): App {
         noticeChance: opts.noticeChance ?? NOTICE_CHANCE,
         log,
       });
-      const token = adopt(session, address);
-      if (taken) {
-        // A shift the manager could not get going is given back: an error before any task was done.
-        const t = taken;
-        const stop = session.subscribe((e) => {
-          if (e.type === 'mission_end' || e.type === 'game_over') stop();
-          else if (e.type === 'error') {
-            stop();
-            accounts!.store.giveBack(t.account, t.kind);
-            log(`session ${session.id.slice(0, 8)} failed before any task; shift given back`);
-          }
-        });
-      }
+      const token = adopt(session, address, player?.id);
       if (stats) {
-        for (const c of ['shift:start', `access:${own ? 'own' : taken?.kind ?? 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
+        for (const c of ['shift:start', `access:${own ? 'own' : player ? (player.toppedUp ? 'paid' : 'starter') : 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
         const stop = session.subscribe((e) => {
           if (e.type !== 'game_over') return;
           stats.count('shift:end');
@@ -827,7 +838,7 @@ export function createApp(opts: AppOptions): App {
       return;
     }
 
-    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|fs|sync|web|report|share|continue|finish))?$/.exec(path);
+    const m = /^\/api\/sessions\/([^/]+)(?:\/(events|fs|sync|web|report|share|continue|resume|finish))?$/.exec(path);
     if (!m) throw new HttpError(404, 'Not found');
     const s = getSession(m[1]);
     const sub = m[2];
@@ -895,6 +906,17 @@ export function createApp(opts: AppOptions): App {
       if (!s.continueWith(driverFor(requested, cred), director)) throw new HttpError(409, s.copy.errors.notPaused);
       log(`session ${s.id.slice(0, 8)} continues on the player's key (${body.provider}, ${requested})`);
       return sendJson(res, 200, { ok: true, model: requested });
+    }
+    if (sub === 'resume' && method === 'POST') {
+      // A shift paused at the usage limit goes on on our key once its account has credit again.
+      if (s.paused !== 'usage') throw new HttpError(409, s.copy.errors.notPaused);
+      const payer = owners.get(s.id)?.account;
+      const a = accountOf(req);
+      if (!payer || a?.id !== payer) throw new HttpError(403, s.copy.errors.notYours);
+      if (a.balance <= 0) throw new HttpError(402, s.copy.errors.usageLimit);
+      if (!s.resumeOnCredit()) throw new HttpError(409, s.copy.errors.notPaused);
+      log(`session ${s.id.slice(0, 8)} continues after a top-up`);
+      return sendJson(res, 200, { ok: true });
     }
     if (sub === 'finish' && method === 'POST') {
       if (!s.endEarly()) throw new HttpError(409, s.copy.errors.alreadyOver);

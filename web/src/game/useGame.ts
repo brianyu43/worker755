@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
 import type { NewSession } from '../api/client';
-import type { GameEvent, MissionKind, OpenInstruction, PauseReason, SessionState, Stats, TreeNode } from '../api/types';
+import type { DestroyCause, GameEvent, MissionKind, OpenInstruction, PauseReason, SessionState, Stats, TreeNode } from '../api/types';
+import { isDestroyed } from '../api/types';
 
 export type ManagerState = 'thinking' | 'waiting' | 'idle';
 export type ClosedOutcome = 'reported' | 'timeout_idle' | 'timeout_partial';
@@ -29,6 +30,8 @@ export interface GameView {
   paused: PauseReason | null;
   /** The player ended the shift early and the review is being written. */
   ending: boolean;
+  /** The player destroyed the machine, and how; the terminal is dead for the rest of the shift. */
+  destroyed: DestroyCause | null;
   lastSeq: number;
 }
 
@@ -45,6 +48,7 @@ const FEED_TYPES = new Set<GameEvent['type']>([
   'mission_end',
   'error',
   'resumed',
+  'machine',
 ]);
 
 function apply(v: GameView, ev: GameEvent): GameView {
@@ -92,6 +96,11 @@ function apply(v: GameView, ev: GameEvent): GameView {
       n.paused = null;
       n.model = ev.model;
       break;
+    case 'machine':
+      if (isDestroyed(ev.event)) n.destroyed = ev.event;
+      // The clock waits while the machine is down.
+      else if (ev.deadline && v.instruction && v.instruction.id === ev.instructionId) n.instruction = { ...v.instruction, deadline: ev.deadline };
+      break;
     case 'ending':
       n.ending = true;
       n.paused = null;
@@ -128,6 +137,7 @@ function fromSnapshot(s: SessionState): GameView {
     error: null,
     paused: null,
     ending: false,
+    destroyed: null,
     lastSeq: 0,
   };
   for (const ev of s.events) v = apply(v, ev);

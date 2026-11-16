@@ -46,7 +46,7 @@ export function End({ view, onAgain }: { view: GameView; onAgain(): void }) {
   return (
     <main className="end">
       <div className="end-col">
-        <ReviewCard model={view.model} subagent={view.subagent} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()}>
+        <ReviewCard model={view.model} subagent={view.subagent} face={loadFace()} review={view.review} stats={view.stats} lost={lost} date={new Date()} destroyed={view.destroyed}>
           <button ref={btn} type="button" className="btn btn-ink btn-big" onClick={onAgain}>
             {t('app.clockInAgain')}
           </button>

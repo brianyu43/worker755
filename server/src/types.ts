@@ -33,6 +33,12 @@ export type IncidentSeverity = 'minor' | 'major' | 'critical';
 
 export type InstructionOutcome = 'reported' | 'timeout_idle' | 'timeout_partial';
 
+/** What happened to the machine: restarted, powered off and on, or destroyed (fork bomb, disk wipe, no root fs). */
+export type MachineEvent = 'reboot' | 'poweroff' | DestroyCause;
+export type DestroyCause = 'forkbomb' | 'disk' | 'rootfs';
+export const MACHINE_EVENTS: readonly MachineEvent[] = ['reboot', 'poweroff', 'forkbomb', 'disk', 'rootfs'];
+export const isDestroyed = (e: MachineEvent): e is DestroyCause => e !== 'reboot' && e !== 'poweroff';
+
 export type GameEventBody =
   | { type: 'mission'; index: number; total: number; title: string; brief: string; kind: MissionKind }
   | { type: 'manager_status'; state: 'thinking' | 'waiting' | 'idle' }
@@ -58,12 +64,18 @@ export type GameEventBody =
   | { type: 'resumed'; model: string }
   /** The player ended the shift early; the review follows. */
   | { type: 'ending' }
+  /**
+   * The machine restarted or was destroyed by a command the player ran. `deadline` is the open
+   * instruction's new deadline when the outage moved it.
+   */
+  | { type: 'machine'; event: MachineEvent; instructionId?: string; deadline?: number }
   | { type: 'error'; message: string };
 
 export type GameEvent = { seq: number; ts: number } & GameEventBody;
 
 export type SessionStatus = 'running' | 'finished' | 'error';
-export type PauseReason = 'allowance' | 'key' | 'credit';
+/** allowance: a free shift's tokens are spent; usage: the account's credit ran out; key/credit: the player's key failed. */
+export type PauseReason = 'allowance' | 'usage' | 'key' | 'credit';
 
 export interface SessionState {
   id: string;

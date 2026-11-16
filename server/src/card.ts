@@ -8,9 +8,9 @@
 // characters, shaped, measured and written out as glyph outlines. Characters no font here has (emoji,
 // rare CJK) are left out. Nothing from a review reaches the markup but those outlines.
 
-import { CARD_COPY, statsOf, verdictOf } from './card-copy.ts';
+import { CARD_COPY, DESTROYED_BY, statsOf, verdictOf } from './card-copy.ts';
 import type { Language } from './language.ts';
-import type { Stats } from './types.ts';
+import type { DestroyCause, Stats } from './types.ts';
 
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
@@ -437,6 +437,8 @@ export interface ReviewCardInput {
   avatar: string | null;
   /** Shown in the corner, e.g. worker755.com. */
   site: string;
+  /** The subagent destroyed the machine, and how. */
+  destroyed?: DestroyCause;
 }
 
 /** What to quote from a review: its prose, without markdown marks or a heading line. */
@@ -510,8 +512,13 @@ export function reviewCardSvg(input: ReviewCardInput, shaper: Shaper): string {
   out.push(t.text(tx, py + 170, model.text, model.style, C.inkSoft));
 
   // The stamp: the outcome, the first thing to read.
-  const verdict = verdictOf(statsOf(input.stats), input.lost);
+  const verdict = verdictOf(statsOf(input.stats), input.lost, !!input.destroyed);
   out.push(stamp(t, upper(copy.verdict[verdict]), { chain: ch.cond, size: 66, spacing: lang === 'zh-CN' || lang === 'ja' ? 6 : 2 }, 920, 236, 400, -6));
+  if (input.destroyed) {
+    // How, under the stamp, as the command that did it.
+    const how: Style = { chain: ['W755 Mono'], size: 22 };
+    out.push(t.text(920, 336, `$ ${DESTROYED_BY[input.destroyed]}`, how, C.stamp, 'middle'));
+  }
 
   // The review itself: larger when it is short, centred in the space above the record.
   const band = { top: 356, bottom: 496 };

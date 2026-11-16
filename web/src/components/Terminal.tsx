@@ -1,6 +1,9 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import type { TreeNode } from '../api/types';
+import type { DestroyCause, TreeNode } from '../api/types';
+import { Monitor } from './Monitor';
+import type { Screen } from './Monitor';
+import { Ansi } from './Ansi';
 import { MOD, touchOnly } from '../game/keys';
 import { Editor } from './Editor';
 import { useStickToBottom } from './stick';
@@ -33,6 +36,8 @@ interface Props {
   onReport(message: string): Promise<void>;
   /** Called with the path of the file opened in the editor, and null when it closes. */
   onEditingChange?(path: string | null): void;
+  /** The machine is gone (destroyed earlier, e.g. before a reload): the screen stays dead. */
+  destroyed?: DestroyCause | null;
 }
 
 /** The on-screen keys under the terminal on a phone, which has no Esc, Tab, Ctrl or arrows. */
@@ -84,12 +89,34 @@ function resolvePath(cwd: string, p: string) {
 
 let lineId = 0;
 
-export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ sessionId, cwd, tree, onReport, onEditingChange }, ref) {
+/** What a fresh login prints after the machine comes back. */
+function loginLines(last: Date): string[] {
+  const d = last;
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  const mon = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const when = `${day} ${mon} ${String(d.getUTCDate()).padStart(2)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC ${d.getUTCFullYear()}`;
+  return [
+    'Ubuntu 24.04.1 LTS 755 tty1',
+    '',
+    '755 login: worker (automatic login)',
+    `Last login: ${when} from 10.0.7.1 on pts/0`,
+    'Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-49-generic x86_64)',
+    '',
+  ];
+}
+
+export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ sessionId, cwd, tree, onReport, onEditingChange, destroyed }, ref) {
   const [lines, setLines] = useState<Line[]>(() => [
     { id: ++lineId, kind: 'sys', text: t('term.ready', { keys: 'Ctrl+Enter', command: 'done' }) },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  /** A command has the screen: an animation, a restart, or the end of the machine. */
+  const [screen, setScreen] = useState<Screen | null>(null);
+  /** When this terminal logged in, for the "Last login" line after a restart. */
+  const loggedIn = useRef(new Date());
+  const dead = !!destroyed || screen?.kind === 'destroy';
   const [editing, setEditing] = useState<{ path: string; content: string; isNew: boolean } | null>(null);
   const [dirty, setDirty] = useState(false);
   // Which pane a phone shows; on a wide screen the editor sits beside the terminal and both show.
@@ -172,7 +199,21 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
   };
   openRef.current = openEditor;
 
+  /** The screen is the terminal's again: after an animation, or a fresh login after a restart. */
+  const screenDone = () => {
+    const was = screen;
+    setScreen(null);
+    if (was?.kind === 'power') {
+      setLines(loginLines(loggedIn.current).map((text) => ({ id: ++lineId, kind: 'out' as const, text })));
+      loggedIn.current = new Date();
+      loadNames();
+    }
+    stick.current = true;
+    requestAnimationFrame(() => focus());
+  };
+
   const run = (typed: string) => {
+    if (dead || screen) return;
     push([{ kind: 'cmd', text: typed, prompt: more === null ? prompt : '>' }]);
     const line = more === null ? typed : `${more}\n${typed}`;
     // An unfinished command waits for its next line, as bash does with its > prompt.
@@ -205,9 +246,13 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
         if (r.killed) add.push({ kind: 'warn', text: t('term.killed') });
         if (r.unsynced) add.push({ kind: 'warn', text: t('term.unsynced') });
         loadNames();
-        if (r.action?.type === 'clear') setLines([]);
+        const action = r.action;
+        if (action?.type === 'clear') setLines([]);
         else if (add.length) push(add);
-        if (r.action?.type === 'edit') await openEditor(r.action.path);
+        if (action?.type === 'edit') await openEditor(action.path);
+        else if (action?.type === 'animate') setScreen({ kind: 'animate', frames: action.frames, frameMs: action.frameMs, anyKey: action.anyKey, loop: action.loop });
+        else if (action?.type === 'power') setScreen({ kind: 'power', mode: action.mode });
+        else if (action?.type === 'destroy') setScreen({ kind: 'destroy', cause: action.cause });
       } catch (e) {
         push([{ kind: 'err', text: e instanceof ApiError && e.status !== 0 ? e.message : t('term.offline') }]);
       } finally {
@@ -535,30 +580,35 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ se
             {lines.map((l) => (
               <div key={l.id} className={`tl tl-${l.kind}`}>
                 {l.kind === 'cmd' && <span className="tl-prompt">{l.prompt} </span>}
-                {l.text}
+                {l.kind === 'out' ? <Ansi text={l.text} /> : l.text}
               </div>
             ))}
           </div>
-          <label className="term-input-row">
-            <span className="tl-prompt">{search ? '(reverse-i-search)' : more === null ? prompt : '>'}</span>
-            <input
-              ref={inputRef}
-              className={`term-input${search ? ' term-input-searching' : ''}`}
-              style={search ? { width: `${input.length + 1}ch` } : undefined}
-              value={input}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              autoFocus={!touchOnly()}
-              aria-label={t('term.command')}
-            />
-            {search && <span className="term-search-hit">{searchHit >= 0 ? history.current[searchHit] : ''}</span>}
-            {busy && <span className="term-busy" aria-hidden />}
-          </label>
+          {!screen && !dead && (
+            <label className="term-input-row">
+              <span className="tl-prompt">{search ? '(reverse-i-search)' : more === null ? prompt : '>'}</span>
+              <input
+                ref={inputRef}
+                className={`term-input${search ? ' term-input-searching' : ''}`}
+                style={search ? { width: `${input.length + 1}ch` } : undefined}
+                value={input}
+                onChange={onChange}
+                onKeyDown={onKeyDown}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoComplete="off"
+                autoCorrect="off"
+                autoFocus={!touchOnly()}
+                aria-label={t('term.command')}
+              />
+              {search && <span className="term-search-hit">{searchHit >= 0 ? history.current[searchHit] : ''}</span>}
+              {busy && <span className="term-busy" aria-hidden />}
+            </label>
+          )}
         </div>
+        {(screen || destroyed) && (
+          <Monitor key={screen ? 'live' : 'gone'} screen={screen ?? { kind: 'destroy', cause: destroyed!, instant: true }} onDone={screenDone} />
+        )}
         {editing && <Splitter kind="editor" />}
         {editing && (
           <Editor

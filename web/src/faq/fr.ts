@@ -90,7 +90,7 @@ export const fr: Faq = {
         {
           id: 'cost',
           q: 'Combien ça coûte ?',
-          a: 'Ton premier service est gratuit : connecte-toi avec Google ou GitHub sur l’écran d’accueil. Ensuite, les services se vendent par lots de 10 pour $9.90, payés une seule fois. Un service commencé va jusqu’au bout.\n\nAvec ta propre clé API, pas besoin de compte ni de services. Tu paies ton fournisseur pour ce que le manager lit et écrit.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">héberge le jeu toi-même</a>.',
+          a: 'En te connectant avec Google ou GitHub sur l’écran d’accueil, tu reçois un crédit de départ, de quoi faire à peu près un service avec le modèle par défaut. Ensuite, tu paies ce que tu utilises : des recharges de $10, $20, $50 ou $200, payées une seule fois, et chaque appel à un modèle coûte le double de ce que son fournisseur nous facture. Les grands modèles consomment le crédit plus vite ; après ta première recharge, tu peux choisir n’importe lequel. Le crédit n’expire pas. S’il s’épuise en plein service, le service attend que tu recharges.\n\nAvec ta propre clé API, pas besoin de compte ni de crédit. Tu paies ton fournisseur pour ce que le manager lit et écrit.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">héberge le jeu toi-même</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const fr: Faq = {
         {
           id: 'stored',
           q: 'Qu’est-ce que vous conservez ?',
-          a: 'Si vous vous connectez : votre nom et votre adresse e-mail fournis par Google ou GitHub, et le nombre de services qu’il vous reste. Les évaluations que vous partagez. Rien d’autre d’un service n’est conservé.\n\nLe service lui-même — vos commandes, les fichiers et le chat — reste dans la mémoire du serveur et disparaît au bout de quatre heures. Pour appliquer les limites, le serveur conserve aussi le nombre de services récemment lancés depuis chaque adresse réseau.\n\nLa page ne charge rien depuis d’autres sites. Votre navigateur conserve votre connexion, votre langue, votre visage et, si vous le lui demandez, votre clé. Les détails sont sur la <a href="/privacy">page de confidentialité</a>.',
+          a: 'Si vous vous connectez : votre nom et votre adresse e-mail fournis par Google ou GitHub, votre solde d’utilisation et les recharges achetées. Les évaluations que vous partagez. Rien d’autre d’un service n’est conservé.\n\nLe service lui-même — vos commandes, les fichiers et le chat — reste dans la mémoire du serveur et disparaît au bout de quatre heures. Pour appliquer les limites, le serveur conserve aussi le nombre de services récemment lancés depuis chaque adresse réseau.\n\nLa page ne charge rien depuis d’autres sites. Votre navigateur conserve votre connexion, votre langue, votre visage et, si vous le lui demandez, votre clé. Les détails sont sur la <a href="/privacy">page de confidentialité</a>.',
         },
       ],
     },

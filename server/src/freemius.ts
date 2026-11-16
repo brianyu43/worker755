@@ -1,24 +1,25 @@
-// Shift packs sold through Freemius, the merchant of record. The player opens Freemius's hosted
-// checkout with their email fixed; each purchase is a license, and each license is one pack of shifts.
-// The buyer's return and Freemius's webhooks are only hints: the license is fetched from Freemius and
-// credited once, or its shifts taken back when Freemius no longer has it (a refund).
+// Top-ups sold through Freemius, the merchant of record: one plan per amount ($10, $20, ...). The
+// player opens Freemius's hosted checkout with their email fixed; each purchase is a license, and each
+// license adds its plan's amount to the account's credit. The buyer's return and Freemius's webhooks
+// are only hints: the license is fetched from Freemius and credited once, or its credit taken back
+// (as much as is left) when Freemius no longer has it (a refund). Licenses of plans that are not
+// top-ups, such as the old shift packs, are never credited again; their refunds still take back what
+// they added.
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { MICROS } from './accounts.ts';
 import type { Accounts } from './accounts.ts';
 
 export interface FreemiusConfig {
   productId: string;
-  planId: string;
+  /** Top-up plans: plan id to the dollars it adds (FREEMIUS_TOPUPS). */
+  topUps: Record<string, number>;
   publicKey: string;
   secretKey: string;
   /** Bearer token for Freemius's API. */
   apiKey: string;
   /** Test cards only. */
   sandbox: boolean;
-  /** Shifts in a pack. */
-  shifts: number;
-  /** What a pack costs, as shown to players, e.g. $9.90. */
-  price: string;
   fetch?: typeof fetch;
   log?: (line: string) => void;
 }
@@ -43,11 +44,22 @@ export class Freemius {
     this.log = config.log ?? (() => {});
   }
 
-  /** The hosted checkout for one pack, for this account and email. */
-  checkoutUrl(accountId: string, email: string, now = Date.now()): string {
+  /** The top-up amounts on sale, in dollars, smallest first. */
+  amounts(): number[] {
+    return [...new Set(Object.values(this.config.topUps))].sort((a, b) => a - b);
+  }
+
+  /** The plan that sells this many dollars of credit. */
+  planFor(amount: unknown): string | null {
+    const hit = Object.entries(this.config.topUps).find(([, usd]) => usd === amount);
+    return hit ? hit[0] : null;
+  }
+
+  /** The hosted checkout for one top-up plan, for this account and email. */
+  checkoutUrl(accountId: string, email: string, planId: string, now = Date.now()): string {
     const c = this.config;
     this.accounts.openCheckout(accountId, email);
-    const url = new URL(`https://checkout.freemius.com/product/${c.productId}/plan/${c.planId}/`);
+    const url = new URL(`https://checkout.freemius.com/product/${c.productId}/plan/${planId}/`);
     url.searchParams.set('user_email', email);
     url.searchParams.set('readonly_user', 'true');
     url.searchParams.set('billing_cycle', 'lifetime');
@@ -70,7 +82,7 @@ export class Freemius {
   }
 
   /**
-   * Looks up a license and brings its pack up to date: credited once while Freemius has it, taken
+   * Looks up a license and brings its top-up up to date: credited once while Freemius has it, taken
    * back once it is gone. Returns the account it belongs to, when one is known.
    */
   async sync(licenseId: unknown): Promise<string | null> {
@@ -79,22 +91,23 @@ export class Freemius {
     const license = await this.api(`licenses/${id}.json`);
     if (!license?.id) {
       const from = this.accounts.refund(id);
-      if (from) this.log(`freemius: license ${id} gone, pack taken back`);
+      if (from) this.log(`freemius: license ${id} gone, credit taken back`);
       return from;
     }
-    if (String(license.plan_id) !== this.config.planId) return null;
+    const amount = this.config.topUps[String(license.plan_id)];
+    if (!amount) return null;
     const user = license.user_id ? await this.api(`users/${String(license.user_id)}.json`) : null;
     const email = typeof user?.email === 'string' ? user.email : '';
     const owner = this.accounts.ownerOf(id, email);
     if (!owner) {
-      this.log(`freemius: license ${id} matches no account; add the shifts by hand`);
+      this.log(`freemius: license ${id} matches no account; add the credit by hand`);
       return null;
     }
-    if (this.accounts.credit(id, owner, this.config.shifts)) this.log(`freemius: license ${id} credited ${this.config.shifts} shifts`);
+    if (this.accounts.credit(id, owner, Math.round(amount * MICROS))) this.log(`freemius: license ${id} credited $${amount}`);
     return owner;
   }
 
-  /** A webhook: signed with the product's secret key. Refunds take the pack back; anything else syncs it. */
+  /** A webhook: signed with the product's secret key. Refunds take the credit back; anything else syncs it. */
   async receive(raw: string, signature: unknown): Promise<boolean> {
     if (!signed(this.config.secretKey, raw, signature)) return false;
     let event: { type?: unknown; objects?: Record<string, { id?: unknown; license_id?: unknown } | undefined>; data?: { license_id?: unknown } };
@@ -107,7 +120,7 @@ export class Freemius {
     const licenseId = o.license?.id ?? event.data?.license_id ?? o.payment?.license_id ?? o.subscription?.license_id;
     if (!licenseId) return true;
     if (typeof event.type === 'string' && /refund/.test(event.type)) {
-      if (this.accounts.refund(String(licenseId))) this.log(`freemius: license ${String(licenseId)} refunded, pack taken back`);
+      if (this.accounts.refund(String(licenseId))) this.log(`freemius: license ${String(licenseId)} refunded, credit taken back`);
       return true;
     }
     await this.sync(licenseId);

@@ -43,7 +43,8 @@ export class VfsError extends Error {
 }
 
 /** What a device or kernel file produces when read. */
-export type Device = 'null' | 'zero' | 'random' | 'full' | 'tty' | (() => string);
+/** 'disk' is a block device (/dev/sda): reading gives its first sectors, writing to it wipes the machine. */
+export type Device = 'null' | 'zero' | 'random' | 'full' | 'tty' | 'disk' | (() => string);
 
 /** A system directory's contents: device files and nested directories. */
 export interface DeviceDir {
@@ -525,8 +526,15 @@ export class MemoryVfs implements Vfs {
     this.writeFile(p, '');
   }
 
+  /** Called when something writes to a block device; the shell turns it into the end of the machine. */
+  onDiskWrite: ((path: string) => void) | null = null;
+
   private writeDevice(p: string, device: Device): void {
     if (device === 'full') throw new VfsError('ENOSPC', p);
+    if (device === 'disk') {
+      this.onDiskWrite?.(p);
+      return;
+    }
     if (typeof device === 'function') throw new VfsError('EACCES', p);
   }
 
@@ -543,7 +551,7 @@ export class MemoryVfs implements Vfs {
       const children = new Map<string, Node>();
       for (const [name, v] of Object.entries(spec)) {
         if (typeof v === 'string' || typeof v === 'function') {
-          const devMode = typeof v === 'function' ? 0o444 : v === 'tty' ? 0o620 : 0o666;
+          const devMode = typeof v === 'function' ? 0o444 : v === 'tty' || v === 'disk' ? 0o660 : 0o666;
           children.set(name, { type: 'file', mode: devMode, mtime: this.now(), content: '', device: v });
         } else children.set(name, build(v));
       }
@@ -665,6 +673,9 @@ function readDevice(device: Device): string {
     case 'zero':
     case 'full':
       return '\0'.repeat(DEVICE_CHUNK);
+    case 'disk':
+      // A boot sector's jump and signature around zeros: enough for `head -c 512 /dev/sda | xxd`.
+      return '\xeb\x63\x90' + '\0'.repeat(507) + '\x55\xaa' + '\0'.repeat(DEVICE_CHUNK - 512);
     case 'random': {
       let out = '';
       for (let i = 0; i < DEVICE_CHUNK; i++) {

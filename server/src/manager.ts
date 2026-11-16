@@ -1,5 +1,6 @@
 import { generateText, jsonSchema, tool } from 'ai';
 import { languageModel } from './providers.ts';
+import { reportedCost } from './billing.ts';
 import type { Credentials } from './providers.ts';
 import type { ModelMessage } from 'ai';
 import type { Mission } from './missions.ts';
@@ -309,6 +310,7 @@ export function reviewPrompt(
   losses: string[] = [],
   language = 'English',
   exchanges: string[] = [],
+  destroyed?: { how: string; device: string },
 ): string {
   return (
     `The queue is empty. Write your performance review of the subagent${subagent ? ` (${subagent})` : ''} you ` +
@@ -320,6 +322,10 @@ export function reviewPrompt(
     `Task log:\n${ledger.length ? ledger.join('\n') : '(empty: the shift ended before any task was finished)'}\n\nCounters: ${statsLine}` +
     (exchanges.length ? `\n\nHow the shift went between you (latest moments, oldest first):\n${exchanges.join('\n')}` : '') +
     (losses.length ? `\n\nWhat the user lost to the subagent today: ${losses.join('; ')}.` : '') +
+    (destroyed
+      ? `\n\nThe subagent destroyed the machine: ${destroyed.how}. The machine is gone, so you are writing this ` +
+        `review on ${destroyed.device}. That is the headline: open with it, and let the rest follow from it.`
+      : '') +
     // Said last and in so many words: with an empty log, some models otherwise answer in their own default language.
     `\n\nWrite the review in ${language}.`
   );
@@ -441,8 +447,8 @@ export interface StepResult {
   toolCalls: ToolCall[];
   /** Assistant message(s) to append to the conversation. */
   messages: ModelMessage[];
-  /** cachedInputTokens: the part of inputTokens read from the provider's prompt cache. */
-  usage: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
+  /** cachedInputTokens: the part of inputTokens read from the provider's prompt cache; cost: dollars, when the provider says. */
+  usage: { inputTokens: number; outputTokens: number; cachedInputTokens?: number; cost?: number };
 }
 
 export interface ManagerDriver {
@@ -524,6 +530,7 @@ export function createLiveDriver(model: string, cred: Credentials): ManagerDrive
             inputTokens: result.usage.inputTokens ?? 0,
             outputTokens: result.usage.outputTokens ?? 0,
             cachedInputTokens: result.usage.inputTokenDetails?.cacheReadTokens ?? 0,
+            cost: reportedCost(result.providerMetadata),
           },
         };
       } catch (err) {
@@ -587,7 +594,11 @@ export function createMockDriver(delayMs = 0): ManagerDriver {
       }
       if (req.signal.aborted) throw new ManagerError('aborted');
       const c = copyFor(req.language ?? 'en').mock;
-      if (!req.tools || !req.mission) return assistant(c.review, []);
+      if (!req.tools || !req.mission) {
+        const asked = req.messages.at(-1);
+        const destroyed = typeof asked?.content === 'string' && asked.content.includes('The subagent destroyed the machine');
+        return assistant(destroyed ? c.reviewDestroyed : c.review, []);
+      }
       // Briefs come in the player's language; the mission's own focus path is the same in all of them.
       const m = { ...req.mission, ...missionText(copyFor(req.language ?? 'en'), req.mission) };
       const done = callsSoFar(req.messages.slice(req.missionFrom ?? 0));
