@@ -5,7 +5,7 @@ import { t } from '../i18n';
 // stats, freemius).
 
 const FREEMIUS_PRIVACY = 'https://freemius.com/privacy/';
-const SOURCE = 'https://github.com/gulivan/worker755';
+const SUPPORT = 'support@worker755.com';
 
 function Page({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -58,8 +58,7 @@ export function Privacy() {
       <h2>Where and how long</h2>
       <p>
         The server is in Germany. Accounts are kept until you ask us to delete yours; daily counts are kept without
-        anything that identifies you. To see or delete your data, write to the address on your receipt, or open an
-        issue at <a href={SOURCE}>{SOURCE.replace('https://', '')}</a> without personal details and we will reach you.
+        anything that identifies you. To see or delete your data, write to <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a>.
       </p>
     </Page>
   );
@@ -84,8 +83,9 @@ export function Terms() {
 
       <h2>Refunds</h2>
       <p>
-        Freemius sells the packs and handles refunds. Ask within 14 days of buying and we refund a pack whose shifts you
-        have not used. A refunded pack&apos;s shifts are taken back.
+        Freemius sells the packs and handles refunds. Ask within 14 days of buying, at{' '}
+        <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a> or through your receipt, and we refund the shifts you have not used.
+        A refunded pack&apos;s shifts are taken back.
       </p>
 
       <h2>Fair use</h2>
