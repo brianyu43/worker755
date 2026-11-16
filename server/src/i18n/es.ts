@@ -538,7 +538,6 @@ export const es: ServerCopy = {
     noInstruction: 'No hay ninguna instrucción pendiente',
     signInNeeded: 'Inicia sesión para jugar con nuestra clave o añade tu propia clave de API.',
     noShifts: 'No te quedan turnos. Compra más o añade tu propia clave de API.',
-    freeClosedBuy: 'Ya agotaste los turnos gratis de hoy. Compra turnos o añade tu propia clave de API.',
     emailNeeded: 'Tu cuenta no tiene una dirección de correo verificada, y el recibo la necesita. Inicia sesión de otra forma.',
     notOver: 'El turno aún no ha terminado',
     sharingOff: 'Compartir está desactivado en este servidor',

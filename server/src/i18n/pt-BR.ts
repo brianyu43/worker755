@@ -538,7 +538,6 @@ export const ptBR: ServerCopy = {
     noInstruction: 'Nenhuma instrução em aberto',
     signInNeeded: 'Entre para jogar usando nossa chave ou adicione sua própria chave de API.',
     noShifts: 'Seus turnos acabaram. Compre mais ou adicione sua própria chave de API.',
-    freeClosedBuy: 'Os turnos grátis de hoje acabaram. Compre turnos ou adicione sua própria chave de API.',
     emailNeeded: 'Seu login não tem um endereço de e-mail verificado, necessário para o recibo. Entre de outra forma.',
     notOver: 'O turno ainda não terminou',
     sharingOff: 'O compartilhamento está desativado neste servidor',

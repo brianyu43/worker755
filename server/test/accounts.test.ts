@@ -5,7 +5,12 @@ import type { AddressInfo } from 'node:net';
 import { Accounts } from '../src/accounts.ts';
 import { createApp } from '../src/http.ts';
 import { Freemius } from '../src/freemius.ts';
-import { safeNext } from '../src/auth.ts';
+import { safeNext, sessionCookie } from '../src/auth.ts';
+import { assistant, call } from '../src/manager.ts';
+import type { ManagerDriver } from '../src/manager.ts';
+import type { Session } from '../src/session.ts';
+import type { GameEvent } from '../src/types.ts';
+import { exec } from './player.ts';
 
 test('accounts: one free shift on sign-up, one account per verified email, free shifts go first', () => {
   const a = new Accounts(':memory:', 1);
@@ -117,7 +122,7 @@ test('a signed-in player plays their free shift, buys a pack through Freemius, a
     assert.equal(back.headers.get('location'), '/play');
     keep(back);
     const me = await (await call('GET', '/api/me')).json();
-    assert.deepEqual(me.account, { name: 'Pat', email: 'p@example.com', shifts: 1 });
+    assert.deepEqual(me.account, { name: 'Pat', email: 'p@example.com', shifts: 1, bought: 0 });
     assert.deepEqual(me.pack, { shifts: 10, price: '$9.90' });
 
     assert.equal((await call('POST', '/api/sessions', {})).status, 201);
@@ -134,7 +139,7 @@ test('a signed-in player plays their free shift, buys a pack through Freemius, a
     assert.equal((await call('POST', '/api/billing/webhook', event, { 'x-signature': 'f'.repeat(64) })).status, 401);
     assert.equal((await call('POST', '/api/billing/webhook', event, { 'x-signature': sig(event) })).status, 200);
     assert.equal((await call('POST', '/api/billing/webhook', event, { 'x-signature': sig(event) })).status, 200);
-    assert.equal((await (await call('GET', '/api/me')).json()).account.shifts, 10, 'one pack, credited once');
+    assert.equal((await (await call('GET', '/api/me')).json()).account.bought, 10, 'one pack, credited once');
     assert.equal((await call('POST', '/api/sessions', {})).status, 201);
 
     const refund = JSON.stringify({ type: 'payment.refund', objects: { payment: { license_id: 555 } } });
@@ -143,6 +148,84 @@ test('a signed-in player plays their free shift, buys a pack through Freemius, a
 
     keep(await call('POST', '/api/auth/signout'));
     assert.equal((await (await call('GET', '/api/me')).json()).account, null);
+  } finally {
+    await app.close();
+  }
+});
+
+function waitFor(s: Session, pred: (e: GameEvent) => boolean, timeoutMs = 5000): Promise<GameEvent> {
+  const found = s.events.find(pred);
+  if (found) return Promise.resolve(found);
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      off();
+      reject(new Error('timed out waiting for event'));
+    }, timeoutMs);
+    const off = s.subscribe((e) => {
+      if (pred(e)) {
+        clearTimeout(t);
+        off();
+        resolve(e);
+      }
+    });
+  });
+}
+
+test("an account's shifts are its only limit: no token cap, and a spent daily pool stops nothing", async () => {
+  const store = new Accounts(':memory:', 1);
+  const player = store.signIn('google', 'g1', 'p@example.com', 'Pat').account;
+  store.credit('L1', player.id, 1);
+  // Every manager call reports far more tokens than the shift or the whole day may use. It gives
+  // one instruction per task and signs the task off once the subagent reports.
+  const heavy = (): ManagerDriver => {
+    let instructed = false;
+    return {
+      model: 'a/one',
+      async step(req) {
+        let res = assistant('Review.', []);
+        if (req.tools) {
+          res = instructed
+            ? assistant('', [call('MissionComplete', { summary: 'Done.' })])
+            : assistant('', [call('Agent', { description: 'Do it', prompt: 'Create the file.' })]);
+          instructed = !instructed;
+        }
+        return { ...res, usage: { inputTokens: 100_000, outputTokens: 0 } };
+      },
+    };
+  };
+  const app = createApp({
+    mock: false,
+    timeoutMs: 5000,
+    openPerAddress: 1000,
+    log: () => {},
+    models: async () => [{ id: 'a/one', label: 'One' }],
+    driverFor: heavy,
+    free: { sessionTokens: 10, dailyTokens: 10, perAddressPerDay: 1, credentials: { provider: 'gateway', apiKey: 'hosted-key-0123456789abcdef' } },
+    accounts: { store, auth: { secret: SECRET } },
+  });
+  await new Promise<void>((r) => app.server.listen(0, '127.0.0.1', () => r()));
+  const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+  const cookie = sessionCookie(SECRET, player.id, false).split(';')[0];
+  const start = () => fetch(`${base}/api/sessions`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: '{}' });
+  try {
+    const first = await start();
+    assert.equal(first.status, 201);
+    const s = app.sessions.get((await first.json()).id)!;
+    // The game clock starts once the page watches the shift.
+    s.start();
+    const count = (type: GameEvent['type']) => s.events.filter((e) => e.type === type).length;
+    for (let n = 1; ; n++) {
+      const next = await waitFor(s, (e) => e.type === 'game_over' || e.type === 'paused' || (e.type === 'instruction' && count('instruction') === n));
+      if (next.type !== 'instruction') break;
+      exec(s, 'echo done > done.txt');
+      s.report('Done.');
+    }
+    assert.equal(count('paused'), 0, 'never paused for a key');
+    assert.equal(count('game_over'), 1, 'played to the end');
+    assert.equal(count('mission_end'), s.missions.length);
+    assert.equal(count('error'), 0);
+    assert.equal((await start()).status, 201, 'the bought shift plays with the daily pool spent');
+    assert.equal((await start()).status, 402, 'then the account is out of shifts');
   } finally {
     await app.close();
   }

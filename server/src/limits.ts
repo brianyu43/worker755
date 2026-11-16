@@ -1,5 +1,6 @@
-// Spending limits for the hosted game. Free shifts run on the server's key, so each one has a token
-// allowance, all of them together share a daily budget, and each address gets a few per day.
+// Spending limits for the hosted game. Without sign-in, free shifts run on the server's key, so each
+// one has a token allowance, all of them together share a daily budget, and each address gets a few
+// per day. With sign-in, an account's shifts are the limit and a shift runs to its end.
 // Shifts on a player's own key are only rate limited.
 
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -198,13 +199,14 @@ export function freeAllowance(sessionTokens: number, daily: DailyBudget): Allowa
   };
 }
 
-/** A bought shift's allowance: its own cap. It counts toward the daily budget but is not stopped by it. */
-export function paidAllowance(sessionTokens: number, daily: DailyBudget | null): Allowance {
-  let spent = 0;
+/**
+ * A shift from a signed-in player's account, free or bought: the account's shift count is the limit,
+ * so it has no cap of its own. It counts toward the daily budget but is never stopped by it.
+ */
+export function accountAllowance(daily: DailyBudget | null): Allowance {
   return {
-    canSpend: () => spent < sessionTokens,
+    canSpend: () => true,
     spend(tokens) {
-      spent += tokens;
       daily?.spend(tokens);
     },
   };

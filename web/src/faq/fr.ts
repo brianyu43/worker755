@@ -90,7 +90,7 @@ export const fr: Faq = {
         {
           id: 'cost',
           q: 'Combien ça coûte ?',
-          a: 'Les services gratuits ne coûtent rien. Ils utilisent la clé du jeu, avec quelques services par jour pour chaque adresse réseau, et partagent tous le même budget quotidien. Une fois le budget épuisé, les services gratuits sont suspendus jusqu’au lendemain (UTC).\n\nSi le budget d’un service gratuit est épuisé en cours de route, il se met en pause. Ajoute ta propre clé pour reprendre là où tu en étais, ou termine le service et récupère ton évaluation.\n\nAvec ta propre clé, pas de limite quotidienne. Tu paies ton fournisseur pour ce que le manager lit et écrit.',
+          a: 'Ton premier service est gratuit : connecte-toi avec Google ou GitHub sur l’écran d’accueil. Ensuite, les services se vendent par lots de 10 pour $9.90, payés une seule fois. Un service commencé va jusqu’au bout.\n\nAvec ta propre clé API, pas besoin de compte ni de services. Tu paies ton fournisseur pour ce que le manager lit et écrit.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">héberge le jeu toi-même</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const fr: Faq = {
         {
           id: 'stored',
           q: 'Qu’est-ce que vous conservez ?',
-          a: 'Les évaluations que vous partagez. C’est la seule partie d’une session qui est conservée.\n\nLa session elle-même — vos commandes, les fichiers et le chat — reste dans la mémoire du serveur et disparaît au bout de quatre heures. Pour appliquer les limites, le serveur conserve aussi le nombre de sessions récemment lancées depuis chaque adresse réseau, ainsi que la part du quota gratuit du jour déjà consommée.\n\nPas de comptes. La page ne charge rien depuis d’autres sites. Votre navigateur conserve votre langue, votre visage et, si vous le lui demandez, votre clé.',
+          a: 'Si vous vous connectez : votre nom et votre adresse e-mail fournis par Google ou GitHub, et le nombre de services qu’il vous reste. Les évaluations que vous partagez. Rien d’autre d’un service n’est conservé.\n\nLe service lui-même — vos commandes, les fichiers et le chat — reste dans la mémoire du serveur et disparaît au bout de quatre heures. Pour appliquer les limites, le serveur conserve aussi le nombre de services récemment lancés depuis chaque adresse réseau.\n\nLa page ne charge rien depuis d’autres sites. Votre navigateur conserve votre connexion, votre langue, votre visage et, si vous le lui demandez, votre clé. Les détails sont sur la <a href="/privacy">page de confidentialité</a>.',
         },
       ],
     },

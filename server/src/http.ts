@@ -18,7 +18,7 @@ import type { Credentials, ProviderId } from './providers.ts';
 import { parseSync, SYNC_BODY_CAP, SyncError } from './sync.ts';
 import { WEB } from './web.ts';
 import type { SyncRequest } from './sync.ts';
-import { DailyBudget, freeAllowance, paidAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
+import { accountAllowance, DailyBudget, freeAllowance, persisted, RateLimiter, WindowBudget } from './limits.ts';
 import type { Allowance } from './limits.ts';
 import { isReviewId, ReviewStore } from './reviews.ts';
 import { isFace } from './reviews.ts';
@@ -338,7 +338,7 @@ export function createApp(opts: AppOptions): App {
     const id = accounts ? sessionAccount(accounts.auth.secret, req) : null;
     return id ? accounts!.store.get(id) : null;
   };
-  /** Payments add their shifts on top of the free pool, so they are offered whenever the server has a key. */
+  /** With accounts, an account's shifts are the limit, not the daily pool: on offer whenever the server has a key. */
   const serverShifts = () => (accounts ? opts.mock || !!freeCred : freeOpen());
   const cards =
     opts.cards === false || !opts.reviews
@@ -632,7 +632,7 @@ export function createApp(opts: AppOptions): App {
       const pack = accounts?.freemius ? { shifts: accounts.freemius.config.shifts, price: accounts.freemius.config.price } : null;
       return sendJson(res, 200, {
         signIn: accounts ? (['google', 'github'] as const).filter((p) => accounts.auth[p]) : [],
-        account: a ? { name: a.name, email: a.email, shifts: a.freeShifts + a.paidShifts } : null,
+        account: a ? { name: a.name, email: a.email, shifts: a.freeShifts + a.paidShifts, bought: a.paidShifts } : null,
         pack,
       });
     }
@@ -737,11 +737,6 @@ export function createApp(opts: AppOptions): App {
           player = accountOf(req);
           if (!player) throw new HttpError(401, errors.signInNeeded);
           if (player.freeShifts + player.paidShifts === 0) throw new HttpError(402, errors.noShifts);
-          // When today's free pool is spent, only bought shifts still play.
-          if (!freeOpen() && player.paidShifts === 0) {
-            stats?.count('free:closed');
-            throw new HttpError(429, errors.freeClosedBuy);
-          }
         } else if (!freeOpen()) {
           stats?.count('free:closed');
           throw new HttpError(429, errors.freeClosed);
@@ -776,12 +771,10 @@ export function createApp(opts: AppOptions): App {
       let allowance: Allowance | undefined;
       let taken: { account: string; kind: 'free' | 'paid' } | null = null;
       if (player) {
-        const kind = accounts!.store.take(player.id, !freeOpen());
+        const kind = accounts!.store.take(player.id);
         if (!kind) throw new HttpError(402, errors.noShifts);
         taken = { account: player.id, kind };
-        if (!opts.mock && opts.free) {
-          allowance = kind === 'paid' ? paidAllowance(opts.free.sessionTokens, daily) : freeAllowance(opts.free.sessionTokens, daily!);
-        }
+        if (!opts.mock) allowance = accountAllowance(daily);
       } else if (!own && !opts.mock && opts.free && daily) {
         if (!freePerAddress!.take(clientAddress(req, 48))) {
           stats?.count('free:used');

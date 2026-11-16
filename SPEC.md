@@ -284,7 +284,13 @@ Two ways to pay for model calls (`server/src/providers.ts`):
   (`server/src/limits.ts`): tokens per shift (`FREE_SHIFT_TOKENS`, default 250k; the closing
   review is always written), tokens per UTC day across all free shifts (`FREE_DAILY_TOKENS`,
   default 5M), and free shifts per address per day (`FREE_SHIFTS_PER_DAY`, default 3). A shift
-  that runs out mid-game ends with an error telling the player to bring a key.
+  that runs out mid-game pauses until the player adds a key or ends it for the review.
+- **Accounts**: with `AUTH_SECRET`, shifts on the server's key need a player signed in with Google
+  or GitHub (`server/src/auth.ts`, `server/src/accounts.ts`). Each account gets
+  `FREE_SHIFTS_ON_SIGNUP` (default 1); packs of `SHIFTS_PER_PACK` are bought through Freemius
+  (`server/src/freemius.ts`). The account's shifts are then the only limit: a shift has no token
+  cap and runs to its end, and the daily budget only counts. Clocking in signed out, or with no
+  shifts left, opens a dialog: sign in, or buy a pack, use your own key, or self-host.
 - **Own key**: the player picks OpenRouter or the Vercel AI Gateway and pastes a key. It is
   held only in that session's driver, never logged, stored or returned; the browser keeps it in
   memory, or in localStorage if the player ticks "Remember on this device". Model ids follow the

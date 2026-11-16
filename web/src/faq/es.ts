@@ -90,7 +90,7 @@ export const es: Faq = {
         {
           id: 'cost',
           q: '¿Cuánto cuesta?',
-          a: 'Los turnos gratis no cuestan nada. Usan la clave del propio juego, permiten unos cuantos al día por dirección de red y comparten un único presupuesto diario. Cuando se agota, los turnos gratis se suspenden hasta el día siguiente (UTC).\n\nSi se agotan los fondos mientras estás en un turno gratis, este se pausa. Añade tu propia clave para continuar donde lo dejaste, o termina el turno y recibe tu evaluación de trabajo.\n\nCon tu propia clave no hay límite diario. Le pagas a tu proveedor por lo que el manager lee y escribe.',
+          a: 'Tu primer turno es gratis: inicia sesión con Google o GitHub en la pantalla de inicio. Después, los turnos vienen en paquetes de 10 por $9.90, con un solo pago. Un turno, una vez empezado, dura hasta el final.\n\nCon tu propia clave de API no necesitas cuenta ni turnos. Le pagas a tu proveedor por lo que el manager lee y escribe.\n\nO <a href="https://github.com/gulivan/worker755#run-it">ejecuta el juego por tu cuenta</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const es: Faq = {
         {
           id: 'stored',
           q: '¿Qué guardan?',
-          a: 'Las evaluaciones que compartes. Es lo único del turno que se guarda.\n\nEl turno en sí, tus comandos, los archivos y el chat viven en la memoria del servidor y desaparecen en un plazo de cuatro horas. Para aplicar los límites, el servidor también guarda cuántos turnos inició recientemente cada dirección de red y cuánto del presupuesto gratuito de hoy se ha gastado.\n\nNo hay cuentas. La página no carga nada de otros sitios. Tu navegador conserva tu idioma, tu cara y, si se lo pides, tu clave.',
+          a: 'Si inicias sesión: tu nombre y tu correo de Google o GitHub, y cuántos turnos te quedan. Las evaluaciones que compartes. Nada más del turno se guarda.\n\nEl turno en sí, tus comandos, los archivos y el chat viven en la memoria del servidor y desaparecen en un plazo de cuatro horas. Para aplicar los límites, el servidor también guarda cuántos turnos inició recientemente cada dirección de red.\n\nLa página no carga nada de otros sitios. Tu navegador conserva tu sesión, tu idioma, tu cara y, si se lo pides, tu clave. Los detalles están en la <a href="/privacy">página de privacidad</a>.',
         },
       ],
     },

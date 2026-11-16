@@ -90,7 +90,7 @@ export const de: Faq = {
         {
           id: 'cost',
           q: 'Was kostet das?',
-          a: 'Kostenlose Schichten kosten nichts. Sie laufen über den eigenen Schlüssel des Spiels, davon gibt es pro Netzwerkadresse nur ein paar am Tag, und alle teilen sich ein gemeinsames Tagesbudget. Ist das aufgebraucht, sind kostenlose Schichten bis zum nächsten Tag (UTC) nicht verfügbar.\n\nGeht einer kostenlosen Schicht mittendrin das Budget aus, pausiert sie. Füge deinen eigenen Schlüssel hinzu, um dort weiterzumachen, wo du aufgehört hast, oder beende die Schicht und lass dir deine Bewertung geben.\n\nMit deinem eigenen Schlüssel gibt es kein Tageslimit. Du bezahlst deinem Anbieter, was der Manager liest und schreibt.',
+          a: 'Deine erste Schicht ist kostenlos: Melde dich auf dem Startbildschirm mit Google oder GitHub an. Danach gibt es Schichten im Paket zu 10 für $9.90, einmalig bezahlt. Eine begonnene Schicht läuft bis zum Ende.\n\nMit deinem eigenen API-Schlüssel brauchst du weder Konto noch Schichten. Du bezahlst deinem Anbieter, was der Manager liest und schreibt.\n\nOder <a href="https://github.com/gulivan/worker755#run-it">betreibe das Spiel selbst</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const de: Faq = {
         {
           id: 'stored',
           q: 'Was speichert ihr?',
-          a: 'Bewertungen, die du teilst. Das ist der einzige Teil einer Schicht, der gespeichert wird.\n\nDie Schicht selbst, deine Befehle, Dateien und der Chat bleiben im Arbeitsspeicher des Servers und sind nach spätestens vier Stunden weg. Zur Begrenzung speichert der Server außerdem, wie viele Schichten von jeder Netzwerkadresse kürzlich gestartet wurden und wie viel vom heutigen Gratisbudget verbraucht ist.\n\nKeine Konten. Die Seite lädt nichts von anderen Websites. Dein Browser speichert deine Sprache, dein Gesicht und – wenn du ihn darum bittest – deinen Schlüssel.',
+          a: 'Wenn du dich anmeldest: deinen Namen und deine E-Mail-Adresse von Google oder GitHub und wie viele Schichten du noch hast. Bewertungen, die du teilst. Sonst wird nichts aus einer Schicht gespeichert.\n\nDie Schicht selbst, deine Befehle, Dateien und der Chat bleiben im Arbeitsspeicher des Servers und sind nach spätestens vier Stunden weg. Zur Begrenzung speichert der Server außerdem, wie viele Schichten von jeder Netzwerkadresse kürzlich gestartet wurden.\n\nDie Seite lädt nichts von anderen Websites. Dein Browser speichert deine Anmeldung, deine Sprache, dein Gesicht und – wenn du ihn darum bittest – deinen Schlüssel. Die Einzelheiten stehen auf der <a href="/privacy">Datenschutzseite</a>.',
         },
       ],
     },

@@ -79,9 +79,10 @@ Everything is optional. See [.env.example](.env.example).
 | --- | --- | --- |
 | `AI_GATEWAY_API_KEY` | | Turns on free shifts, paid from this key |
 | `FREE_MODELS` | first offered model | Models free shifts may use, comma separated |
-| `FREE_SHIFT_TOKENS` | 250000 | Token allowance per free shift (the review is always written) |
-| `FREE_DAILY_TOKENS` | 5000000 | Tokens per UTC day across all free shifts |
-| `FREE_SHIFTS_PER_DAY` | 3 | Free shifts per address per day |
+| `FREE_SHIFT_TOKENS` | 250000 | Without sign-in: token allowance per free shift (the review is always written) |
+| `FREE_DAILY_TOKENS` | 5000000 | Without sign-in: tokens per UTC day across all free shifts |
+| `FREE_SHIFTS_PER_DAY` | 3 | Without sign-in: free shifts per address per day |
+| `AUTH_SECRET` | | Turns on sign-in with Google or GitHub: free shifts per account, then packs sold through Freemius; an account's shifts are the only limit (see `.env.example`) |
 | `SHIFTS_PER_HOUR` | 30 | Shift starts per address per hour, on any key |
 | `MANAGER_MODELS` | built-in list | Models offered, in gateway naming (`vendor/model`) |
 | `INSTRUCTION_TIMEOUT_MS` | 90000 | Time per instruction |

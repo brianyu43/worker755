@@ -90,7 +90,7 @@ export const ptBR: Faq = {
         {
           id: 'cost',
           q: 'Quanto custa?',
-          a: 'Os turnos grátis não custam nada. Eles usam a chave do próprio jogo, com alguns turnos por dia para cada endereço de rede, e todos compartilham o mesmo limite diário. Quando o limite acaba, os turnos grátis ficam indisponíveis até o dia seguinte (UTC).\n\nSe o limite acabar no meio de um turno grátis, ele será pausado. Adicione sua própria chave para continuar de onde parou ou encerre o turno e receba sua avaliação de trabalho.\n\nCom sua própria chave, não há limite diário. Você paga ao seu provedor pelo que o gerente lê e escreve.',
+          a: 'Seu primeiro turno é grátis: entre com o Google ou o GitHub na tela inicial. Depois disso, os turnos vêm em pacotes de 10 por $9.90, com pagamento único. Um turno, depois de começar, vai até o fim.\n\nCom sua própria chave de API, você não precisa de conta nem de turnos. Você paga ao seu provedor pelo que o gerente lê e escreve.\n\nOu <a href="https://github.com/gulivan/worker755#run-it">rode o jogo por conta própria</a>.',
         },
         {
           id: 'providers',
@@ -105,7 +105,7 @@ export const ptBR: Faq = {
         {
           id: 'stored',
           q: 'O que vocês guardam?',
-          a: 'As avaliações que você compartilha. Essa é a única parte do turno que fica salva.\n\nO turno em si, seus comandos, arquivos e conversas ficam na memória do servidor e desaparecem em até quatro horas. Para aplicar os limites, o servidor também salva quantos turnos cada endereço de rede iniciou recentemente e quanto do orçamento grátis de hoje já foi gasto.\n\nSem contas. A página não carrega nada de outros sites. Seu navegador guarda seu idioma, seu rosto e, se você pedir, sua chave.',
+          a: 'Se você entrar: seu nome e e-mail vindos do Google ou do GitHub, e quantos turnos ainda restam. As avaliações que você compartilha. Nada mais do turno fica salvo.\n\nO turno em si, seus comandos, arquivos e conversas ficam na memória do servidor e desaparecem em até quatro horas. Para aplicar os limites, o servidor também salva quantos turnos cada endereço de rede iniciou recentemente.\n\nA página não carrega nada de outros sites. Seu navegador guarda seu login, seu idioma, seu rosto e, se você pedir, sua chave. Os detalhes estão na <a href="/privacy">página de privacidade</a>.',
         },
       ],
     },

@@ -9,7 +9,8 @@ export type SignInProvider = 'google' | 'github';
 export interface Me {
   /** Ways to sign in; empty when shifts on the server's key need no account. */
   signIn: SignInProvider[];
-  account: { name: string; email: string; shifts: number } | null;
+  /** shifts: all left; bought: how many of them were bought. */
+  account: { name: string; email: string; shifts: number; bought: number } | null;
   /** A pack of shifts on sale, when payments are on. */
   pack: { shifts: number; price: string } | null;
 }

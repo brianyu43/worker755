@@ -30,7 +30,8 @@ process.on('uncaughtException', () => {
   process.exit(1);
 });
 
-// With AI_GATEWAY_API_KEY set, players get free shifts on it, within these limits.
+// With AI_GATEWAY_API_KEY set, players get free shifts on it, within these limits (without sign-in;
+// with it, an account's shifts are the limit).
 // Without it, every player brings their own key.
 const hosted = !mock && !!process.env.AI_GATEWAY_API_KEY;
 const free = hosted

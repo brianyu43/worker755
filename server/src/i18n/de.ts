@@ -538,7 +538,6 @@ export const de: ServerCopy = {
     noInstruction: 'Keine offene Anweisung',
     signInNeeded: 'Melde dich an, um mit unserem Schlüssel zu spielen, oder füge deinen eigenen API-Schlüssel hinzu.',
     noShifts: 'Du hast keine Schichten mehr. Kauf weitere oder füge deinen eigenen API-Schlüssel hinzu.',
-    freeClosedBuy: 'Deine kostenlosen Schichten für heute sind aufgebraucht. Kauf weitere oder füge deinen eigenen API-Schlüssel hinzu.',
     emailNeeded: 'Für deine Anmeldung ist keine bestätigte E-Mail-Adresse hinterlegt, die für den Beleg benötigt wird. Melde dich auf einem anderen Weg an.',
     notOver: 'Die Schicht ist noch nicht vorbei',
     sharingOff: 'Teilen ist auf diesem Server deaktiviert',

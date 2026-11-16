@@ -481,62 +481,57 @@ kbd {
   color: var(--ink-soft);
 }
 
-/* ---------- Start: the player's account on our key ---------- */
-.account {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--ink);
-  border-radius: 3px;
-  background: var(--sheet);
-  font-size: 14px;
-}
-.account p {
-  margin: 0;
-}
-.account-who {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--ink-soft);
-  overflow-wrap: anywhere;
-}
-.account-shifts {
-  font-weight: 600;
-}
-.account-empty {
-  color: var(--stamp);
-}
-.account-why {
-  color: var(--ink-soft);
-}
-.account-alt {
-  font-size: 13px;
-}
-.account-alt a {
-  color: var(--ink-soft);
-}
-.sign-in {
+/* ---------- Start: the signed-in player, and the ways to play on once the free shift is used ---------- */
+.account-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-.btn-sign-in,
-.btn-buy {
-  text-decoration: none;
   justify-content: center;
+  gap: 4px 10px;
+  margin: 18px 0 0;
+  color: var(--ink-faint);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
-.btn-buy {
-  align-self: flex-start;
+.account-line .link-btn {
+  color: var(--ink-faint);
 }
-.btn-sign-in {
+.offer-sheet {
+  position: relative;
+}
+.offer-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.offer-close:hover {
+  background: rgb(28 42 74 / 0.07);
+}
+.offer-sheet .end-title {
+  padding-right: 36px;
+}
+.offer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.offer-actions .btn {
+  justify-content: center;
   color: var(--ink);
+  text-decoration: none;
 }
-.btn-sign-in:hover,
-.btn-buy:not(:disabled):hover {
+.offer-actions .btn-ink {
+  color: var(--sheet);
+}
+.offer-actions .btn:not(.btn-ink):hover {
   background: rgb(28 42 74 / 0.07);
 }
 .link-btn {

@@ -107,9 +107,9 @@ export const en: Faq = {
           id: 'cost',
           q: 'What does it cost?',
           a:
-            "Free shifts cost nothing. They run on the game's own key, a few a day for each network address, and all of them share one daily budget. When it is spent, free shifts close until the next day (UTC).\n\n" +
-            'If a free shift runs out partway, it pauses. Add your own key to carry on where you stopped, or end it and take your review.\n\n' +
-            'With your own key there is no daily limit. You pay your provider for what the manager reads and writes.',
+            'Your first shift is free: sign in with Google or GitHub on the start screen. After that, shifts come in packs of 10 for $9.90, paid once. A shift, once started, runs to its end.\n\n' +
+            'With your own API key you need no account and no shifts. You pay your provider for what the manager reads and writes.\n\n' +
+            'Or <a href="https://github.com/gulivan/worker755#run-it">run the game yourself</a>.',
         },
         {
           id: 'providers',
@@ -127,9 +127,9 @@ export const en: Faq = {
           id: 'stored',
           q: 'What do you keep?',
           a:
-            'Reviews you share. That is the only part of a shift that is saved.\n\n' +
-            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently and how much of today's free budget is spent.\n\n" +
-            'No accounts. The page loads nothing from other sites. Your browser keeps your language, your face and, if you ask it to, your key.',
+            'If you sign in: your name and email from Google or GitHub, and how many shifts you have left. Reviews you share. Nothing else from a shift is saved.\n\n' +
+            "The shift itself, your commands, the files and the chat, lives in the server's memory and is gone within four hours. For the limits, the server also saves how many shifts each network address started recently.\n\n" +
+            'The page loads nothing from other sites. Your browser keeps your sign-in, your language, your face and, if you ask it to, your key. The <a href="/privacy">privacy page</a> has the details.',
         },
       ],
     },

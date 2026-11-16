@@ -572,7 +572,6 @@ export const en = {
     noInstruction: 'No open instruction',
     signInNeeded: 'Sign in to play on our key, or add your own API key.',
     noShifts: 'You have no shifts left. Buy more, or add your own API key.',
-    freeClosedBuy: 'Free shifts are used up for today. Buy shifts, or add your own API key.',
     emailNeeded: 'Your sign-in has no verified email address, which the receipt needs. Sign in another way.',
     notOver: 'The shift is not over yet',
     sharingOff: 'Sharing is off on this server',

@@ -124,9 +124,9 @@ export class Accounts {
     }
   }
 
-  /** Takes one shift, a free one first; null when none is left. paidOnly skips the free ones. */
-  take(id: string, paidOnly = false): ShiftKind | null {
-    if (!paidOnly && this.db.prepare('UPDATE accounts SET free_shifts = free_shifts - 1 WHERE id = ? AND free_shifts > 0').run(id).changes) {
+  /** Takes one shift, a free one first; null when none is left. */
+  take(id: string): ShiftKind | null {
+    if (this.db.prepare('UPDATE accounts SET free_shifts = free_shifts - 1 WHERE id = ? AND free_shifts > 0').run(id).changes) {
       return 'free';
     }
     if (this.db.prepare('UPDATE accounts SET paid_shifts = paid_shifts - 1 WHERE id = ? AND paid_shifts > 0').run(id).changes) {

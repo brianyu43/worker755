@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, client } from '../api/client';
-import { checkoutUrl, getMe, signInUrl, signOut } from '../api/account';
+import { checkoutUrl, getMe, signOut } from '../api/account';
 import type { Me } from '../api/account';
 import type { NewSession } from '../api/client';
 import type { Character, ModelList, Provider, Workplace } from '../api/types';
@@ -10,6 +10,8 @@ import { loadFace, randomFace, saveFace } from '../game/avatar';
 import { loadKey, loadPicks, saveKey, savePicks } from '../game/apiKey';
 import { useLanyard } from '../game/useLanyard';
 import { KeyCheckRow, ModelOptions, useKeyCheck } from '../components/KeyCheck';
+import { ShiftOffer } from '../components/ShiftOffer';
+import type { OfferKind } from '../components/ShiftOffer';
 import { currentLanguage, dateLocale, LANGUAGE_LABELS, LANGUAGES, setLanguage, t, type Key, type Language } from '../i18n';
 
 interface Props {
@@ -126,15 +128,33 @@ export function Start({ onStart }: Props) {
   /** Shifts on our key need an account here. */
   const accounts = !!me?.signIn.length;
   const shiftsLeft = me?.account?.shifts ?? 0;
+  /** Asked on clocking in when a free shift cannot start: sign in first, or the shifts are used up. */
+  const [shiftOffer, setShiftOffer] = useState<OfferKind | null>(null);
+  const [offerError, setOfferError] = useState<string | null>(null);
+  const showOffer = (kind: OfferKind | null) => {
+    setOfferError(null);
+    setShiftOffer(kind);
+  };
   const buy = async () => {
     setBuying(true);
-    setStartError(null);
+    setOfferError(null);
     try {
       location.assign(await checkoutUrl(language));
     } catch (err) {
-      setStartError(err instanceof ApiError ? err.message : t('start.failed'));
+      setOfferError(err instanceof ApiError ? err.message : t('start.failed'));
       setBuying(false);
     }
+  };
+  const keyInput = useRef<HTMLInputElement>(null);
+  /** Bumped to move the cursor to the key field once it is on screen. */
+  const [focusKey, setFocusKey] = useState(0);
+  useEffect(() => {
+    if (focusKey) keyInput.current?.focus();
+  }, [focusKey]);
+  const ownKeyInstead = () => {
+    showOffer(null);
+    setAccess('own');
+    setFocusKey((n) => n + 1);
   };
   const leave = async () => {
     await signOut();
@@ -189,9 +209,13 @@ export function Start({ onStart }: Props) {
     if (saved) void keyCheck.check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // The button is disabled until the list arrives, and a disabled button cannot take focus.
+  // The button is disabled until the list arrives, and a disabled button cannot take focus. Only on
+  // arrival: later lists (another provider, the free shift or a key) leave the cursor where it is.
+  const focused = useRef(false);
   useEffect(() => {
-    if (models) btn.current?.focus();
+    if (!models || focused.current) return;
+    focused.current = true;
+    btn.current?.focus();
   }, [models]);
 
   const go = async () => {
@@ -201,6 +225,8 @@ export function Start({ onStart }: Props) {
       setStartError(t('start.pasteKey'));
       return;
     }
+    if (access === 'free' && accounts && !me?.account) return showOffer('signIn');
+    if (access === 'free' && accounts && !shiftsLeft) return showOffer('out');
     setStarting(true);
     setStartError(null);
     if (access === 'own') saveKey(remember ? { provider, apiKey: key } : null);
@@ -221,8 +247,15 @@ export function Start({ onStart }: Props) {
         ...(access === 'own' ? { apiKey: key, provider } : {}),
       });
     } catch (err) {
-      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('start.failed'));
       setStarting(false);
+      // Signed out or used up in the meantime (another tab, an older page): the same choices as above.
+      if (access === 'free' && err instanceof ApiError && (err.status === 401 || err.status === 402)) {
+        getMe()
+          .then(setMe)
+          .catch(() => {});
+        return showOffer(err.status === 401 ? 'signIn' : 'out');
+      }
+      setStartError(err instanceof ApiError && err.status >= 400 && err.status < 500 ? err.message : t('start.failed'));
     }
   };
 
@@ -408,50 +441,16 @@ export function Start({ onStart }: Props) {
               {(freeOpen ? (['free', 'own'] as const) : (['own'] as const)).map((a) => (
                 <label key={a} className={`seg-opt${access === a ? ' seg-on' : ''}`}>
                   <input type="radio" name="access" value={a} checked={access === a} onChange={() => setAccess(a)} />
-                  <span>{t(a === 'own' ? 'start.access.own' : accounts ? 'start.access.ours' : 'start.access.free')}</span>
+                  <span>
+                    {a === 'own'
+                      ? t('start.access.own')
+                      : me?.account?.bought
+                        ? t('start.shiftsLeft', { count: shiftsLeft })
+                        : t('start.access.free')}
+                  </span>
                 </label>
               ))}
             </div>
-            {access === 'free' && accounts && (
-              <div className="account">
-                {me?.account ? (
-                  <>
-                    <p className="account-who">
-                      <span>{me.account.email || me.account.name}</span>
-                      <button type="button" className="link-btn" onClick={() => void leave()}>
-                        {t('start.signOut')}
-                      </button>
-                    </p>
-                    <p className={`account-shifts${shiftsLeft ? '' : ' account-empty'}`}>
-                      {t('start.shiftsLeft', { count: shiftsLeft })}
-                    </p>
-                    {me.pack && (
-                      <button type="button" className="btn btn-buy" disabled={buying} onClick={() => void buy()}>
-                        {t('start.buy', { count: me.pack.shifts, price: me.pack.price })}
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <p className="account-why">{t('start.signInWhy')}</p>
-                    <div className="sign-in">
-                      {me?.signIn.map((p) => (
-                        <a key={p} className={`btn btn-sign-in sign-in-${p}`} href={signInUrl(p)}>
-                          {t(p === 'google' ? 'start.signIn.google' : 'start.signIn.github')}
-                        </a>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {models?.sourceUrl && (
-                  <p className="account-alt">
-                    <a href={models.sourceUrl} target="_blank" rel="noreferrer">
-                      {t('start.selfHost')}
-                    </a>
-                  </p>
-                )}
-              </div>
-            )}
             {access === 'own' && (
               <div className="form-grid">
                 <label className="field">
@@ -480,6 +479,7 @@ export function Start({ onStart }: Props) {
                     )}
                   </span>
                   <input
+                    ref={keyInput}
                     id="api-key"
                     className="select"
                     type="password"
@@ -516,7 +516,7 @@ export function Start({ onStart }: Props) {
               ref={btn}
               type="submit"
               className="btn btn-ink btn-big clock-in"
-              disabled={!models || starting || (access === 'free' && accounts && shiftsLeft === 0)}
+              disabled={!models || starting}
             >
               {starting ? t('start.clockingIn') : t('start.clockIn')}
             </button>
@@ -526,8 +526,26 @@ export function Start({ onStart }: Props) {
         {arrival === 'signInFailed' && !me?.account && <p className="form-error">{t('start.signInFailed')}</p>}
         {arrival === 'bought' && <p className="form-note">{t('start.bought')}</p>}
         {startError && <p className="form-error">{startError}</p>}
+        {me?.account && (
+          <p className="account-line">
+            <span>{me.account.email || me.account.name}</span>
+            <button type="button" className="link-btn" onClick={() => void leave()}>
+              {t('start.signOut')}
+            </button>
+          </p>
+        )}
         <SiteLinks site={models} />
       </div>
+      <ShiftOffer
+        kind={shiftOffer}
+        me={me}
+        sourceUrl={models?.sourceUrl ?? ''}
+        buying={buying}
+        error={offerError}
+        onBuy={() => void buy()}
+        onOwnKey={ownKeyInstead}
+        onClose={() => showOffer(null)}
+      />
     </main>
   );
 }

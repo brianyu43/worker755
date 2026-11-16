@@ -538,7 +538,6 @@ export const fr: ServerCopy = {
     noInstruction: 'Aucune instruction en cours',
     signInNeeded: 'Connecte-toi pour jouer avec notre clé, ou ajoute ta propre clé API.',
     noShifts: 'Tu n’as plus de services. Achètes-en d’autres ou ajoute ta propre clé API.',
-    freeClosedBuy: 'Tu as épuisé les services gratuits du jour. Achètes-en ou ajoute ta propre clé API.',
     emailNeeded: 'Ton compte n’a pas d’adresse e-mail vérifiée, nécessaire pour le reçu. Connecte-toi autrement.',
     notOver: 'Le service n’est pas encore terminé',
     sharingOff: 'Le partage est désactivé sur ce serveur',
