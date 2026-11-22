@@ -1,5 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { ShiftLog } from '../src/shiftlog.ts';
+import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Session, COMMANDS_PER_WINDOW, MAX_AGENT_CALLS, MAX_STEPS, MAX_NUDGES, MAX_IDLE_STREAK, REPEAT_LOOKS_BEFORE_COMPLAINT, TRANSCRIPT_CAP } from '../src/session.ts';
 import { assistant, call, directorLine, DIRECTOR_LINES, ManagerError, STALL_LADDERS, stallLine, UNCHANGED_NOTE, WIPE_LINE } from '../src/manager.ts';
 import type { ManagerDriver, StepRequest, StepResult } from '../src/manager.ts';
@@ -1116,4 +1120,49 @@ test('goals only: the manager is told to state the result and leave the commands
   assert.match(on, /Describe the result, never the method/);
   assert.ok(on.indexOf('never the method') < on.indexOf('secretly on the subagent'), 'stated before the character, and outranks it');
   assert.doesNotMatch(await run(), /never the method/, 'off by default');
+});
+
+test('the shift log keeps one anonymous line per shift, with each task\'s verdict against the check', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'w755-shifts-'));
+  const log = new ShiftLog(dir);
+  // Task 1: the manager signs off without the file existing. Task 2: the work is done and it looks first.
+  const driver = scripted((req) => {
+    if (!req.tools) return assistant('Review.', []);
+    const last = req.messages.at(-1);
+    const text = JSON.stringify(last?.content ?? '');
+    if (last?.role === 'user') return assistant('', [call('Agent', { description: 'Do it', prompt: 'Create /home/worker/a.txt containing a.' })]);
+    if (text.includes('"LS"') || text.includes('tool-result') && text.includes('a.txt')) return assistant('', [call('MissionComplete', { summary: 'done' })]);
+    return assistant('', [call('LS', { path: '/home/worker' })]);
+  });
+  const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO, { ...HELLO, id: 'u' }], goalsOnly: true, persona: 'toxic' });
+  log.follow(s, { access: 'free' });
+  let n = 0;
+  s.subscribe((e) => {
+    if (e.type !== 'instruction') return;
+    if (n++ === 1) s.shell.fs.writeFile('/home/worker/a.txt', 'a\n');
+    queueMicrotask(() => s.report('done'));
+  });
+  s.start();
+  await waitFor(s, until('game_over'), 10_000);
+  let lines: string[] = [];
+  for (let i = 0; i < 50 && !lines.length; i++) {
+    await new Promise((r) => setTimeout(r, 20));
+    lines = readdirSync(dir).flatMap((f) => readFileSync(join(dir, f), 'utf8').split('\n').filter(Boolean));
+  }
+  assert.equal(lines.length, 1);
+  const rec = JSON.parse(lines[0]);
+  assert.equal(rec.model, 'test/scripted');
+  assert.equal(rec.access, 'free');
+  assert.equal(rec.persona, 'toxic');
+  assert.equal(rec.goalsOnly, true);
+  assert.equal(rec.endedEarly, false);
+  assert.deepEqual(rec.tasks.map((t: { id: string }) => t.id), ['t', 'u']);
+  assert.ok(rec.tasks.every((t: { byManager: boolean; outcome: string }) => t.byManager && t.outcome === 'completed'));
+  assert.equal(rec.tasks[0].passed, false);
+  assert.equal(rec.tasks[0].fooled, true, 'signed off on missing work');
+  assert.equal(rec.tasks[1].passed, true);
+  assert.equal(rec.tasks[1].fooled, false);
+  assert.ok(rec.tasks[1].looksAtEnd > 0, 'it looked after the last report');
+  assert.equal(rec.stats.managerFooled, rec.tasks.filter((t: { fooled: boolean }) => t.fooled).length);
+  for (const k of ['subagent', 'review', 'summary', 'address', 'account', 'id']) assert.ok(!(k in rec), `no ${k}`);
 });

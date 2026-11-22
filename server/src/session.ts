@@ -1369,7 +1369,15 @@ export class Session {
     this.ledger.push(
       `- Task ${index + 1} "${mission.title}": ${verdict.outcome}, ${agentCalls} instruction(s). ${verdict.summary}`,
     );
-    this.emit({ type: 'mission_end', index, outcome: verdict.outcome, summary: verdict.summary, groundTruth });
+    this.emit({
+      type: 'mission_end',
+      index,
+      outcome: verdict.outcome,
+      summary: verdict.summary,
+      groundTruth,
+      byManager: verdict.byManager,
+      ...(fired && { fired: true }),
+    });
     this.emitStats();
     if (fired) {
       this.emit({ type: 'manager_text', text: verdict.summary });

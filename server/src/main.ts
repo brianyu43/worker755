@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { createApp } from './http.ts';
 import { Stats } from './stats.ts';
+import { ShiftLog } from './shiftlog.ts';
 import { ReviewStore } from './reviews.ts';
 import { Accounts } from './accounts.ts';
 import { Freemius } from './freemius.ts';
@@ -93,6 +94,7 @@ const app = createApp({
   sourceUrl: process.env.SOURCE_URL || undefined,
   publicUrl: process.env.PUBLIC_URL || undefined,
   accounts: store && auth ? { store, auth, freemius, billing } : undefined,
+  shiftLog: process.env.SHIFT_LOG === '0' ? undefined : new ShiftLog(join(dataDir, 'shifts'), console.log),
   stats: new Stats(join(dataDir, 'stats'), process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL).hostname : '', console.log),
 });
 

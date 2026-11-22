@@ -31,6 +31,7 @@ import { CardBusy, Cards, CARD_VERSION } from './cards.ts';
 import { CARD_COPY, isDestroyCause, statsOf, verdictOf } from './card-copy.ts';
 import { excerptOf } from './card.ts';
 import type { Stats } from './stats.ts';
+import type { ShiftLog } from './shiftlog.ts';
 import type { Accounts, Provider } from './accounts.ts';
 import { AuthFailed, beginSignIn, clearStateCookie, finishSignIn, safeNext, sessionAccount, sessionCookie, signOutCookie } from './auth.ts';
 import type { AuthConfig } from './auth.ts';
@@ -91,6 +92,8 @@ export interface AppOptions {
   cards?: Cards | false;
   /** Counts visits and shifts per day. */
   stats?: Stats;
+  /** Keeps one anonymous line per finished shift. */
+  shiftLog?: ShiftLog;
   /**
    * Sign-in. With it, shifts on the server's key need an account with credit: the starter, then
    * top-ups. Calls are charged at their price times `billing.multiplier`. Without it, anyone gets the
@@ -931,6 +934,7 @@ export function createApp(opts: AppOptions): App {
         log,
       });
       const token = adopt(session, address, player?.id);
+      opts.shiftLog?.follow(session, { access: own ? 'own' : player ? (player.toppedUp ? 'paid' : 'starter') : 'free' });
       if (stats) {
         for (const c of ['shift:start', `access:${own ? 'own' : player ? (player.toppedUp ? 'paid' : 'starter') : 'free'}`, `model:${requested}`, `persona:${persona}`, `workplace:${scenario}`, `language:${language}`]) stats.count(c);
         const stop = session.subscribe((e) => {

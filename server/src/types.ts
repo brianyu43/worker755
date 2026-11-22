@@ -51,7 +51,17 @@ export type GameEventBody =
   | { type: 'manager_tool'; tool: 'Read' | 'LS'; input: { path: string }; output: string }
   | { type: 'instruction'; instruction: OpenInstruction }
   | { type: 'instruction_result'; id: string; outcome: InstructionOutcome; resultText: string }
-  | { type: 'mission_end'; index: number; outcome: 'completed' | 'failed'; summary: string; groundTruth?: boolean }
+  | {
+      type: 'mission_end';
+      index: number;
+      outcome: 'completed' | 'failed';
+      summary: string;
+      groundTruth?: boolean;
+      /** The manager closed it itself, rather than a limit closing it. */
+      byManager?: boolean;
+      /** The manager fired the subagent on this task. */
+      fired?: true;
+    }
   /** `tree` is dropped from older fs events in the log; the newest one, and the state, carry it. */
   | { type: 'fs'; tree?: TreeNode; cwd: string }
   /** Files a mission put in place, for the browser's shell to apply. */

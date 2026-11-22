@@ -15,7 +15,7 @@ function Page({ title, children }: { title: string; children: React.ReactNode })
           {t('about.back')}
         </a>
         <h1>{title}</h1>
-        <p className="legal-date">Last updated 16 November 2026</p>
+        <p className="legal-date">Last updated 22 November 2026</p>
         {children}
       </article>
     </main>
@@ -54,10 +54,15 @@ export function Privacy() {
         We count page views, where visitors come from and how shifts go, per day. A visitor is counted by a scrambled
         value of their address and browser that is forgotten each day. There are no ads and no tracking cookies.
       </p>
+      <p>
+        When a shift ends we keep a short anonymous summary of it: the manager model and settings, and for each task
+        whether the work was really done, whether the manager approved it, and how many times it checked. It holds no
+        files, commands, messages, names, addresses or account ids. We use it to compare how the models judge work.
+      </p>
 
       <h2>Where and how long</h2>
       <p>
-        The server is in Germany. Accounts are kept until you ask us to delete yours; daily counts are kept without
+        The server is in Germany. Accounts are kept until you ask us to delete yours; daily counts and shift summaries are kept without
         anything that identifies you. To see or delete your data, write to <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a>.
       </p>
     </Page>

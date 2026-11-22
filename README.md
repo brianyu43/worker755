@@ -160,6 +160,7 @@ Everything is optional. See [.env.example](.env.example).
 | `TRUSTED_PROXIES` | | Hosts allowed to set `cf-connecting-ip` (e.g. `tunnel`); empty trusts any peer |
 | `DATA_DIR` | `server/data` | Where shared reviews and the free-shift counts are saved |
 | `SHARING` | 1 | `0` turns review sharing off |
+| `SHIFT_LOG` | 1 | `0` stops the anonymous per-shift summaries in `DATA_DIR/shifts` (read them with `node server/scripts/shifts.ts`) |
 | `SOURCE_URL`, `DONATE_URL` | | Links shown under the start screen and the review |
 | `PUBLIC_URL` | | Sent to OpenRouter for app attribution |
 
