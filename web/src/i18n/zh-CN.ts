@@ -113,6 +113,8 @@ export const zhCN: Catalogue = {
   'key.check': '检查密钥',
   'key.checking': '检查中…',
   'key.ok': '密钥可用：有 {count} 个模型可用',
+  'key.checkLocal': '列出模型',
+  'key.okLocal': '已连接：有 {count} 个模型可用',
   'key.failed': '无法检查密钥。再试一次。',
   'key.recommended': '推荐',
   'key.other': '其他',

@@ -224,7 +224,7 @@ function createRealClient(): GameClient {
     createSession: async ({ model, allowSkip, allowQuit, subagent, scenario, director, apiKey, provider, language, stance, persona }) => {
       const { token, ...state } = await request<SessionState & { token?: string }>('POST', '/api/sessions', {
         ...(model ? { model } : {}),
-        ...(apiKey ? { apiKey, provider } : {}),
+        ...(apiKey ? { apiKey, provider } : provider === 'local' ? { provider } : {}),
         allowSkip: allowSkip === true,
         ...(allowQuit ? { allowQuit: true } : {}),
         subagent: subagent ?? '',

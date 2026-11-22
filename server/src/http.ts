@@ -13,7 +13,7 @@ import type { ManagerDriver } from './manager.ts';
 import { freeModels, isModelId, keyModels, listModels, MOCK_MODEL } from './models.ts';
 import { isScenarioId, SCENARIO_LIST } from './scenarios.ts';
 import type { KeyProblem, ModelOption } from './models.ts';
-import { hostedCredentials, isPlausibleKey, isProviderId, PROVIDERS } from './providers.ts';
+import { hostedCredentials, isPlausibleKey, isProviderId, providerList } from './providers.ts';
 import type { Credentials, ProviderId } from './providers.ts';
 import { parseSync, SYNC_BODY_CAP, SyncError } from './sync.ts';
 import { WEB } from './web.ts';
@@ -478,6 +478,14 @@ export function createApp(opts: AppOptions): App {
   const keyHash = (cred: Credentials) => createHash('sha256').update(`${cred.provider}\n${cred.apiKey}`).digest('hex');
 
   /** A player's key must work before it gets a shift: an unchecked string would cost nothing to spam. */
+  /** The provider and key a player sent; the local model server takes no key. */
+  function playerCredentials(body: Record<string, unknown>, errors: ReturnType<typeof copyFor>['errors']): Credentials {
+    if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
+    if (body.provider === 'local') return { provider: 'local', apiKey: '' };
+    if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
+    return { provider: body.provider, apiKey: body.apiKey };
+  }
+
   async function verifyKey(req: IncomingMessage, cred: Credentials, errors: ReturnType<typeof copyFor>['errors']): Promise<void> {
     const h = keyHash(cred);
     if ((verified.get(h) ?? 0) > Date.now()) return;
@@ -708,7 +716,7 @@ export function createApp(opts: AppOptions): App {
         default: list[0]?.id ?? '',
         mock: opts.mock,
         free: serverShifts(),
-        providers: PROVIDERS,
+        providers: providerList(),
         subagents: SUBAGENT_NAMES,
         stance: { text: DEFAULT_STANCE, max: STANCE_MAX },
         characters: PERSONAS.map((id) => ({ id, text: personaText(id) })),
@@ -724,10 +732,8 @@ export function createApp(opts: AppOptions): App {
       // Checks a player's key with its provider and lists every model it can use.
       const body = await readJson(req);
       const errors = copyFor(isLanguage(body.language) ? body.language : 'en').errors;
-      if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
-      if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
+      const cred = playerCredentials(body, errors);
       if (!keyChecks.take(clientAddress(req, 48))) throw new HttpError(429, errors.tooManyChecks);
-      const cred: Credentials = { provider: body.provider, apiKey: body.apiKey };
       const found = await checkKey(cred);
       if ('problem' in found) throw keyError(found.problem, errors);
       if (!found.models.length) throw new HttpError(400, errors.noModels);
@@ -750,12 +756,11 @@ export function createApp(opts: AppOptions): App {
       let cred: Credentials | null = null;
       let list: ModelOption[];
       let player: ReturnType<typeof accountOf> = null;
-      const own = body.apiKey !== undefined && body.apiKey !== '';
+      // A local model server counts as the player's own key: it needs none.
+      const own = (body.apiKey !== undefined && body.apiKey !== '') || body.provider === 'local';
       if (own) {
-        if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
-        if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, errors.notAKey);
-        cred = { provider: body.provider, apiKey: body.apiKey };
-        list = await models(body.provider);
+        cred = playerCredentials(body, errors);
+        list = await models(cred.provider);
       } else {
         if (!opts.mock && !freeCred) throw new HttpError(400, errors.keyNeeded);
         if (accounts) {
@@ -894,10 +899,8 @@ export function createApp(opts: AppOptions): App {
       // A paused shift goes on with the player's own key, from where it stopped.
       const body = await readJson(req);
       if (!s.paused) throw new HttpError(409, s.copy.errors.notPaused);
-      if (!isProviderId(body.provider)) throw new HttpError(400, 'Unknown provider');
-      if (!isPlausibleKey(body.apiKey)) throw new HttpError(400, s.copy.errors.notAKey);
-      const cred: Credentials = { provider: body.provider, apiKey: body.apiKey };
-      const list = await models(body.provider);
+      const cred = playerCredentials(body, s.copy.errors);
+      const list = await models(cred.provider);
       const requested = typeof body.model === 'string' && body.model ? body.model : list[0]?.id;
       if (!requested || !offered(list, requested, true)) throw new HttpError(400, `Unknown model: ${requested ?? ''}`);
       // The user's messages stay with the model that wrote them when the key's provider has it.

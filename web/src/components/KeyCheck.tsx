@@ -14,15 +14,18 @@ interface Checked {
   for?: string;
 }
 
-/** Checks a player's key with its provider; once it answers, every model the key can use is on offer. */
-export function useKeyCheck(provider: Provider, apiKey: string) {
+/**
+ * Checks a player's key with its provider; once it answers, every model the key can use is on offer.
+ * A provider that needs no key (a local model server) is asked for its models all the same.
+ */
+export function useKeyCheck(provider: Provider, apiKey: string, needsKey = true) {
   const [state, setState] = useState<Checked>({ status: 'idle' });
-  const key = apiKey.trim();
+  const key = needsKey ? apiKey.trim() : '';
   const sig = `${provider}\n${key}`;
   const current: Checked = state.for === sig ? state : { status: 'idle' };
 
   const check = async () => {
-    if (!key) {
+    if (needsKey && !key) {
       setState({ status: 'error', error: t('start.pasteKey'), for: sig });
       return;
     }
@@ -37,7 +40,7 @@ export function useKeyCheck(provider: Provider, apiKey: string) {
     }
   };
 
-  return { ...current, check };
+  return { ...current, check, needsKey };
 }
 
 export type KeyCheck = ReturnType<typeof useKeyCheck>;
@@ -47,10 +50,10 @@ export function KeyCheckRow({ check, className }: { check: KeyCheck; className?:
   return (
     <div className={`key-check${className ? ` ${className}` : ''}`}>
       <button type="button" className="btn btn-small" onClick={() => void check.check()} disabled={check.status === 'checking'}>
-        {check.status === 'checking' ? t('key.checking') : t('key.check')}
+        {check.status === 'checking' ? t('key.checking') : t(check.needsKey ? 'key.check' : 'key.checkLocal')}
       </button>
       <span className={`key-status${check.status === 'ok' ? ' key-ok' : check.status === 'error' ? ' key-bad' : ''}`} aria-live="polite">
-        {check.status === 'ok' && t('key.ok', { count: check.models?.length ?? 0 })}
+        {check.status === 'ok' && t(check.needsKey ? 'key.ok' : 'key.okLocal', { count: check.models?.length ?? 0 })}
         {check.status === 'error' && check.error}
       </span>
     </div>

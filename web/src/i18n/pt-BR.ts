@@ -113,6 +113,8 @@ export const ptBR: Catalogue = {
   'key.check': 'Verificar chave',
   'key.checking': 'Verificando…',
   'key.ok': 'A chave funciona: {count} modelos disponíveis',
+  'key.checkLocal': 'Listar modelos',
+  'key.okLocal': 'Conectado: {count} modelos disponíveis',
   'key.failed': 'Não foi possível verificar a chave. Tente de novo.',
   'key.recommended': 'Recomendado',
   'key.other': 'Outro',

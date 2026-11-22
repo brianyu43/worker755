@@ -113,6 +113,8 @@ export const es: Catalogue = {
   'key.check': 'Comprobar clave',
   'key.checking': 'Comprobando…',
   'key.ok': 'La clave funciona: hay {count} modelos disponibles',
+  'key.checkLocal': 'Listar modelos',
+  'key.okLocal': 'Conectado: hay {count} modelos disponibles',
   'key.failed': 'No se pudo comprobar la clave. Inténtalo de nuevo.',
   'key.recommended': 'Recomendado',
   'key.other': 'Otro',

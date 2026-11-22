@@ -194,7 +194,20 @@ export function Start({ onStart }: Props) {
     };
   }, [access, provider, reload, toppedUp]);
   const keyInfo = models?.providers.find((p) => p.id === provider);
-  const keyCheck = useKeyCheck(provider, apiKey);
+  /** A local model server takes no key: the key field goes, and its models are listed at once. */
+  const keyless = keyInfo?.needsKey === false;
+  const keyCheck = useKeyCheck(provider, apiKey, !keyless);
+  // Where the server has a local model server, it is the default for a player with no saved key.
+  const localDefault = useRef(false);
+  useEffect(() => {
+    if (localDefault.current || !models?.providers.length) return;
+    localDefault.current = true;
+    if (!saved && models.providers[0].needsKey === false) setProvider(models.providers[0].id);
+  }, [models, saved]);
+  useEffect(() => {
+    if (access === 'own' && keyless && keyCheck.status === 'idle') void keyCheck.check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access, keyless, keyCheck.status]);
   // Once the key is checked, everything it can use is on offer, not only the usual picks.
   const offer = access === 'own' && keyCheck.models ? keyCheck.models : (models?.models ?? []);
   // The picks always come from the list on offer, also when a checked key is changed again. The
@@ -223,7 +236,7 @@ export function Start({ onStart }: Props) {
   const go = async () => {
     if (starting) return;
     const key = apiKey.trim();
-    if (access === 'own' && !key) {
+    if (access === 'own' && !key && !keyless) {
       setStartError(t('start.pasteKey'));
       return;
     }
@@ -231,7 +244,7 @@ export function Start({ onStart }: Props) {
     if (access === 'free' && accounts && atLimit(me)) return showOffer('limit');
     setStarting(true);
     setStartError(null);
-    if (access === 'own') saveKey(remember ? { provider, apiKey: key } : null);
+    if (access === 'own' && !keyless) saveKey(remember ? { provider, apiKey: key } : null);
     try {
       await onStart({
         language,
@@ -246,7 +259,7 @@ export function Start({ onStart }: Props) {
           : persona !== 'default' && models?.characters?.some((c) => c.id === persona)
             ? { persona }
             : {}),
-        ...(access === 'own' ? { apiKey: key, provider } : {}),
+        ...(access === 'own' ? { apiKey: keyless ? '' : key, provider } : {}),
       });
     } catch (err) {
       setStarting(false);
@@ -465,6 +478,7 @@ export function Start({ onStart }: Props) {
                     ))}
                   </select>
                 </label>
+                {!keyless && (
                 <div className="field">
                   <span className="field-label">
                     <label htmlFor="api-key">{t('start.apiKey')}</label>
@@ -488,7 +502,9 @@ export function Start({ onStart }: Props) {
                     onChange={(e) => setApiKey(e.target.value)}
                   />
                 </div>
+                )}
                 <KeyCheckRow check={keyCheck} className="form-span" />
+                {!keyless && (
                 <p className="key-note form-span">
                   <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden>
                     <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -498,10 +514,13 @@ export function Start({ onStart }: Props) {
                     <strong>{t('start.keyNote.title')}</strong> {t('start.keyNote.body')}
                   </span>
                 </p>
+                )}
+                {!keyless && (
                 <label className="check form-span">
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                   <span>{t('start.remember')}</span>
                 </label>
+                )}
               </div>
             )}
           </section>

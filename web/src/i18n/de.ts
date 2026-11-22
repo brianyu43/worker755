@@ -113,6 +113,8 @@ export const de: Catalogue = {
   'key.check': 'Schlüssel prüfen',
   'key.checking': 'Wird geprüft…',
   'key.ok': 'Schlüssel funktioniert: {count} Modelle verfügbar',
+  'key.checkLocal': 'Modelle auflisten',
+  'key.okLocal': 'Verbunden: {count} Modelle verfügbar',
   'key.failed': 'Der Schlüssel konnte nicht geprüft werden. Versuch’s noch mal.',
   'key.recommended': 'Empfohlen',
   'key.other': 'Andere',

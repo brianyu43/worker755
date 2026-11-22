@@ -115,6 +115,8 @@ export const en = {
   'key.check': 'Check key',
   'key.checking': 'Checking…',
   'key.ok': 'Key works: {count} models available',
+  'key.checkLocal': 'List models',
+  'key.okLocal': 'Connected: {count} models available',
   'key.failed': 'Could not check the key. Try again.',
   'key.recommended': 'Recommended',
   'key.other': 'Other',

@@ -129,7 +129,8 @@ export type Persona = 'default' | 'toxic' | 'ally' | 'saboteur';
 /** A character on offer, or one the player writes. */
 export type Character = Persona | 'custom';
 
-export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deepseek';
+/** 'local': a model server of the operator's own (Ollama, llama.cpp, vLLM), offered only where one is set up. */
+export type Provider = 'openrouter' | 'gateway' | 'anthropic' | 'openai' | 'deepseek' | 'local';
 
 export interface ModelList {
   models: { id: string; label: string }[];
@@ -144,7 +145,8 @@ export interface ModelList {
   /** Free shifts on the server's key are open right now. */
   free: boolean;
   /** Where a player's own key can come from. */
-  providers: { id: Provider; label: string; keyUrl: string }[];
+  /** needsKey false: the provider takes no key from the player. */
+  providers: { id: Provider; label: string; keyUrl: string; needsKey?: boolean }[];
   donateUrl: string;
   sourceUrl: string;
   sharing: boolean;

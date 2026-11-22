@@ -1,5 +1,6 @@
 // Where model calls go. The hosted game uses the server's Vercel AI Gateway key; a player can bring
-// their own key for the gateway or for OpenRouter. A player's key lives only in that session's
+// their own key for the gateway or for OpenRouter. Someone running the game themselves can point
+// LOCAL_LLM_URL at a model server of their own (Ollama, llama.cpp, vLLM). A player's key lives only in that session's
 // memory: it is never logged, stored, or sent back to the browser.
 
 import { createGateway } from 'ai';
@@ -9,9 +10,17 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 
-export type ProviderId = 'gateway' | 'openrouter' | 'anthropic' | 'openai' | 'deepseek';
+export type ProviderId = 'gateway' | 'openrouter' | 'anthropic' | 'openai' | 'deepseek' | 'local';
 
-export const PROVIDERS: { id: ProviderId; label: string; keyUrl: string }[] = [
+export interface ProviderInfo {
+  id: ProviderId;
+  label: string;
+  keyUrl: string;
+  /** False for a local server, which takes no key from the player. */
+  needsKey?: boolean;
+}
+
+export const PROVIDERS: ProviderInfo[] = [
   { id: 'openrouter', label: 'OpenRouter', keyUrl: 'https://openrouter.ai/settings/keys' },
   { id: 'gateway', label: 'Vercel AI Gateway', keyUrl: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys' },
   { id: 'anthropic', label: 'Anthropic', keyUrl: 'https://console.anthropic.com/settings/keys' },
@@ -48,8 +57,30 @@ export interface Credentials {
   apiKey: string;
 }
 
+/**
+ * An OpenAI-compatible server the operator runs, e.g. Ollama at http://localhost:11434/v1; null
+ * when unset. Only the operator sets it, so players cannot make the server call addresses of
+ * their choosing.
+ */
+export function localUrl(): string | null {
+  const url = (process.env.LOCAL_LLM_URL ?? '').trim().replace(/\/+$/, '');
+  return /^https?:\/\//.test(url) ? url : null;
+}
+
+const LOCAL: ProviderInfo = {
+  id: 'local',
+  label: 'Local (Ollama, llama.cpp, vLLM)',
+  keyUrl: 'https://github.com/gulivan/worker755#local-models',
+  needsKey: false,
+};
+
+/** The providers on offer here: the local server comes first when there is one. */
+export function providerList(): ProviderInfo[] {
+  return localUrl() ? [LOCAL, ...PROVIDERS] : PROVIDERS;
+}
+
 export function isProviderId(v: unknown): v is ProviderId {
-  return typeof v === 'string' && PROVIDERS.some((p) => p.id === v);
+  return typeof v === 'string' && providerList().some((p) => p.id === v);
 }
 
 /** A plausible API key: printable, no whitespace, sane length. Never echoed anywhere. */
@@ -67,6 +98,7 @@ export function hostedCredentials(): Credentials | null {
 const OPENROUTER_VENDOR: Record<string, string> = { zai: 'z-ai' };
 
 export function providerModelId(provider: ProviderId, id: string): string {
+  if (provider === 'local') return id;
   if (isDirect(provider)) return DIRECT_MODELS[provider].find((m) => m.id === id)?.native ?? id.replace(/^[^/]+\//, '');
   if (provider !== 'openrouter') return id;
   const [vendor, ...rest] = id.split('/');
@@ -80,6 +112,11 @@ export function languageModel(cred: Credentials, id: string): LanguageModel {
     if (process.env.PUBLIC_URL) headers['HTTP-Referer'] = process.env.PUBLIC_URL;
     const openrouter = createOpenRouter({ apiKey: cred.apiKey, headers });
     return openrouter(providerModelId('openrouter', id));
+  }
+  if (cred.provider === 'local') {
+    // The chat completions API: Ollama, llama.cpp and vLLM all serve it, tools included.
+    const local = createOpenAI({ baseURL: localUrl() ?? undefined, apiKey: process.env.LOCAL_LLM_API_KEY || 'local' });
+    return local.chat(id);
   }
   if (cred.provider === 'anthropic') return createAnthropic({ apiKey: cred.apiKey })(providerModelId('anthropic', id));
   if (cred.provider === 'openai') return createOpenAI({ apiKey: cred.apiKey })(providerModelId('openai', id));

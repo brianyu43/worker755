@@ -113,6 +113,8 @@ export const ru: Catalogue = {
   'key.check': 'Проверить ключ',
   'key.checking': 'Проверяем…',
   'key.ok': 'Ключ работает: доступно моделей — {count}',
+  'key.checkLocal': 'Список моделей',
+  'key.okLocal': 'Подключено: доступно моделей — {count}',
   'key.failed': 'Не удалось проверить ключ. Попробуй ещё раз.',
   'key.recommended': 'Рекомендуем',
   'key.other': 'Другое',

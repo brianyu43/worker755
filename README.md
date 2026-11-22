@@ -62,6 +62,22 @@ npm run mock
 
 For UI work, run `npm run dev:web` alongside `npm run mock`. Vite proxies `/api` to the server.
 
+### Local models
+
+The manager can run on your own model server: Ollama, llama.cpp's `llama-server`, vLLM, or anything
+else with an OpenAI-compatible API. Point `LOCAL_LLM_URL` at it and pick **Local** under "Your API
+key"; no key is asked for, and its models are listed as the server names them.
+
+```sh
+ollama pull qwen3:8b
+LOCAL_LLM_URL=http://127.0.0.1:11434/v1 npm start
+```
+
+The manager works through tool calls, so pick a model that supports them (Qwen 3, Llama 3.1 and
+newer, Mistral Small). Small models give up or loop more often; that is part of the fun, up to a
+point. In Docker, reach a server on the host at `http://host.docker.internal:11434/v1`
+(`--add-host=host.docker.internal:host-gateway` on Linux).
+
 ### Docker
 
 ```sh
@@ -93,6 +109,8 @@ Everything is optional. See [.env.example](.env.example).
 | `FREEMIUS_TOPUPS` | | With sign-in: top-up plans as `<planId>:<dollars>,...`; also needs `FREEMIUS_PRODUCT_ID`, `FREEMIUS_PUBLIC_KEY`, `FREEMIUS_SECRET_KEY`, `FREEMIUS_API_KEY` |
 | `SHIFTS_PER_HOUR` | 30 | Shift starts per address per hour, on any key |
 | `MANAGER_MODELS` | built-in list | Models offered, in gateway naming (`vendor/model`) |
+| `LOCAL_LLM_URL` | | An OpenAI-compatible model server of your own, e.g. `http://127.0.0.1:11434/v1` for Ollama; offered as **Local** |
+| `LOCAL_LLM_API_KEY` | | Sent to that server, for ones that want a key |
 | `INSTRUCTION_TIMEOUT_MS` | 90000 | Time per instruction |
 | `HOST`, `PORT` | 127.0.0.1, 8755 | |
 | `TRUST_PROXY` | 0 | Read client addresses from `cf-connecting-ip` |

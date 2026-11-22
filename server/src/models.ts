@@ -1,5 +1,5 @@
 import { createGateway } from 'ai';
-import { DIRECT_MODELS, isDirect, providerModelId } from './providers.ts';
+import { DIRECT_MODELS, isDirect, localUrl, providerModelId } from './providers.ts';
 import type { Credentials, ProviderId } from './providers.ts';
 
 export interface ModelOption {
@@ -76,6 +76,7 @@ async function openrouterCatalogue(): Promise<Map<string, string> | null> {
 export async function listModels(provider: ProviderId = 'gateway'): Promise<ModelOption[]> {
   // Vendors' own model lists need the player's key, so their offer is fixed and checked by hand.
   if (isDirect(provider)) return DIRECT_MODELS[provider].map(({ id, label }) => ({ id, label }));
+  if (provider === 'local') return localModels().catch(() => []);
   const hit = cache.get(provider);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.list;
   const wanted = envList('MANAGER_MODELS').length ? envList('MANAGER_MODELS') : PREFERRED_MODELS;
@@ -149,9 +150,22 @@ function directOption(provider: 'anthropic' | 'openai' | 'deepseek', native: str
   return { id: `${provider}/${native}`, label: typeof name === 'string' && name ? name : native };
 }
 
+/** What the local model server has, by its own names; embedding models cannot manage anyone. */
+async function localModels(): Promise<ModelOption[]> {
+  const base = localUrl();
+  if (!base) return [];
+  const key = process.env.LOCAL_LLM_API_KEY;
+  const body = await getJson(`${base}/models`, key ? { authorization: `Bearer ${key}` } : {});
+  return entries(body)
+    .flatMap((m) => (typeof m.id === 'string' && !/embed/i.test(m.id) ? [{ id: m.id, label: m.id }] : []))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
 async function fetchKeyModels(cred: Credentials): Promise<ModelOption[]> {
   const bearer = { authorization: `Bearer ${cred.apiKey}` };
   switch (cred.provider) {
+    case 'local':
+      return localModels();
     case 'openrouter': {
       // The catalogue is public, so the key is checked on its own.
       await getJson('https://openrouter.ai/api/v1/key', bearer);

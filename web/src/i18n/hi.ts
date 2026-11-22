@@ -113,6 +113,8 @@ export const hi: Catalogue = {
   'key.check': 'की जाँचें',
   'key.checking': 'जाँच हो रही है…',
   'key.ok': 'की काम करती है: {count} मॉडल उपलब्ध',
+  'key.checkLocal': 'मॉडल सूचीबद्ध करो',
+  'key.okLocal': 'कनेक्ट हो गया: {count} मॉडल उपलब्ध हैं',
   'key.failed': 'की की जाँच नहीं हो सकी। फिर कोशिश करो।',
   'key.recommended': 'अनुशंसित',
   'key.other': 'अन्य',

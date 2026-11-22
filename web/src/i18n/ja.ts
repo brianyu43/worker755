@@ -113,6 +113,8 @@ export const ja: Catalogue = {
   'key.check': 'キーを確認',
   'key.checking': '確認中…',
   'key.ok': 'キーは有効です：利用可能なモデルは{count}個',
+  'key.checkLocal': 'モデル一覧',
+  'key.okLocal': '接続済み：{count}個のモデルを利用可能',
   'key.failed': 'キーを確認できませんでした。もう一度お試しください。',
   'key.recommended': 'おすすめ',
   'key.other': 'その他',
