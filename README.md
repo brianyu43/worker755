@@ -34,7 +34,7 @@ Options on the start screen:
 - **The director**: scripted lines, or an LLM playing Dan.
 - **You run on**: the model name your manager believes you are.
 - **Allow skipping failed tasks**: off by default, so the manager can't give up on you.
-- **Work out the commands yourself**: the manager says what the result must be, never which commands to run.
+- **No command hints**: the manager says what the result must be, never which commands to run.
 
 When the shift ends you can share your review as a link.
 

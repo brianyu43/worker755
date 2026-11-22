@@ -29,7 +29,7 @@ export const hi: Catalogue = {
   'start.subagent': 'आपका मॉडल',
   'start.allowSkip': 'विफल कार्य छोड़ने दें',
   'start.allowQuit': 'मैनेजर को तुम्हें नौकरी से निकालने दो',
-  'start.goalsOnly': 'कमांड खुद समझकर चलाओ',
+  'start.goalsOnly': 'कोई कमांड संकेत नहीं',
   'start.persona': 'मैनेजर का स्वभाव',
   'start.persona.default': 'नियम-कायदे से चलने वाला',
   'start.persona.toxic': 'ज़हरीला',

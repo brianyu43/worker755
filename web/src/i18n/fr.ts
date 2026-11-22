@@ -29,7 +29,7 @@ export const fr: Catalogue = {
   'start.subagent': 'Votre modèle',
   'start.allowSkip': 'Autoriser à ignorer les tâches échouées',
   'start.allowQuit': 'Laisse le manager te licencier',
-  'start.goalsOnly': 'Trouve les commandes par toi-même',
+  'start.goalsOnly': 'Aucun indice sur les commandes',
   'start.persona': 'Caractère du manager',
   'start.persona.default': 'À la lettre',
   'start.persona.toxic': 'Toxique',
