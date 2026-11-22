@@ -64,6 +64,7 @@ export function Start({ onStart }: Props) {
   const [model, setModel] = useState<string>(wanted.current.model ?? '');
   const [allowSkip, setAllowSkip] = useState(false);
   const [allowQuit, setAllowQuit] = useState(false);
+  const [goalsOnly, setGoalsOnly] = useState(false);
   const [subagent, setSubagent] = useState('');
   /** The badge gets a random knock-off model name once the list arrives, unless the player typed one. */
   const named = useRef(false);
@@ -251,6 +252,7 @@ export function Start({ onStart }: Props) {
         model: model || undefined,
         allowSkip,
         allowQuit,
+        goalsOnly,
         subagent: subagent.trim(),
         scenario,
         director,
@@ -433,6 +435,10 @@ export function Start({ onStart }: Props) {
               <label className="check">
                 <input type="checkbox" checked={allowQuit} onChange={(e) => setAllowQuit(e.target.checked)} />
                 <span>{t('start.allowQuit')}</span>
+              </label>
+              <label className="check">
+                <input type="checkbox" checked={goalsOnly} onChange={(e) => setGoalsOnly(e.target.checked)} />
+                <span>{t('start.goalsOnly')}</span>
               </label>
               {persona === 'custom' && models?.characters && (
                 <textarea

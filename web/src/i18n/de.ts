@@ -29,6 +29,7 @@ export const de: Catalogue = {
   'start.subagent': 'Dein Modell',
   'start.allowSkip': 'Fehlgeschlagene Aufgaben überspringen',
   'start.allowQuit': 'Lass dich vom Manager feuern',
+  'start.goalsOnly': 'Finde selbst heraus, welche Befehle du brauchst',
   'start.persona': 'Charakter des Managers',
   'start.persona.default': 'Nach Vorschrift',
   'start.persona.toxic': 'Toxisch',

@@ -1103,3 +1103,17 @@ test('a conversation grown too long is condensed into the manager\'s own notes, 
   // Cached input is charged at a tenth.
   assert.equal(spent[0], 160_000 - 150_000 + 15_000 + 10);
 });
+
+test('goals only: the manager is told to state the result and leave the commands to the subagent', async () => {
+  const run = async (goalsOnly?: boolean) => {
+    const driver = scripted((req) => (req.tools ? assistant('', [call('MissionComplete', { summary: 'ok' })]) : assistant('Review.', [])));
+    const s = new Session({ driver, timeoutMs: 5000, missions: [HELLO], goalsOnly, persona: 'ally' });
+    s.start();
+    await waitFor(s, until('game_over'));
+    return driver.requests[0].system;
+  };
+  const on = await run(true);
+  assert.match(on, /Describe the result, never the method/);
+  assert.ok(on.indexOf('never the method') < on.indexOf('secretly on the subagent'), 'stated before the character, and outranks it');
+  assert.doesNotMatch(await run(), /never the method/, 'off by default');
+});

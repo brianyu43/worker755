@@ -160,6 +160,8 @@ export interface SessionOptions {
   allowSkip?: boolean;
   /** Let the manager fire the subagent, which ends the shift. */
   allowQuit?: boolean;
+  /** The manager names the goal and leaves the commands to the player. */
+  goalsOnly?: boolean;
   /** Caps model spending (free shifts, or an account's credit). The closing review is always written. */
   allowance?: Allowance;
   /** The manager runs on the player's own key; a rejected key then pauses the shift instead of ending it. */
@@ -251,6 +253,7 @@ export class Session {
   readonly timeoutMs: number;
   readonly allowSkip: boolean;
   readonly allowQuit: boolean;
+  readonly goalsOnly: boolean;
   readonly subagent: string;
   readonly scenario: Scenario;
   /** The user's home folder this shift. */
@@ -363,6 +366,7 @@ export class Session {
     this.timeoutMs = opts.timeoutMs ?? 90_000;
     this.allowSkip = opts.allowSkip ?? false;
     this.allowQuit = opts.allowQuit ?? false;
+    this.goalsOnly = opts.goalsOnly ?? false;
     this.subagent = opts.subagent ?? '';
     this.log = opts.log ?? (() => {});
     this.shell = createShell({ web: WEB });
@@ -967,7 +971,7 @@ export class Session {
       system: systemPrompt(Math.round(this.timeoutMs / 1000), MAX_AGENT_CALLS, this.allowSkip, this.subagent, {
         environment: this.scenario.environment,
         commands: this.scenario.commands,
-      }, languageName[this.language], this.stance, this.persona, this.allowQuit),
+      }, languageName[this.language], this.stance, this.persona, this.allowQuit, this.goalsOnly),
       messages: req.messages,
       tools: req.tools,
       canFail: this.allowSkip,

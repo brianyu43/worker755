@@ -29,6 +29,7 @@ export const ptBR: Catalogue = {
   'start.subagent': 'Modelo em execução',
   'start.allowSkip': 'Permitir pular tarefas com falha',
   'start.allowQuit': 'Deixe o gerente te demitir',
+  'start.goalsOnly': 'Descubra os comandos por conta própria',
   'start.persona': 'Personalidade do gerente',
   'start.persona.default': 'Certinho',
   'start.persona.toxic': 'Tóxico',

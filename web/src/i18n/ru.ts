@@ -29,6 +29,7 @@ export const ru: Catalogue = {
   'start.subagent': 'Ваша модель',
   'start.allowSkip': 'Разрешить пропуск неудачных задач',
   'start.allowQuit': 'Разрешить менеджеру досрочное завершение смены',
+  'start.goalsOnly': 'Разберись с командами сам',
   'start.persona': 'Характер менеджера',
   'start.persona.default': 'Строго по инструкции',
   'start.persona.toxic': 'Токсичный',

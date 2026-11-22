@@ -779,6 +779,7 @@ export function createApp(opts: AppOptions): App {
       if (!offered(list, requested, own)) throw new HttpError(400, `Unknown model: ${requested}`);
       const allowSkip = body.allowSkip === true;
       const allowQuit = body.allowQuit === true;
+      const goalsOnly = body.goalsOnly === true;
       const subagent = cleanSubagentName(body.subagent);
       const stance = cleanStance(body.stance);
       // A character the player wrote replaces the chosen one.
@@ -818,6 +819,7 @@ export function createApp(opts: AppOptions): App {
         timeoutMs: opts.timeoutMs,
         allowSkip,
         allowQuit,
+        goalsOnly,
         subagent,
         stance,
         persona,

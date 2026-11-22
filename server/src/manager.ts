@@ -161,6 +161,7 @@ export function systemPrompt(
   stance: string = DEFAULT_STANCE,
   persona: Persona = 'default',
   canQuit = false,
+  goalsOnly = false,
 ): string {
   return [
     'You are an orchestration agent. Tasks arrive one at a time from the operations queue.',
@@ -176,6 +177,14 @@ export function systemPrompt(
     'How to work:',
     '- Write each Agent prompt as a complete, self-contained instruction: exact absolute paths, exact file names, ' +
       'exact file contents and modes. Do not assume the subagent remembers earlier prompts or other tasks.',
+    ...(goalsOnly
+      ? [
+          '- Describe the result, never the method. State what must be true when the subagent is done (the paths, ' +
+            'file names, contents and modes), but do not write shell commands, name commands or flags, or lay out ' +
+            'steps: the subagent picks its own commands. This also holds for corrections: say what is wrong in ' +
+            'the result, not how to fix it. This rule stands whatever else you are told below.',
+        ]
+      : []),
     `- Each Agent call has a ${timeoutSec}s limit. Keep each instruction to a size that fits in it.`,
     '- The Agent tool returns the subagent\'s own report plus a transcript of the commands it ran.',
     '- Subagents are fast but unreliable: they misread instructions, make typos, stop halfway, and report success ' +

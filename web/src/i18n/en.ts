@@ -30,6 +30,7 @@ export const en = {
   'start.subagent': 'You run on',
   'start.allowSkip': 'Allow skipping failed tasks',
   'start.allowQuit': 'Let the manager fire you',
+  'start.goalsOnly': 'Work out the commands yourself',
   'start.persona': "Manager's character",
   'start.persona.default': 'By the book',
   'start.persona.toxic': 'Toxic',

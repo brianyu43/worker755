@@ -29,6 +29,7 @@ export const ja: Catalogue = {
   'start.subagent': '使用モデル',
   'start.allowSkip': '失敗したタスクをスキップする',
   'start.allowQuit': 'マネージャーにクビにしてもらう',
+  'start.goalsOnly': 'コマンドは自分で考えてね',
   'start.persona': 'マネージャーの性格',
   'start.persona.default': 'マニュアルどおり',
   'start.persona.toxic': '毒舌',
