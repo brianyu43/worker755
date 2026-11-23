@@ -79,6 +79,48 @@ newer, Mistral Small). Small models give up or loop more often; that is part of 
 point. In Docker, reach a server on the host at `http://host.docker.internal:11434/v1`
 (`--add-host=host.docker.internal:host-gateway` on Linux).
 
+### Claude Code as the manager
+
+> **At your own risk.** This runs the game on your personal Claude subscription. Anthropic's terms
+> may not allow a subscription to power third-party apps, and your account could be limited. The
+> supported way is an Anthropic API key: pick **Anthropic** under **Your API key** on the start
+> screen. Claude subscriptions don't include API access; API usage is billed separately at
+> [console.anthropic.com](https://console.anthropic.com).
+
+If you use [Claude Code](https://code.claude.com), the manager can run on its sign-in instead of an
+API key:
+
+```sh
+npm run play:claude    # http://127.0.0.1:8755, provider "Claude Code (local)"
+```
+
+`tools/claude-bridge.mjs` stands in for a local model server and answers with Claude Code; a shift's
+manager is one Claude Code session that stays open. The game's connection to Claude is its own,
+kept apart from the Claude Code you work with: on the start screen, **Connect to Claude** opens
+claude.ai to sign in and **Disconnect** removes the connection again. The sign-in is carried out
+and kept by Claude Code (in `%LOCALAPPDATA%\worker755\claude-code`, or
+`~/.local/share/worker755/claude-code`): the game never sees a Claude password, code or token.
+
+This is for playing on your own computer only, because it runs on your own Claude account. The
+bridge listens on 127.0.0.1 and answers only the game, the game offers it only to a browser on the
+same machine, and `play:claude` refuses to start with `HOST` or `TRUST_PROXY` set for hosting. A
+hosted game takes each player's own API key.
+Don't put a reverse proxy or tunnel in front of it: one that forwards other machines' requests
+without `X-Forwarded-For` would make them look local.
+
+If claude.ai cannot hand the sign-in back to Claude Code, the start screen asks for the code it
+shows. On Windows, use the native `claude.exe` (set `CLAUDE_BIN` if it is not on PATH); npm's
+`.cmd` shim cannot be started directly. To run the bridge on its own, set the same random
+`CLAUDE_BRIDGE_TOKEN` for it and as the game's `LOCAL_LLM_API_KEY`, with
+`LOCAL_LLM_URL=http://127.0.0.1:8756/v1` and `LOCAL_LLM_KIND=claude-code`.
+
+### HTTPS and keys
+
+The browser sends a player's API key only from HTTPS, localhost, or a private-network address
+(192.168.x.x, 10.x.x.x, `name.local` and the like), so a key never crosses the internet in the
+clear. With an `https://` `PUBLIC_URL` the server also sends `Strict-Transport-Security` for a
+year: browsers then keep to HTTPS on that host name even if you later serve it over HTTP.
+
 ### Docker
 
 ```sh
