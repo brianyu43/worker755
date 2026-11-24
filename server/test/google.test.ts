@@ -115,6 +115,25 @@ test('keyModels for Google filters AI Studio list to Gemini chat models and maps
       assert.deepEqual(await keyModels({ provider: 'google', apiKey: 'test-key-0123456789abcdef' }), { problem });
     });
   }
+
+  await withFetch(
+    (async () =>
+      new Response(
+        JSON.stringify({
+          error: { code: 400, details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }] },
+        }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      )) as typeof fetch,
+    async () => {
+      assert.deepEqual(await keyModels({ provider: 'google', apiKey: 'test-key-0123456789abcdef' }), { problem: 'key' });
+    },
+  );
+
+  for (const body of ['{}', JSON.stringify({ error: { details: [{ reason: 'OTHER' }] } })]) {
+    await withFetch((async () => new Response(body, { status: 400 })) as typeof fetch, async () => {
+      assert.deepEqual(await keyModels({ provider: 'google', apiKey: 'test-key-0123456789abcdef' }), { problem: 'down' });
+    });
+  }
 });
 
 test('keyModels for Vertex AI probes countTokens against vertexBaseUrl and maps errors', async () => {
@@ -160,6 +179,22 @@ test('keyModels for Vertex AI probes countTokens against vertexBaseUrl and maps 
   });
 
   await withVertexEnv({}, async () => {
+    for (const denied of [403, 402]) {
+      await withFetch(
+        (async (input) => {
+          const url = String(input);
+          if (url.includes('gemini-4-argon:')) return new Response('{}', { status: 200 });
+          if (url.includes('gemini-3.1-pro-preview:')) return new Response('{}', { status: denied });
+          return new Response('{}', { status: 404 });
+        }) as typeof fetch,
+        async () => {
+          assert.deepEqual(await keyModels({ provider: 'vertex', apiKey: 'vertex-test-key-0123456789abcdef' }), {
+            models: [{ id: 'google/gemini-4-argon', label: 'Gemini 4 Argon' }],
+          });
+        },
+      );
+    }
+
     for (const [status, problem] of [
       [401, 'key'],
       [403, 'key'],

@@ -209,9 +209,26 @@ async function fetchKeyModels(cred: Credentials): Promise<ModelOption[]> {
       return entries(body).flatMap((m) => (typeof m.id === 'string' ? [directOption('deepseek', m.id)] : []));
     }
     case 'google': {
-      const body = await getJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', {
-        'x-goog-api-key': cred.apiKey,
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', {
+        headers: { 'x-goog-api-key': cred.apiKey },
+        signal: AbortSignal.timeout(KEY_CHECK_MS),
       });
+      if (!res.ok) {
+        if (res.status === 400) {
+          const errBody = await res.json().catch(() => null);
+          const details = (errBody as { error?: { details?: unknown } } | null)?.error?.details;
+          if (
+            Array.isArray(details) &&
+            details.some(
+              (d) => d && typeof d === 'object' && (d as { reason?: unknown }).reason === 'API_KEY_INVALID',
+            )
+          ) {
+            throw new KeyCheckError('key');
+          }
+        }
+        throw new KeyCheckError(problemOf(res.status));
+      }
+      const body = await res.json();
       const list = (body as { models?: unknown })?.models;
       if (!Array.isArray(list)) return [];
       return list.flatMap((raw) => {
@@ -256,9 +273,9 @@ async function fetchKeyModels(cred: Credentials): Promise<ModelOption[]> {
           }
         }),
       );
-      if (authProblem) throw new KeyCheckError(authProblem);
       const found = results.filter((m): m is ModelOption => m !== null);
       if (found.length) return found;
+      if (authProblem) throw new KeyCheckError(authProblem);
       throw new KeyCheckError(sawDown ? 'down' : 'key');
     }
   }
